@@ -1,5 +1,6 @@
 ﻿using Frostbyte.Extensions;
-using Frostbyte.Factories;
+using Frostbyte.Handlers;
+using Frostbyte.Websocket;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Drawing;
@@ -31,11 +32,13 @@ namespace Frostbyte
         {
             Console.WriteAscii($"   {nameof(Frostbyte)}".ToUpper(), Color.Cyan);
 
-            var cf = Provider.GetRequiredService<ConfigFactory>();
+            Provider.InjectRequiredServices();
+
+            var cf = Provider.GetRequiredService<ConfigHandler>();
             var config = cf.ValidateConfiguration();
 
-            var wf = Provider.GetRequiredService<WebsocketFactory>();
-            wf.Initialize(config);
+            var wsServer = Provider.GetRequiredService<WSServer>();
+            await wsServer.InitializeAsync(config);
 
             await Task.Delay(-1);
         }

@@ -1,76 +1,121 @@
 ﻿using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Net;
-using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Frostbyte.Websocket
 {
-    [Service(ServiceLifetime.Singleton)]
+    [Service(ServiceLifetime.Singleton, typeof(StatsHandler))]
     public sealed class WSServer : IAsyncDisposable
     {
-        public event Func<WSClient, ValueTask> OnConnected;
-        public event Func<WSClient, ValueTask> OnDisconnected;
-        public event Func<WSClient, string, ValueTask> OnMessageReceived;
-        public event Func<WSClient, string, ValueTask> OnMessageDelivered;
+        private readonly HttpListener _listener;
+        private readonly LogHandler<WSServer> _log;
+        private readonly ConcurrentDictionary<ulong, WSClient> _clients;
+        private readonly ConcurrentDictionary<ulong, Task> _receiveTasks;
 
-        public IPEndPoint EndPoint { get; private set; }
-        private readonly Socket _socket;
+        private ConfigEntity config;
+        private Task StatsSenderTask;
+        private StatsHandler statsHandler;
+        private CancellationTokenSource MainCancellation, WSCancellation, StatsCancellation;
 
-        public WSServer(ConfigEntity config)
+        public WSServer()
         {
-            EndPoint = IPAddress.TryParse(config.Host, out var address)
-                ? new IPEndPoint(address, config.Port)
-                : new IPEndPoint(IPAddress.Any, config.Port);
-
-            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _listener = new HttpListener();
+            _log = new LogHandler<WSServer>();
+            _clients = new ConcurrentDictionary<ulong, WSClient>();
+            _receiveTasks = new ConcurrentDictionary<ulong, Task>();
+            WSCancellation = new CancellationTokenSource();
+            StatsCancellation = new CancellationTokenSource();
+            MainCancellation = CancellationTokenSource.CreateLinkedTokenSource(WSCancellation.Token, StatsCancellation.Token);
         }
 
-        public void Start()
+        public async Task InitializeAsync(ConfigEntity config)
         {
-            _socket.Bind(EndPoint);
-            _socket.Listen(0);
-            _socket.BeginAccept(AcceptCallback, null);
-            _socket.BeginReceive(new byte[512], 0, 0, SocketFlags.None, ReceiveCallback, null);
+            this.config = config;
+            _log.LogInformation($"Security protocol set to TLS11 & TLS12.");
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
+            _listener.Prefixes.Add(config.Url);
+            _listener.Start();
+
+            _log.LogInformation($"HTTP listner listening on: {config.Url}.");
+            while (!WSCancellation.IsCancellationRequested)
+            {
+                var context = await _listener.GetContextAsync().ConfigureAwait(false);
+                await ProcessRequestAsync(context).ConfigureAwait(false);
+            }
         }
 
-        private void AcceptCallback(IAsyncResult result)
+        private async Task ProcessRequestAsync(HttpListenerContext context)
         {
-            if (!result.IsCompleted)
-                return;
+            switch (context.Request.Url.LocalPath)
+            {
+                case "/loadtracks":
+                    if (context.Response.Headers.Get("Password") != config.Password)
+                    {
+                        context.Response.StatusCode = 403;
+                        context.Response.StatusDescription = "Password header doesn't match config's value.";
+                        return;
+                    }
 
-            _socket.EndAccept(result);
-            _socket.Receive(new byte[512]);
 
-            var client = new WSClient(_socket);
-            OnConnected?.Invoke(client);
-            _socket.BeginAccept(AcceptCallback, null);
+                    break;
+
+                case "/":
+                    if (!context.Request.IsWebSocketRequest)
+                    {
+                        context.Response.StatusCode = 400;
+                        context.Response.Close();
+                        return;
+                    }
+
+                    var ws = await context.AcceptWebSocketAsync(string.Empty).ConfigureAwait(false);
+                    ulong.TryParse(ws.Headers.Get("User-Id"), out var userId);
+                    int.TryParse(ws.Headers.Get("Shards"), out var shards);
+
+                    var wsClient = new WSClient(ws, userId, shards);
+                    wsClient.OnClosed += OnCLosed;
+                    var receieve = wsClient.ReceiveAsync();
+
+                    _clients.TryAdd(userId, wsClient);
+                    _receiveTasks.TryAdd(userId, receieve);
+
+                    _log.LogInformation($"Websocket client connected with {userId} id.");
+                    break;
+
+                default:
+                    _log.LogWarning($"Unknown path requested: {context.Request.Url}.");
+                    break;
+            }
         }
 
-        private void ReceiveCallback(IAsyncResult result)
+        private Task OnCLosed()
         {
-            if (!result.IsCompleted)
-                return;
-
-            _socket.EndReceive(result);
-
-            _socket.BeginReceive(new byte[512], 0, 0, SocketFlags.None, ReceiveCallback, null);
+            throw new NotImplementedException();
         }
 
-        private string HandshakeResponse(string key)
+        private async Task CollectStatsAsync()
         {
-            return
-                $"HTTP/1.1 101 Switching Protocols\n" +
-                $"Upgrade: WebSocket\n" +
-                $"Connection: Upgrade\n" +
-                $"Sec-WebSocket-Accept: {key}";
+            while (!StatsCancellation.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+                var clients = _clients.Count;
+                var guildConnections = _clients.Values.Sum(x => x._guildConnections.Count);
+            }
         }
 
         public ValueTask DisposeAsync()
         {
-            throw new NotImplementedException();
+            MainCancellation.Cancel(false);
+            _listener.Close();
+
+            return default;
         }
     }
 }

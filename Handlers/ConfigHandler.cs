@@ -1,20 +1,19 @@
 ﻿using Frostbyte.Attributes;
 using Frostbyte.Entities;
-using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using System.IO;
 
-namespace Frostbyte.Factories
+namespace Frostbyte.Handlers
 {
     [Service(ServiceLifetime.Singleton)]
-    public sealed class ConfigFactory
+    public sealed class ConfigHandler
     {
-        private LogHandler<ConfigFactory> Logger { get; }
+        private LogHandler<ConfigHandler> Logger { get; }
 
-        public ConfigFactory()
+        public ConfigHandler()
         {
-            Logger = new LogHandler<ConfigFactory>();
+            Logger = new LogHandler<ConfigHandler>();
         }
 
         public ConfigEntity ValidateConfiguration()

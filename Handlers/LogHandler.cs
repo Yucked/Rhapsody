@@ -58,14 +58,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical => "CRIT",
-                LogLevel.Debug => "DBUG",
-                LogLevel.Error => "EROR",
-                LogLevel.Information => "INFO",
-                LogLevel.None => "NONE",
-                LogLevel.Trace => "TRCE",
-                LogLevel.Warning => "WARN",
-                _ => "NONE"
+                LogLevel.Critical       => "CRIT",
+                LogLevel.Debug          => "DBUG",
+                LogLevel.Error          => "EROR",
+                LogLevel.Information    => "INFO",
+                LogLevel.None           => "NONE",
+                LogLevel.Trace          => "TRCE",
+                LogLevel.Warning        => "WARN",
+                _                       => "NONE"
             };
         }
 
@@ -73,14 +73,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical => Color.Red,
-                LogLevel.Debug => Color.SlateBlue,
-                LogLevel.Error => Color.Red,
-                LogLevel.Information => Color.SpringGreen,
-                LogLevel.None => Color.BurlyWood,
-                LogLevel.Trace => Color.SlateBlue,
-                LogLevel.Warning => Color.Yellow,
-                _ => Color.SlateBlue
+                LogLevel.Critical       => Color.Red,
+                LogLevel.Debug          => Color.SlateBlue,
+                LogLevel.Error          => Color.Red,
+                LogLevel.Information    => Color.SpringGreen,
+                LogLevel.None           => Color.BurlyWood,
+                LogLevel.Trace          => Color.SlateBlue,
+                LogLevel.Warning        => Color.Yellow,
+                _                       => Color.SlateBlue
             };
         }
 

@@ -6,5 +6,6 @@
         public string Host { get; set; }
         public string Password { get; set; }
         public SourcesEntity Sources { get; set; }
+        internal string Url => $"http://{Host}:{Port}/";
     }
 }

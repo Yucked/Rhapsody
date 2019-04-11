@@ -1,25 +1,30 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Frostbyte.Websocket
 {
-    public sealed class WSClient : IAsyncDisposable
+    public sealed class WSClient
     {
-        private readonly Socket _socket;
+        public event Func<Task> OnClosed;
+        public readonly ConcurrentDictionary<ulong, object> _guildConnections;
 
-        public string Id { get; set; }
+        private readonly int _shards;
+        private readonly ulong _userId;
+        private readonly HttpListenerWebSocketContext _wsContext;
 
-        public WSClient(Socket socket)
+        public WSClient(HttpListenerWebSocketContext socketContext, ulong userId, int shards)
         {
-            _socket = socket;
+            _wsContext = socketContext;
+            _userId = userId;
+            _shards = shards;
         }
 
-        public ValueTask DisposeAsync()
+        public async Task ReceiveAsync()
         {
-            throw new NotImplementedException();
         }
     }
 }
