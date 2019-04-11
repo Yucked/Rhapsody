@@ -2,8 +2,10 @@
 using Frostbyte.Entities;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -17,19 +19,19 @@ namespace Frostbyte.Websocket
         private readonly HttpListener _listener;
         private readonly LogHandler<WSServer> _log;
         private readonly ConcurrentDictionary<ulong, WSClient> _clients;
-        private readonly ConcurrentDictionary<ulong, Task> _receiveTasks;
+        private readonly ConcurrentDictionary<CancellationTokenSource, Task> _receiveTasks;
 
         private ConfigEntity config;
         private Task StatsSenderTask;
         private StatsHandler statsHandler;
-        private CancellationTokenSource MainCancellation, WSCancellation, StatsCancellation;
+        private CancellationTokenSource MainCancellation, WSCancellation, StatsCancellation, ReceiveCancellation;
 
         public WSServer()
         {
             _listener = new HttpListener();
             _log = new LogHandler<WSServer>();
             _clients = new ConcurrentDictionary<ulong, WSClient>();
-            _receiveTasks = new ConcurrentDictionary<ulong, Task>();
+            _receiveTasks = new ConcurrentDictionary<CancellationTokenSource, Task>();
             WSCancellation = new CancellationTokenSource();
             StatsCancellation = new CancellationTokenSource();
             MainCancellation = CancellationTokenSource.CreateLinkedTokenSource(WSCancellation.Token, StatsCancellation.Token);
@@ -43,8 +45,9 @@ namespace Frostbyte.Websocket
 
             _listener.Prefixes.Add(config.Url);
             _listener.Start();
-
             _log.LogInformation($"HTTP listner listening on: {config.Url}.");
+
+            StatsSenderTask = Task.Run(CollectStatsAsync, StatsCancellation.Token);
             while (!WSCancellation.IsCancellationRequested)
             {
                 var context = await _listener.GetContextAsync().ConfigureAwait(false);
@@ -81,10 +84,11 @@ namespace Frostbyte.Websocket
 
                     var wsClient = new WSClient(ws, userId, shards);
                     wsClient.OnClosed += OnCLosed;
-                    var receieve = wsClient.ReceiveAsync();
-
                     _clients.TryAdd(userId, wsClient);
-                    _receiveTasks.TryAdd(userId, receieve);
+
+                    ReceiveCancellation = new CancellationTokenSource();
+                    var receieve = wsClient.ReceiveAsync(ReceiveCancellation);
+                    _receiveTasks.TryAdd(ReceiveCancellation, receieve);
 
                     _log.LogInformation($"Websocket client connected with {userId} id.");
                     break;
@@ -95,9 +99,10 @@ namespace Frostbyte.Websocket
             }
         }
 
-        private Task OnCLosed()
+        private Task OnCLosed(ulong guildId)
         {
-            throw new NotImplementedException();
+            _clients.TryRemove(guildId, out _);
+            return Task.CompletedTask;
         }
 
         private async Task CollectStatsAsync()
@@ -105,17 +110,37 @@ namespace Frostbyte.Websocket
             while (!StatsCancellation.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
-                var clients = _clients.Count;
-                var guildConnections = _clients.Values.Sum(x => x._guildConnections.Count);
+                var process = Process.GetCurrentProcess();
+
+                var stats = new StatisticsEntity
+                {
+                    ConnectedPlayers = _clients.Count,
+                    PlayingPlayers = _clients.Values.Sum(x => x._guildConnections.Count),
+                    Uptime = DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()
+                }
+                .Populate(process);
+
+                var serialize = JsonConvert.SerializeObject(stats);
+                var sendTasks = _clients.Select(x => x.Value.SendAsync(serialize));
+                await Task.WhenAll(sendTasks).ConfigureAwait(false);
             }
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            foreach (var client in _clients)
+                await client.Value.DisposeAsync();
+
+            foreach (var (token, task) in _receiveTasks)
+            {
+                token.Cancel(false);
+                task.Dispose();
+            }
+
             MainCancellation.Cancel(false);
             _listener.Close();
 
-            return default;
+            _clients.Clear();
         }
     }
 }
