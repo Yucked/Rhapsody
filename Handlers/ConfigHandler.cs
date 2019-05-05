@@ -9,12 +9,12 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class ConfigHandler
     {
-        private LogHandler<ConfigHandler> Logger { get; }
-
         public ConfigHandler()
         {
             Logger = new LogHandler<ConfigHandler>();
         }
+
+        private LogHandler<ConfigHandler> Logger { get; }
 
         public ConfigEntity ValidateConfiguration()
         {
@@ -32,10 +32,7 @@ namespace Frostbyte.Handlers
                 Port = 6666,
                 Sources = new SourcesEntity
                 {
-                    Soundcloud = true,
-                    Twitch = false,
-                    Vimeo = false,
-                    YouTube = true
+                    Soundcloud = true, Twitch = false, Vimeo = false, YouTube = true
                 }
             };
 

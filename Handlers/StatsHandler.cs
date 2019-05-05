@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Frostbyte.Handlers
+﻿namespace Frostbyte.Handlers
 {
     public sealed class StatsHandler
     {
-
     }
 }

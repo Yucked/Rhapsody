@@ -2,11 +2,11 @@
 using System;
 using System.Diagnostics;
 
-namespace Frostbyte.Entities
+namespace Frostbyte.Entities.Operations
 {
-    public sealed class StatisticsEntity : BaseOP
+    public sealed class StatisticsOp : BaseOp
     {
-        public StatisticsEntity() : base("stats")
+        public StatisticsOp() : base("stats")
         {
         }
 
@@ -25,7 +25,7 @@ namespace Frostbyte.Entities
         [JsonProperty("upt")]
         public TimeSpan Uptime { get; set; }
 
-        public StatisticsEntity Populate(Process process)
+        public StatisticsOp Populate(Process process)
         {
             Memory.Populate(process);
             Cpu.Populate(process);

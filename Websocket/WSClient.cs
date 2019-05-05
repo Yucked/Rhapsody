@@ -7,18 +7,16 @@ using System.Threading.Tasks;
 
 namespace Frostbyte.Websocket
 {
-    public sealed class WSClient : IAsyncDisposable
+    public sealed class WsClient : IAsyncDisposable
     {
-        public event Func<ulong, Task> OnClosed;
-        public readonly ConcurrentDictionary<ulong, object> _guildConnections;
-
         private readonly int _shards;
-        private readonly ulong _userId;
         private readonly WebSocket _socket;
+        private readonly ulong _userId;
         private readonly Encoding _utf8;
         private readonly HttpListenerWebSocketContext _wsContext;
+        public readonly ConcurrentDictionary<ulong, object> GuildConnections;
 
-        public WSClient(HttpListenerWebSocketContext socketContext, ulong userId, int shards)
+        public WsClient(HttpListenerWebSocketContext socketContext, ulong userId, int shards)
         {
             _wsContext = socketContext;
             _socket = socketContext.WebSocket;
@@ -27,24 +25,24 @@ namespace Frostbyte.Websocket
             _utf8 = new UTF8Encoding(false);
         }
 
+        public async ValueTask DisposeAsync()
+        {
+            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
+            _socket.Dispose();
+        }
+
+        public event Func<ulong, Task> OnClosed;
+
         public async Task ReceiveAsync(CancellationTokenSource cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
                 return;
-
-
         }
 
         public async Task SendAsync(string contents)
         {
             var bytes = _utf8.GetBytes(contents);
             await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
-            _socket.Dispose();
         }
     }
 }

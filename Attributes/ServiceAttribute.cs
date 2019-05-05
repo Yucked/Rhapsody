@@ -3,13 +3,9 @@ using System;
 
 namespace Frostbyte.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Class)]
     public sealed class ServiceAttribute : Attribute
     {
-        public ServiceLifetime Lifetime { get; set; }
-
-        public Type[] InjectableTypes { get; set; }
-
         public ServiceAttribute(ServiceLifetime lifetime)
         {
             Lifetime = lifetime;
@@ -20,5 +16,8 @@ namespace Frostbyte.Attributes
             Lifetime = lifetime;
             InjectableTypes = injectableTypes;
         }
+
+        public ServiceLifetime Lifetime { get; }
+        public Type[] InjectableTypes { get; }
     }
 }

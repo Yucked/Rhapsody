@@ -11,14 +11,19 @@ namespace Frostbyte
 {
     public sealed class Program : IAsyncDisposable
     {
-        private IServiceProvider Provider { get; }
-
         public Program()
         {
-            var services = new ServiceCollection()
-                .AddAttributeServices();
+            var services = new ServiceCollection().AddAttributeServices();
 
             Provider = services.BuildServiceProvider();
+        }
+
+        private IServiceProvider Provider { get; }
+
+        public ValueTask DisposeAsync()
+        {
+            // TODO: Dispose of websocket connections
+            return default;
         }
 
         public static Task Main(string[] arguments)
@@ -37,16 +42,10 @@ namespace Frostbyte
             var cf = Provider.GetRequiredService<ConfigHandler>();
             var config = cf.ValidateConfiguration();
 
-            var wsServer = Provider.GetRequiredService<WSServer>();
+            var wsServer = Provider.GetRequiredService<WsServer>();
             await wsServer.InitializeAsync(config);
 
             await Task.Delay(-1);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            // TODO: Dispose of websocket connections
-            return default;
         }
     }
 }

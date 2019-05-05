@@ -10,8 +10,7 @@ namespace Frostbyte.Extensions
     {
         public static IServiceCollection AddAttributeServices(this IServiceCollection services)
         {
-            var matches = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
+            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
 
             if (matches.Length is 0)
                 return services;
@@ -19,17 +18,20 @@ namespace Frostbyte.Extensions
             foreach (var match in matches)
             {
                 var attr = match.GetCustomAttribute<ServiceAttribute>();
-                _ = attr.Lifetime switch
+                switch (attr.Lifetime)
                 {
-                    ServiceLifetime.Scoped
-                        => services.AddScoped(match),
+                    case ServiceLifetime.Scoped:
+                        services.AddScoped(match);
+                        break;
 
-                    ServiceLifetime.Singleton
-                        => services.AddSingleton(match),
+                    case ServiceLifetime.Singleton:
+                        services.AddSingleton(match);
+                        break;
 
-                    ServiceLifetime.Transient
-                        => services.AddTransient(match)
-                };
+                    case ServiceLifetime.Transient:
+                        services.AddTransient(match);
+                        break;
+                }
             }
 
             return services;
@@ -37,8 +39,7 @@ namespace Frostbyte.Extensions
 
         public static IServiceProvider InjectRequiredServices(this IServiceProvider provider)
         {
-            var matches = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
+            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
 
             if (matches.Length is 0)
                 return provider;
@@ -49,7 +50,7 @@ namespace Frostbyte.Extensions
                 if (attr.InjectableTypes is null || attr.InjectableTypes.Length is 0)
                     continue;
 
-                var properties = match.GetRuntimeProperties();
+                var properties = match.GetRuntimeProperties().ToArray();
 
                 foreach (var type in attr.InjectableTypes)
                 {
@@ -58,10 +59,7 @@ namespace Frostbyte.Extensions
                         continue;
 
                     var property = properties.FirstOrDefault(x => x.PropertyType == type);
-                    if (property is null)
-                        continue;
-
-                    property.SetValue(match, service);
+                    property?.SetValue(match, service);
                 }
             }
 

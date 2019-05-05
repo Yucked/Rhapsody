@@ -1,16 +1,16 @@
-﻿using System;
+﻿using Frostbyte.Enums;
+using Frostbyte.Extensions;
+using System;
 using System.Drawing;
 using System.IO;
-using Frostbyte.Enums;
-using Frostbyte.Extensions;
 using Console = Colorful.Console;
 
 namespace Frostbyte.Handlers
 {
     public sealed class LogHandler<T>
     {
-        private readonly object _lockObj;
         private readonly DateTimeOffset _date;
+        private readonly object _lockObj;
 
         public LogHandler()
         {
@@ -56,32 +56,15 @@ namespace Frostbyte.Handlers
 
         private string GetLogLevel(LogLevel logLevel)
         {
-            return logLevel switch
-            {
-                LogLevel.Critical       => "CRIT",
-                LogLevel.Debug          => "DBUG",
-                LogLevel.Error          => "EROR",
-                LogLevel.Information    => "INFO",
-                LogLevel.None           => "NONE",
-                LogLevel.Trace          => "TRCE",
-                LogLevel.Warning        => "WARN",
-                _                       => "NONE"
-            };
+            return logLevel switch { LogLevel.Critical => "CRIT", LogLevel.Debug => "DBUG", LogLevel.Error => "EROR", LogLevel.Information
+                       => "INFO", LogLevel.None => "NONE", LogLevel.Trace => "TRCE", LogLevel.Warning => "WARN", _ => "NONE" };
         }
 
         private Color GetColor(LogLevel logLevel)
         {
-            return logLevel switch
-            {
-                LogLevel.Critical       => Color.Red,
-                LogLevel.Debug          => Color.SlateBlue,
-                LogLevel.Error          => Color.Red,
-                LogLevel.Information    => Color.SpringGreen,
-                LogLevel.None           => Color.BurlyWood,
-                LogLevel.Trace          => Color.SlateBlue,
-                LogLevel.Warning        => Color.Yellow,
-                _                       => Color.SlateBlue
-            };
+            return logLevel switch { LogLevel.Critical => Color.Red, LogLevel.Debug => Color.SlateBlue, LogLevel.Error => Color.Red,
+                       LogLevel.Information => Color.SpringGreen, LogLevel.None => Color.BurlyWood, LogLevel.Trace => Color.SlateBlue,
+                       LogLevel.Warning => Color.Yellow, _ => Color.SlateBlue };
         }
 
         private void WriteToFile(string message)
