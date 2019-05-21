@@ -39,9 +39,8 @@ namespace Frostbyte.Websocket
                 return;
         }
 
-        public async Task SendAsync(string contents)
+        public async Task SendAsync(ReadOnlyMemory<byte> bytes)
         {
-            var bytes = _utf8.GetBytes(contents);
             await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }

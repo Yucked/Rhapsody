@@ -3,12 +3,15 @@ using Frostbyte.Entities;
 using Frostbyte.Entities.Operations;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,9 +23,7 @@ namespace Frostbyte.Websocket
         private readonly ConcurrentDictionary<ulong, WsClient> _clients;
         private readonly HttpListener _listener;
         private readonly LogHandler<WsServer> _log;
-
         private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
-
         private readonly ConcurrentDictionary<CancellationTokenSource, Task> _receiveTasks;
 
         private ConfigEntity _config;
@@ -67,26 +68,40 @@ namespace Frostbyte.Websocket
             _listener.Start();
             _log.LogInformation($"HTTP listener listening on: {config.Url}.");
 
-            _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
+            //_statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
             while (!_wsCancellation.IsCancellationRequested)
             {
                 var context = await _listener.GetContextAsync().ConfigureAwait(false);
-                await ProcessRequestAsync(context).ConfigureAwait(false);
+                _ = ProcessRequestAsync(context).ConfigureAwait(false);
             }
         }
 
         private async Task ProcessRequestAsync(HttpListenerContext context)
         {
-            switch (context.Request.Url.LocalPath)
+            var localPath = context.Request.Url.LocalPath;
+            _log.LogDebug($"Processing request from {localPath} path.");
+            var response = new ResponseEntity();
+
+            switch (localPath)
             {
                 case "/loadtracks":
-                    if (context.Response.Headers.Get("Password") != _config.Password)
+
+                    if (context.Request.Headers.Get("Password") != _config.Password)
                     {
-                        context.Response.StatusCode = 403;
-                        context.Response.StatusDescription = "Password header doesn't match config's value.";
+                        response.IsSuccess = false;
+                        response.Reason = "Password header doesn't match value specified in configuration.";
+                        await context.Response.OutputStream.WriteAsync(JsonSerializer.ToBytes(response)).ConfigureAwait(false);
+                        _log.LogDebug($"Returned 403 for {localPath} path from {context.Request.UserAgent} agent.");
+                    }
+                    else
+                    {
+
+                        response.IsSuccess = true;
+                        response.Reason = "Password match was a success!";
+                        await context.Response.OutputStream.WriteAsync(JsonSerializer.ToBytes(response)).ConfigureAwait(false);
                     }
 
-
+                    context.Response.Close();
                     break;
 
                 case "/":
@@ -126,6 +141,7 @@ namespace Frostbyte.Websocket
 
         private async Task CollectStatsAsync()
         {
+            _log.LogDebug("Entering sending statistics loop.");
             while (!_statsCancellation.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
@@ -136,9 +152,9 @@ namespace Frostbyte.Websocket
                     ConnectedPlayers = _clients.Count,
                     PlayingPlayers = _clients.Values.Sum(x => x.GuildConnections.Count),
                     Uptime = DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()
-                }.Populate(process);
+                };
 
-                var serialize = JsonConvert.SerializeObject(stats);
+                var serialize = JsonSerializer.ToBytes(stats);
                 var sendTasks = _clients.Select(x => x.Value.SendAsync(serialize));
                 await Task.WhenAll(sendTasks).ConfigureAwait(false);
             }

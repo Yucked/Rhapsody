@@ -4,6 +4,8 @@ using Frostbyte.Websocket;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Drawing;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Console = Colorful.Console;
 
@@ -11,7 +13,7 @@ namespace Frostbyte
 {
     public sealed class Program : IAsyncDisposable
     {
-        public Program()
+        private Program()
         {
             var services = new ServiceCollection().AddAttributeServices();
 
@@ -35,8 +37,7 @@ namespace Frostbyte
 
         private async Task InitializeAsync()
         {
-            Console.WriteAscii($"   {nameof(Frostbyte)}".ToUpper(), Color.Cyan);
-
+            PrintInformationHeader();
             Provider.InjectRequiredServices();
 
             var cf = Provider.GetRequiredService<ConfigHandler>();
@@ -46,6 +47,28 @@ namespace Frostbyte
             await wsServer.InitializeAsync(config);
 
             await Task.Delay(-1);
+        }
+
+        private void PrintInformationHeader()
+        {
+            const string header = @"        ▄████  █▄▄▄▄ ████▄    ▄▄▄▄▄      ▄▄▄▄▀ ███ ▀▄    ▄   ▄▄▄▄▀ ▄███▄   
+        █▀   ▀ █  ▄▀ █   █   █     ▀▄ ▀▀▀ █    █  █  █  █ ▀▀▀ █    █▀   ▀  
+        █▀▀    █▀▀▌  █   █ ▄  ▀▀▀▀▄       █    █ ▀ ▄  ▀█      █    ██▄▄    
+        █      █  █  ▀████  ▀▄▄▄▄▀       █     █  ▄▀  █      █     █▄   ▄▀ 
+         █       █                      ▀      ███  ▄▀      ▀      ▀███▀   
+          ▀     ▀                                                          ";
+            var lineBreak = new string('-', 90);
+            var informationalVersion =
+                ((AssemblyInformationalVersionAttribute[])
+                    typeof(Uri).Assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false))[0]
+                .InformationalVersion;
+
+            Console.WriteLine(header, Color.Teal);
+            Console.WriteLine(lineBreak, Color.Gray);
+            Console.Write("    CoreFX Build: ", Color.Plum);
+            Console.Write($"{informationalVersion.Split('+')[0]} ({informationalVersion.Split('+')[1]})");
+            Console.Write(Environment.NewLine);
+            Console.WriteLine(lineBreak, Color.Gray);
         }
     }
 }

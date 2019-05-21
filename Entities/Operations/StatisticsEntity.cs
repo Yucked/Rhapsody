@@ -24,14 +24,6 @@ namespace Frostbyte.Entities.Operations
 
         [JsonProperty("upt")]
         public TimeSpan Uptime { get; set; }
-
-        public StatisticsOp Populate(Process process)
-        {
-            Memory.Populate(process);
-            Cpu.Populate(process);
-
-            return this;
-        }
     }
 
     public sealed class MemoryEntity
