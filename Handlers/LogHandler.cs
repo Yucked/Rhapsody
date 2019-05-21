@@ -35,7 +35,7 @@ namespace Frostbyte.Handlers
 
         public void Log(LogLevel logLevel, string message, Exception exception)
         {
-            var date = $"[{DateTimeOffset.Now:MMM d - hh:mm: ss tt}]";
+            var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
             var log = $" [{GetLogLevel(logLevel)}] ";
             var formatted = message.LogFormatter(exception);
 
@@ -56,15 +56,32 @@ namespace Frostbyte.Handlers
 
         private string GetLogLevel(LogLevel logLevel)
         {
-            return logLevel switch { LogLevel.Critical => "CRIT", LogLevel.Debug => "DBUG", LogLevel.Error => "EROR", LogLevel.Information
-                       => "INFO", LogLevel.None => "NONE", LogLevel.Trace => "TRCE", LogLevel.Warning => "WARN", _ => "NONE" };
+            return logLevel switch
+            {
+                LogLevel.Critical => "CRIT",
+                LogLevel.Debug => "DBUG",
+                LogLevel.Error => "EROR",
+                LogLevel.Information => "INFO",
+                LogLevel.None => "NONE",
+                LogLevel.Trace => "TRCE",
+                LogLevel.Warning => "WARN",
+                _ => "NONE"
+            };
         }
 
         private Color GetColor(LogLevel logLevel)
         {
-            return logLevel switch { LogLevel.Critical => Color.Red, LogLevel.Debug => Color.SlateBlue, LogLevel.Error => Color.Red,
-                       LogLevel.Information => Color.SpringGreen, LogLevel.None => Color.BurlyWood, LogLevel.Trace => Color.SlateBlue,
-                       LogLevel.Warning => Color.Yellow, _ => Color.SlateBlue };
+            return logLevel switch
+            {
+                LogLevel.Critical => Color.Red,
+                LogLevel.Debug => Color.SlateBlue,
+                LogLevel.Error => Color.Red,
+                LogLevel.Information => Color.SpringGreen,
+                LogLevel.None => Color.BurlyWood,
+                LogLevel.Trace => Color.SlateBlue,
+                LogLevel.Warning => Color.Yellow,
+                _ => Color.SlateBlue
+            };
         }
 
         private void WriteToFile(string message)
