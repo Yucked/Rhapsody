@@ -1,6 +1,6 @@
 ﻿namespace Frostbyte.Entities
 {
-    public struct SourcesEntity
+    public sealed class SourcesEntity
     {
         public bool YouTube { get; set; }
         public bool Soundcloud { get; set; }

@@ -1,6 +1,5 @@
 ﻿using Frostbyte.Attributes;
 using Frostbyte.Entities;
-using Frostbyte.Entities.Operations;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -8,14 +7,15 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
+using System.Text.Json.Serialization;
 
 namespace Frostbyte.Websocket
 {
-    [Service(ServiceLifetime.Singleton, typeof(StatsHandler))]
+    [Service(ServiceLifetime.Singleton)]
     public sealed class WsServer : IAsyncDisposable
     {
         private readonly ConcurrentDictionary<ulong, WsClient> _clients;
@@ -26,7 +26,6 @@ namespace Frostbyte.Websocket
 
         private ConfigEntity _config;
         private CancellationTokenSource _receiveCancellation;
-        private StatsHandler _statsHandler;
         private Task _statsSenderTask;
 
         public WsServer()
@@ -66,9 +65,9 @@ namespace Frostbyte.Websocket
 
             _listener.Prefixes.Add(config.Url);
             _listener.Start();
-            _log.LogInformation($"HTTP listener listening on: {config.Url}.");
+            _log.LogInformation($"Server started on {config.Url}. Listening for requests ...");
 
-            //_statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
+            _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
             while (!_wsCancellation.IsCancellationRequested)
             {
                 var context = await _listener.GetContextAsync().ConfigureAwait(false);
@@ -111,12 +110,10 @@ namespace Frostbyte.Websocket
                         response.IsSuccess = false;
                         await context.SendResponseAsync(response).ConfigureAwait(false);
                         context.Response.Close();
-
-                        _log.LogDebug($"Returned 400 for {localPath} path from {remoteEndPoint}.");
                         return;
                     }
 
-                    _log.LogDebug($"Websocket connection opened from {remoteEndPoint}.");
+                    _log.LogDebug($"Incoming websocket request coming from {remoteEndPoint}.");
 
                     var ws = await context.AcceptWebSocketAsync(default).ConfigureAwait(false);
                     ulong.TryParse(ws.Headers.Get("User-Id"), out var userId);
@@ -127,12 +124,10 @@ namespace Frostbyte.Websocket
                     _clients.TryAdd(userId, wsClient);
 
                     _receiveCancellation = new CancellationTokenSource();
-                    var receive = wsClient.ReceiveAsync(_receiveCancellation);
+                    _ = wsClient.ReceiveAsync(_receiveCancellation);
                     _receiveTokens.TryAdd(userId, _receiveCancellation);
 
-                    await wsClient.SendAsync("Foo Bar");
-
-                    _log.LogInformation($"Websocket connected from {remoteEndPoint} with {userId} id.");
+                    _log.LogInformation($"Websocket connected opened from {remoteEndPoint}.");
                     break;
 
                 default:
@@ -153,21 +148,27 @@ namespace Frostbyte.Websocket
 
         private async Task CollectStatsAsync()
         {
-            _log.LogDebug("Entering sending statistics loop.");
             while (!_statsCancellation.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+                if (_clients.IsEmpty)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+                    continue;
+                }
+
                 var process = Process.GetCurrentProcess();
 
-                var stats = new StatisticsOp
+                var stat = new StatisticPacket
                 {
                     ConnectedPlayers = _clients.Count,
-                    PlayingPlayers = _clients.Values.Sum(x => x.GuildConnections.Count),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count),
                     Uptime = DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()
-                };
+                }.Populate(process);
 
-                var sendTasks = _clients.Select(x => x.Value.SendAsync(stats));
-                await Task.WhenAll(sendTasks).ConfigureAwait(false);
+                var bytes = JsonSerializer.ToBytes(stat);
+                var sendTasks = _clients.Select(x => x.Value.SendAsync(bytes));
+                await Task.WhenAll(sendTasks);
+                await Task.Delay(TimeSpan.FromSeconds(30));
             }
         }
     }

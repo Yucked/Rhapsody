@@ -1,7 +1,7 @@
 ﻿using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using System.IO;
 
 namespace Frostbyte.Handlers
@@ -22,7 +22,7 @@ namespace Frostbyte.Handlers
             {
                 Logger.LogInformation("Loaded Configuration!");
                 var read = File.ReadAllText("./Config.json");
-                return JsonConvert.DeserializeObject<ConfigEntity>(read);
+                return JsonSerializer.Parse<ConfigEntity>(read);
             }
 
             var config = new ConfigEntity
@@ -32,12 +32,15 @@ namespace Frostbyte.Handlers
                 Port = 6666,
                 Sources = new SourcesEntity
                 {
-                    Soundcloud = true, Twitch = false, Vimeo = false, YouTube = true
+                    Soundcloud = true,
+                    Twitch = false,
+                    Vimeo = false,
+                    YouTube = true
                 }
             };
 
-            var json = JsonConvert.SerializeObject(config);
-            File.WriteAllText("./Config.json", json);
+            var json = JsonSerializer.ToBytes(config);
+            File.WriteAllBytes("./Config.json", json);
 
             Logger.LogWarning("Built and using default configuration.");
             return config;

@@ -1,4 +1,6 @@
-﻿namespace Frostbyte.Entities
+﻿using System.Text.Json.Serialization;
+
+namespace Frostbyte.Entities
 {
     public sealed class ConfigEntity
     {
@@ -7,6 +9,7 @@
         public string Password { get; set; }
         public SourcesEntity Sources { get; set; }
 
+        [JsonIgnore]
         internal string Url
         {
             get { return $"http://{Host}:{Port}/"; }

@@ -3,6 +3,7 @@ using Frostbyte.Handlers;
 using Frostbyte.Websocket;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -57,17 +58,15 @@ namespace Frostbyte
         █      █  █  ▀████  ▀▄▄▄▄▀       █     █  ▄▀  █      █     █▄   ▄▀ 
          █       █                      ▀      ███  ▄▀      ▀      ▀███▀   
           ▀     ▀                                                          ";
-            var lineBreak = new string('-', 90);
-            var informationalVersion =
-                ((AssemblyInformationalVersionAttribute[])
-                    typeof(Uri).Assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false))[0]
-                .InformationalVersion;
+            var lineBreak = $"\n{new string('-', 90)}\n";
+            var process = Process.GetCurrentProcess();
 
             Console.WriteLine(header, Color.Teal);
             Console.WriteLine(lineBreak, Color.Gray);
-            Console.Write("    CoreFX Build: ", Color.Plum);
-            Console.Write($"{informationalVersion.Split('+')[0]} ({informationalVersion.Split('+')[1]})");
-            Console.Write(Environment.NewLine);
+            Console.Write("     Runtime: ", Color.Plum);
+            Console.Write($"{RuntimeInformation.FrameworkDescription}\n");
+            Console.Write("     Process: ", Color.Plum);
+            Console.Write($"{process.Id} ID | {process.Threads.Count} Threads\n");
             Console.WriteLine(lineBreak, Color.Gray);
         }
     }

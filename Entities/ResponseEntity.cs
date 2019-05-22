@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Frostbyte.Entities
 {
     public sealed class ResponseEntity
     {
-        [JsonProperty("is")]
+        [JsonPropertyName("is")]
         public bool IsSuccess { get; set; }
 
-        [JsonProperty("r")]
+        [JsonPropertyName("r")]
         public string Reason { get; set; }
     }
 }

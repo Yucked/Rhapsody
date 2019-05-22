@@ -1,10 +1,8 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+﻿using System.Text.Json.Serialization;
 using System.Runtime.Serialization;
 
 namespace Frostbyte.Enums
 {
-    [JsonConverter(typeof(StringEnumConverter))]
     public enum LoadType
     {
         [EnumMember(Value = "TRACK_LOADED")]
