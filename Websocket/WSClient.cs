@@ -71,7 +71,7 @@ namespace Frostbyte.Websocket
         public async Task SendAsync(ReadOnlyMemory<byte> bytes)
         {
             await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
-            Utf8String str = new Utf8String(bytes.Span);
+            var str = new Utf8String(bytes.Span);
             _log.LogDebug(str.ToString());
         }
     }

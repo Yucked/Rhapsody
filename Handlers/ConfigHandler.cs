@@ -29,7 +29,7 @@ namespace Frostbyte.Handlers
             {
                 Host = "127.0.0.1",
                 Password = "foobar",
-                Port = 6666,
+                Port = 8080,
                 Sources = new SourcesEntity
                 {
                     Soundcloud = true,

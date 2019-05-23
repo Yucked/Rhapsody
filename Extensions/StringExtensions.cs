@@ -16,5 +16,10 @@ namespace Frostbyte.Extensions
                           $"      Trace     : {exception.StackTrace ?? "Unavailable."}");
             return $"{sf}";
         }
+
+        public static string ReplaceArgument(this string str, string data)
+        {
+            return str.Replace("{0}", data);
+        }
     }
 }

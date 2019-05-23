@@ -23,12 +23,13 @@ namespace Frostbyte.Websocket
         private readonly LogHandler<WsServer> _log;
         private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _receiveTokens;
+        private readonly SourceHandler _sourceHandler;
 
         private ConfigEntity _config;
         private CancellationTokenSource _receiveCancellation;
         private Task _statsSenderTask;
 
-        public WsServer()
+        public WsServer(SourceHandler sourceHandler)
         {
             _listener = new HttpListener();
             _log = new LogHandler<WsServer>();
@@ -37,6 +38,7 @@ namespace Frostbyte.Websocket
             _wsCancellation = new CancellationTokenSource();
             _statsCancellation = new CancellationTokenSource();
             _mainCancellation = CancellationTokenSource.CreateLinkedTokenSource(_wsCancellation.Token, _statsCancellation.Token);
+            _sourceHandler = sourceHandler;
         }
 
         public async ValueTask DisposeAsync()
@@ -65,7 +67,7 @@ namespace Frostbyte.Websocket
 
             _listener.Prefixes.Add(config.Url);
             _listener.Start();
-            _log.LogInformation($"Server started on {config.Url}. Listening for requests ...");
+            _log.LogInformation($"Server started on {config.Url}.");
 
             _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
             while (!_wsCancellation.IsCancellationRequested)
@@ -83,8 +85,7 @@ namespace Frostbyte.Websocket
 
             switch (localPath)
             {
-                case "/loadtracks":
-
+                case "/tracks":
                     if (context.Request.Headers.Get("Password") != _config.Password)
                     {
                         response.IsSuccess = false;
@@ -93,9 +94,9 @@ namespace Frostbyte.Websocket
                     }
                     else
                     {
-                        response.IsSuccess = true;
-                        response.Reason = "Password match was a success!";
-                        await context.SendResponseAsync(response).ConfigureAwait(false);
+                        var restReq = await _sourceHandler.HandlerRequestAsync(context.Request.QueryString.Get("query"))
+                                                          .ConfigureAwait(false);
+                        await context.SendResponseAsync(restReq).ConfigureAwait(false);
                     }
 
                     _log.LogDebug($"Processed REST request for {localPath} path from {remoteEndPoint}.");
@@ -103,10 +104,9 @@ namespace Frostbyte.Websocket
                     break;
 
                 case "/":
-
                     if (!context.Request.IsWebSocketRequest)
                     {
-                        response.Reason = "Only websocket connections are allowed at this endpoint.";
+                        response.Reason = "Only websocket connections are allowed at this endpoint. For rest use /tracks endpoint.";
                         response.IsSuccess = false;
                         await context.SendResponseAsync(response).ConfigureAwait(false);
                         context.Response.Close();
