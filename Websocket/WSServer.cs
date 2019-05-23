@@ -94,9 +94,18 @@ namespace Frostbyte.Websocket
                     }
                     else
                     {
-                        var restReq = await _sourceHandler.HandlerRequestAsync(context.Request.QueryString.Get("query"))
-                                                          .ConfigureAwait(false);
-                        await context.SendResponseAsync(restReq).ConfigureAwait(false);
+                        var query = context.Request.QueryString.Get("query");
+                        if (query is null)
+                        {
+                            response.Reason = "Please use the `?query={id}:{YOUR_QUERY} argument after /tracks.";
+                            response.IsSuccess = false;
+                            await context.SendResponseAsync(response).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            var restReq = await _sourceHandler.HandlerRequestAsync(query).ConfigureAwait(false);
+                            await context.SendResponseAsync(restReq).ConfigureAwait(false);
+                        }
                     }
 
                     _log.LogDebug($"Processed REST request for {localPath} path from {remoteEndPoint}.");
@@ -132,6 +141,10 @@ namespace Frostbyte.Websocket
 
                 default:
                     _log.LogWarning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
+                    response.IsSuccess = false;
+                    response.Reason = "You are trying to access an unknown endpoint.";
+                    await context.SendResponseAsync(response).ConfigureAwait(false);
+                    context.Response.Close();
                     break;
             }
         }
