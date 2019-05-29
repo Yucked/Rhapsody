@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace Frostbyte.Enums
 {
