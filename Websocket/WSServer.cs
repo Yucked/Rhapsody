@@ -82,14 +82,13 @@ namespace Frostbyte.Websocket
         {
             var localPath = context.Request.Url.LocalPath;
             var remoteEndPoint = context.Request.RemoteEndPoint;
-            var response = new ResponseEntity();
+            var response = new ResponseEntity(false, string.Empty);
 
             switch (localPath)
             {
                 case "/tracks":
                     if (context.Request.Headers.Get("Password") != _config.Password)
                     {
-                        response.IsSuccess = false;
                         response.Reason = "Password header doesn't match value specified in configuration.";
                         await context.SendResponseAsync(response).ConfigureAwait(false);
                     }
@@ -99,13 +98,12 @@ namespace Frostbyte.Websocket
                         if (query is null)
                         {
                             response.Reason = "Please use the `?query={id}:{YOUR_QUERY} argument after /tracks.";
-                            response.IsSuccess = false;
                             await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                         else
                         {
-                            var restReq = await _sourceHandler.HandlerRequestAsync(query).ConfigureAwait(false);
-                            await context.SendResponseAsync(restReq).ConfigureAwait(false);
+                            response = await _sourceHandler.HandlerRequestAsync(query).ConfigureAwait(false);
+                            await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                     }
 
@@ -116,7 +114,6 @@ namespace Frostbyte.Websocket
                     if (!context.Request.IsWebSocketRequest)
                     {
                         response.Reason = "Only websocket connections are allowed at this endpoint. For rest use /tracks endpoint.";
-                        response.IsSuccess = false;
                         await context.SendResponseAsync(response).ConfigureAwait(false);
                         context.Response.Close();
                         return;
@@ -141,7 +138,6 @@ namespace Frostbyte.Websocket
 
                 default:
                     _log.LogWarning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
-                    response.IsSuccess = false;
                     response.Reason = "You are trying to access an unknown endpoint.";
                     await context.SendResponseAsync(response).ConfigureAwait(false);
                     context.Response.Close();
