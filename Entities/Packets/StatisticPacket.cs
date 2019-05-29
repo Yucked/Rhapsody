@@ -24,7 +24,7 @@ namespace Frostbyte.Entities.Packets
         public CpuEntity Cpu { get; set; }
 
         [JsonPropertyName("upt")]
-        public TimeSpan Uptime { get; set; }
+        public long Uptime { get; set; }
 
         public StatisticPacket Populate(Process process)
         {
@@ -45,7 +45,7 @@ namespace Frostbyte.Entities.Packets
 
     public sealed class MemoryEntity
     {
-        [JsonPropertyName("u")]
+        [JsonPropertyName("usd")]
         public long Used { get; set; }
 
         [JsonPropertyName("alloc")]
