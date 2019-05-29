@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
@@ -12,34 +11,46 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class SourceHandler
     {
-        private readonly IEnumerable<BaseSource> _sources;
+        private readonly IEnumerable<object> _sources;
 
         public SourceHandler(IServiceProvider provider)
         {
-            _sources = provider.GetServices(typeof(BaseSource)).Cast<BaseSource>();
+            _sources = provider.GetServices(typeof(BaseSource));
         }
 
-        public async Task<RESTEntity> HandlerRequestAsync(string url)
+        public async Task<ResponseEntity> HandlerRequestAsync(string url)
         {
             var split = url.Split(':');
             var prefix = split[0].ToLower();
             var query = split[1];
-            var response = RESTEntity.Empty;
+            var response = new ResponseEntity(true, string.Empty);
 
             foreach (var source in _sources)
             {
                 switch (source)
                 {
                     case YoutubeSource yt when yt.Prefix == prefix:
+
                         if (!yt.IsEnabled)
+                        {
+                            response.IsSuccess = false;
+                            response.Reason = "YouTube endpoint is blocked in configuration.";
                             break;
-                        response = await yt.PrepareResponseAsync(query).ConfigureAwait(false);
+                        }
+
+                        response.AdditionObject = await yt.PrepareResponseAsync(query).ConfigureAwait(false);
                         break;
 
                     case SoundCloudSource sc when sc.Prefix == prefix:
+
                         if (!sc.IsEnabled)
+                        {
+                            response.IsSuccess = false;
+                            response.Reason = "YouTube endpoint is blocked in configuration.";
                             break;
-                        response = await sc.PrepareResponseAsync(query).ConfigureAwait(false);
+                        }
+
+                        response.AdditionObject = await sc.PrepareResponseAsync(query).ConfigureAwait(false);
                         break;
                 }
             }
