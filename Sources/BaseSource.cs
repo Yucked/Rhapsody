@@ -9,10 +9,14 @@ namespace Frostbyte.Sources
     {
         protected const string NO_EMBED_URL = "http://noembed.com/embed?url={0}&callback=my_embed_function";
 
-        protected Regex Regex(string pattern)
-            => new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        public abstract bool IsEnabled { get; }
 
-        public abstract ValueTask<TrackEntity> GetTrackAsync(string query);
+        public abstract string Prefix { get; }
+
+        protected Regex Regex(string pattern)
+        {
+            return new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        }
 
         public abstract ValueTask<RESTEntity> PrepareResponseAsync(string query);
 
