@@ -57,6 +57,7 @@ namespace Frostbyte.Websocket
             _listener.Close();
             _clients.Clear();
             _receiveTokens.Clear();
+            _statsSenderTask.Dispose();
         }
 
         public async Task InitializeAsync(ConfigEntity config)
@@ -108,7 +109,6 @@ namespace Frostbyte.Websocket
                         }
                     }
 
-                    _log.LogDebug($"Processed REST request for {localPath} path from {remoteEndPoint}.");
                     context.Response.Close();
                     break;
 
@@ -175,7 +175,7 @@ namespace Frostbyte.Websocket
                 {
                     ConnectedPlayers = _clients.Count,
                     PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count),
-                    Uptime = DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()
+                    Uptime = (int) (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
                 var bytes = JsonSerializer.ToBytes(stat);

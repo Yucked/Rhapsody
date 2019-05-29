@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
@@ -10,29 +12,36 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class SourceHandler
     {
-        private readonly YoutubeSource _youtubeSource;
+        private readonly IEnumerable<BaseSource> _sources;
 
-        public SourceHandler(YoutubeSource youtubeSource)
+        public SourceHandler(IServiceProvider provider)
         {
-            _youtubeSource = youtubeSource;
+            _sources = provider.GetServices(typeof(BaseSource)).Cast<BaseSource>();
         }
 
-        public async Task<RESTEntity> HandlerRequestAsync(string query)
+        public async Task<RESTEntity> HandlerRequestAsync(string url)
         {
-            var split = query.Split(':');
-            var id = split[0].ToLower();
-            var url = split[1];
+            var split = url.Split(':');
+            var prefix = split[0].ToLower();
+            var query = split[1];
+            var response = RESTEntity.Empty;
 
-            RESTEntity response = default;
-
-            switch (id)
+            foreach (var source in _sources)
             {
-                case "ytsearch":
-                    response = await _youtubeSource.PrepareResponseAsync(url).ConfigureAwait(false);
-                    break;
+                switch (source)
+                {
+                    case YoutubeSource yt when yt.Prefix == prefix:
+                        if (!yt.IsEnabled)
+                            break;
+                        response = await yt.PrepareResponseAsync(query).ConfigureAwait(false);
+                        break;
 
-                case "scsearch":
-                    break;
+                    case SoundCloudSource sc when sc.Prefix == prefix:
+                        if (!sc.IsEnabled)
+                            break;
+                        response = await sc.PrepareResponseAsync(query).ConfigureAwait(false);
+                        break;
+                }
             }
 
             return response;

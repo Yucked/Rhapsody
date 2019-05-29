@@ -9,6 +9,8 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class ConfigHandler
     {
+        public static ConfigEntity Config { get; private set; }
+
         public ConfigHandler()
         {
             Logger = new LogHandler<ConfigHandler>();
@@ -22,10 +24,11 @@ namespace Frostbyte.Handlers
             {
                 Logger.LogInformation("Loaded Configuration!");
                 var read = File.ReadAllText("./Config.json");
-                return JsonSerializer.Parse<ConfigEntity>(read);
+                Config = JsonSerializer.Parse<ConfigEntity>(read);
+                return Config;
             }
 
-            var config = new ConfigEntity
+            Config = new ConfigEntity
             {
                 Host = "127.0.0.1",
                 Password = "foobar",
@@ -39,11 +42,11 @@ namespace Frostbyte.Handlers
                 }
             };
 
-            var json = JsonSerializer.ToBytes(config);
+            var json = JsonSerializer.ToBytes(Config);
             File.WriteAllBytes("./Config.json", json);
 
             Logger.LogWarning("Built and using default configuration.");
-            return config;
+            return Config;
         }
     }
 }

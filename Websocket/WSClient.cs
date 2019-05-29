@@ -17,13 +17,13 @@ namespace Frostbyte.Websocket
         private readonly WebSocket _socket;
         private readonly ulong _userId;
         private readonly IPEndPoint _endPoint;
-        private readonly HttpListenerWebSocketContext _wsContext;
         private readonly LogHandler<WsClient> _log;
-        public readonly ConcurrentDictionary<ulong, GuildHandler> Guilds;
 
-        public WsClient(HttpListenerWebSocketContext socketContext, ulong userId, int shards, IPEndPoint endPoint)
+        public event Func<IPEndPoint, ulong, Task> OnClosed;
+        public ConcurrentDictionary<ulong, GuildHandler> Guilds { get; }
+
+        public WsClient(WebSocketContext socketContext, ulong userId, int shards, IPEndPoint endPoint)
         {
-            _wsContext = socketContext;
             _socket = socketContext.WebSocket;
             _userId = userId;
             _shards = shards;
@@ -31,14 +31,6 @@ namespace Frostbyte.Websocket
             _log = new LogHandler<WsClient>();
             Guilds = new ConcurrentDictionary<ulong, GuildHandler>();
         }
-
-        public async ValueTask DisposeAsync()
-        {
-            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
-            _socket.Dispose();
-        }
-
-        public event Func<IPEndPoint, ulong, Task> OnClosed;
 
         public async Task ReceiveAsync(CancellationTokenSource cancellationToken)
         {
@@ -55,15 +47,21 @@ namespace Frostbyte.Websocket
                             break;
 
                         case WebSocketMessageType.Text:
-                            var parse = JsonSerializer.Parse<PlayerPacket>(memory.Span);
-                            var guild = Guilds[parse.GuildId] ??= new GuildHandler();
-                            guild.HandleOperation(parse);
+                            var packet = JsonSerializer.Parse<PlayerPacket>(memory.Span);
+                            var guild = Guilds[packet.GuildId] ??= new GuildHandler(_userId, _shards);
+                            await guild.HandlePacketAsync(packet).ConfigureAwait(false);
                             break;
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                OnClosed?.Invoke(_endPoint, _userId);
+                _log.LogError(ex);
+            }
+            finally
+            {
+                await DisposeAsync().ConfigureAwait(false);
                 OnClosed?.Invoke(_endPoint, _userId);
             }
         }
@@ -73,6 +71,12 @@ namespace Frostbyte.Websocket
             await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
             var str = new Utf8String(bytes.Span);
             _log.LogDebug(str.ToString());
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
+            _socket.Dispose();
         }
     }
 }

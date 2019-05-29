@@ -33,6 +33,11 @@ namespace Frostbyte.Handlers
             Log(LogLevel.Warning, message, exception);
         }
 
+        public void LogError(Exception exception)
+        {
+            Log(LogLevel.Error, string.Empty, exception);
+        }
+
         public void Log(LogLevel logLevel, string message, Exception exception)
         {
             var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
