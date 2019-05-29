@@ -10,7 +10,7 @@ namespace Frostbyte.Entities
         public LoadType LoadType { get; set; }
 
         [JsonPropertyName("tracks")]
-        public IEnumerable<TrackEntity> Tracks { get; set; }
+        public IList<TrackEntity> Tracks { get; set; }
 
         public static RESTEntity Empty
             => new RESTEntity
