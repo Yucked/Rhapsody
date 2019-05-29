@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Frostbyte.Entities
+namespace Frostbyte.Entities.Results
 {
     public sealed class YouTubeResult
     {
