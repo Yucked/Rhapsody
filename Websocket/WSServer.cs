@@ -171,9 +171,8 @@ namespace Frostbyte.Websocket
                     PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count),
                     Uptime = (int) (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
-
-                var bytes = JsonSerializer.ToBytes(stat);
-                var sendTasks = _clients.Select(x => x.Value.SendAsync(bytes));
+                
+                var sendTasks = _clients.Select(x => x.Value.SendAsync(stat));
                 await Task.WhenAll(sendTasks);
                 await Task.Delay(TimeSpan.FromSeconds(30));
             }

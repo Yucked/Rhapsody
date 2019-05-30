@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
-using System.Text.Utf8;
+using Frostbyte.Extensions;
 
 namespace Frostbyte.Websocket
 {
@@ -46,7 +46,7 @@ namespace Frostbyte.Websocket
 
                         case WebSocketMessageType.Text:
                             var packet = JsonSerializer.Parse<PlayerPacket>(memory.Span);
-                            var guild = Guilds[packet.GuildId] ??= new GuildHandler(_userId, _shards);
+                            var guild = Guilds[packet.GuildId] ??= new GuildHandler(packet.GuildId, _userId, _shards);
                             await guild.HandlePacketAsync(packet).ConfigureAwait(false);
                             break;
                     }
@@ -64,11 +64,9 @@ namespace Frostbyte.Websocket
             }
         }
 
-        public async Task SendAsync(ReadOnlyMemory<byte> bytes)
+        public async Task SendAsync(object @object)
         {
-            await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
-            var str = new Utf8String(bytes.Span);
-            LogHandler<WsClient>.Instance.LogDebug(str.ToString());
+            await _socket.SendAsync<WsClient>(@object).ConfigureAwait(false);
         }
 
         public async ValueTask DisposeAsync()

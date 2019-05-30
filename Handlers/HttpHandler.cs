@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Text.Utf8;
 using System.Threading.Tasks;
 
 namespace Frostbyte.Handlers
@@ -54,9 +53,7 @@ namespace Frostbyte.Handlers
             }
 
             _client.DefaultRequestHeaders.Add(key, value);
-            {
-                return this;
-            }
+            return this;
         }
     }
 }

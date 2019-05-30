@@ -58,7 +58,7 @@ namespace Frostbyte.Handlers
 
             Console.WriteLine(header, Color.Teal);
         }
-        
+
         private async Task PrintRepositoryInformationAsync()
         {
             var result = new GitHubResult();
@@ -69,7 +69,7 @@ namespace Frostbyte.Handlers
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(get.Span).FirstOrDefault();
 
             Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit.Sha}",
-                                       Color.White, 
+                                       Color.White,
                                        new Formatter("Issues", Color.Plum),
                                        new Formatter("License", Color.Plum),
                                        new Formatter("SHA", Color.Plum));
