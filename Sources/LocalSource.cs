@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,9 +33,14 @@ namespace Frostbyte.Sources
                 {
                     return response;
                 }
-                else
+
+                foreach (var file in files)
                 {
+                    var track = BuildTrack(file);
+                    response.Tracks.Add(track);
                 }
+
+                response.LoadType = LoadType.SearchResult;
             }
             else
             {
@@ -60,7 +64,7 @@ namespace Frostbyte.Sources
             {
                 Id = file.Name,
                 Title = file.Tag.Title,
-                Author = file.Tag.FirstArtist,
+                Author = file.Tag.FirstAlbumArtist,
                 TrackLength = (int) file.Properties.Duration.TotalMilliseconds
             };
 
