@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton)]
+    [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
     public sealed class YoutubeSource : BaseSource
     {
         private const string ID_REGEX = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";
@@ -33,13 +33,7 @@ namespace Frostbyte.Sources
             var bytes = await HttpHandler.Instance.GetBytesAsync(queryUrl).ConfigureAwait(false);
             var result = JsonSerializer.Parse<YouTubeResult>(bytes.Span);
             var tracks = result.Video.Select(x => x.ToTrack).ToArray();
-            return tracks.Any()
-                       ? new RESTEntity
-                       {
-                           LoadType = LoadType.SearchResult,
-                           Tracks = tracks
-                       }
-                       : RESTEntity.Empty;
+            return new RESTEntity(tracks.Length == 0 ? LoadType.NoMatches : LoadType.SearchResult, tracks);
         }
 
         public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)

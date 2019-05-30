@@ -17,7 +17,6 @@ namespace Frostbyte
             var services = new ServiceCollection().AddAttributeServices();
             var provider = services.BuildServiceProvider();
 
-            provider.InjectRequiredServices();
             await provider.GetRequiredService<StartupHandler>().InitializeAsync();
 
             await Task.Delay(-1);

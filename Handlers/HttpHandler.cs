@@ -39,10 +39,9 @@ namespace Frostbyte.Handlers
 
             using var content = get.Content;
             await using var readStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
-            readStream.Position = 0;
-            var readOnly = new ReadOnlyMemory<byte>();
-            await readStream.WriteAsync(readOnly).ConfigureAwait(false);
-            return readOnly;
+            await using var memStream = new MemoryStream();
+            await readStream.CopyToAsync(memStream).ConfigureAwait(false);
+            return memStream.ToArray();
         }
 
         public HttpHandler WithCustomHeader(string key, string value)

@@ -6,18 +6,18 @@ namespace Frostbyte.Attributes
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class ServiceAttribute : Attribute
     {
+        public ServiceLifetime Lifetime { get; }
+        public Type BaseType { get; }
+
         public ServiceAttribute(ServiceLifetime lifetime)
         {
             Lifetime = lifetime;
         }
 
-        public ServiceAttribute(ServiceLifetime lifetime, params Type[] injectableTypes)
+        public ServiceAttribute(ServiceLifetime lifetime, Type baseType)
         {
             Lifetime = lifetime;
-            InjectableTypes = injectableTypes;
+            BaseType = baseType;
         }
-
-        public ServiceLifetime Lifetime { get; }
-        public Type[] InjectableTypes { get; }
     }
 }

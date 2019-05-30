@@ -3,13 +3,16 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Results;
 using Frostbyte.Enums;
 using Frostbyte.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
+    [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
     public sealed class SoundCloudSource : BaseSource
     {
         private const string BASE_URL = "https://api.soundcloud.com",
@@ -47,7 +50,7 @@ namespace Frostbyte.Sources
                 response.LoadType = LoadType.SearchResult;
             }
 
-            return response.Tracks.Count == 0 ? RESTEntity.Empty : response;
+            return response;
         }
 
         public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)

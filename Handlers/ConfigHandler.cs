@@ -11,18 +11,11 @@ namespace Frostbyte.Handlers
     {
         public static ConfigEntity Config { get; private set; }
 
-        public ConfigHandler()
-        {
-            Logger = new LogHandler<ConfigHandler>();
-        }
-
-        private LogHandler<ConfigHandler> Logger { get; }
-
         public ConfigEntity ValidateConfiguration()
         {
             if (File.Exists("./Config.json"))
             {
-                Logger.LogInformation("Loaded Configuration!");
+                LogHandler<ConfigHandler>.Instance.LogInformation("Loaded Configuration!");
                 var read = File.ReadAllText("./Config.json");
                 Config = JsonSerializer.Parse<ConfigEntity>(read);
                 return Config;
@@ -38,14 +31,14 @@ namespace Frostbyte.Handlers
                     Soundcloud = true,
                     Twitch = false,
                     Vimeo = false,
-                    YouTube = true
+                    YouTube = true,
+                    Local = false
                 }
             };
 
             var json = JsonSerializer.ToBytes(Config);
             File.WriteAllBytes("./Config.json", json);
-
-            Logger.LogWarning("Built and using default configuration.");
+            LogHandler<ConfigHandler>.Instance.LogWarning("Built and using default configuration.");
             return Config;
         }
     }

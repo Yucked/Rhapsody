@@ -17,7 +17,6 @@ namespace Frostbyte.Websocket
         private readonly WebSocket _socket;
         private readonly ulong _userId;
         private readonly IPEndPoint _endPoint;
-        private readonly LogHandler<WsClient> _log;
 
         public event Func<IPEndPoint, ulong, Task> OnClosed;
         public ConcurrentDictionary<ulong, GuildHandler> Guilds { get; }
@@ -28,7 +27,6 @@ namespace Frostbyte.Websocket
             _userId = userId;
             _shards = shards;
             _endPoint = endPoint;
-            _log = new LogHandler<WsClient>();
             Guilds = new ConcurrentDictionary<ulong, GuildHandler>();
         }
 
@@ -57,7 +55,7 @@ namespace Frostbyte.Websocket
             catch (Exception ex)
             {
                 OnClosed?.Invoke(_endPoint, _userId);
-                _log.LogError(ex);
+                LogHandler<WsClient>.Instance.LogError(ex);
             }
             finally
             {
@@ -70,7 +68,7 @@ namespace Frostbyte.Websocket
         {
             await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
             var str = new Utf8String(bytes.Span);
-            _log.LogDebug(str.ToString());
+            LogHandler<WsClient>.Instance.LogDebug(str.ToString());
         }
 
         public async ValueTask DisposeAsync()

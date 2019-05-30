@@ -9,10 +9,12 @@ namespace Frostbyte.Handlers
 {
     public sealed class LogHandler<T>
     {
+        public static readonly LogHandler<T> Instance = new LogHandler<T>();
+        
         private readonly DateTimeOffset _date;
         private readonly object _lockObj;
 
-        public LogHandler()
+        private LogHandler()
         {
             _lockObj = new object();
             _date = DateTimeOffset.Now;

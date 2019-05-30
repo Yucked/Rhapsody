@@ -21,15 +21,39 @@ namespace Frostbyte.Extensions
                 switch (attr.Lifetime)
                 {
                     case ServiceLifetime.Scoped:
-                        services.AddScoped(match);
+                        if (attr.BaseType != null)
+                        {
+                            services.AddScoped(attr.BaseType, match);
+                        }
+                        else
+                        {
+                            services.AddScoped(match);
+                        }
+
                         break;
 
                     case ServiceLifetime.Singleton:
-                        services.AddSingleton(match);
+                        if (attr.BaseType != null)
+                        {
+                            services.AddSingleton(attr.BaseType, match);
+                        }
+                        else
+                        {
+                            services.AddSingleton(match);
+                        }
+
                         break;
 
                     case ServiceLifetime.Transient:
-                        services.AddTransient(match);
+                        if (attr.BaseType != null)
+                        {
+                            services.AddTransient(attr.BaseType, match);
+                        }
+                        else
+                        {
+                            services.AddTransient(match);
+                        }
+
                         break;
                 }
             }
@@ -37,6 +61,7 @@ namespace Frostbyte.Extensions
             return services;
         }
 
+        /*
         public static IServiceProvider InjectRequiredServices(this IServiceProvider provider)
         {
             var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
@@ -65,5 +90,6 @@ namespace Frostbyte.Extensions
 
             return provider;
         }
+        */
     }
 }

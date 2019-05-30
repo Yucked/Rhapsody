@@ -30,8 +30,9 @@ namespace Frostbyte.Handlers
             SetupConsole();
             PrintHeader();
             await PrintRepositoryInformationAsync().ConfigureAwait(false);
+            Console.WriteLine(new string('-', 100), Color.Gray);
             PrintSystemInformation();
-            
+            Console.Write(new string('-', 100), Color.Gray);
             var config = _config.ValidateConfiguration();
             await _server.InitializeAsync(config).ConfigureAwait(false);
         }
@@ -52,7 +53,8 @@ namespace Frostbyte.Handlers
         █▀▀    █▀▀▌  █   █ ▄  ▀▀▀▀▄       █    █ ▀ ▄  ▀█      █    ██▄▄    
         █      █  █  ▀████  ▀▄▄▄▄▀       █     █  ▄▀  █      █     █▄   ▄▀ 
          █       █                      ▀      ███  ▄▀      ▀      ▀███▀   
-          ▀     ▀                                                          ";
+          ▀     ▀                                                          
+";
 
             Console.WriteLine(header, Color.Teal);
         }
@@ -60,19 +62,17 @@ namespace Frostbyte.Handlers
         private async Task PrintRepositoryInformationAsync()
         {
             var result = new GitHubResult();
-            var get = await HttpHandler.Instance.GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte/").ConfigureAwait(false);
+            var get = await HttpHandler.Instance.GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte").ConfigureAwait(false);
             result.Repo = JsonSerializer.Parse<GitHubRepo>(get.Span);
 
             get = await HttpHandler.Instance.GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte/commits").ConfigureAwait(false);
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(get.Span).FirstOrDefault();
-            result.Commit.Sha.Substring(0, 7);
-            
-            Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues}    |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit.Sha}",
+
+            Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit.Sha}",
                                        Color.White, 
-                                       new Formatter("", Color.Plum),
-                                       new Formatter("Open Issues", Color.Plum),
-                                       new Formatter("License Name", Color.Plum),
-                                       new Formatter("Current Version", Color.Plum));
+                                       new Formatter("Issues", Color.Plum),
+                                       new Formatter("License", Color.Plum),
+                                       new Formatter("SHA", Color.Plum));
         }
 
         private void PrintSystemInformation()
@@ -80,13 +80,14 @@ namespace Frostbyte.Handlers
             var process = Process.GetCurrentProcess();
             Console.WriteLineFormatted(
                                        $"    {{0}}: {RuntimeInformation.FrameworkDescription}    |    {{1}}: {RuntimeInformation.OSDescription}\n" +
-                                       $"    {{2}}: {process.Id} ID / Using {{3}} Threads / Started On {{4}}\n",
+                                       "    {2}: {3} ID / Using {4} Threads / Started On {5}",
                                        Color.White,
-                                       new Formatter("FX Info", Color.Gold),
-                                       new Formatter("OS Info", Color.Gold),
-                                       new Formatter("Process", Color.Gold),
+                                       new Formatter("FX Info", Color.Crimson),
+                                       new Formatter("OS Info", Color.Crimson),
+                                       new Formatter("Process", Color.Crimson),
                                        new Formatter(process.Id, Color.GreenYellow),
-                                       new Formatter($"{process.StartTime:MMM d - hh:mm:ss tt}", Color.Gold));
+                                       new Formatter(process.Threads.Count, Color.GreenYellow),
+                                       new Formatter($"{process.StartTime:MMM d - hh:mm:ss tt}", Color.GreenYellow));
         }
     }
 }

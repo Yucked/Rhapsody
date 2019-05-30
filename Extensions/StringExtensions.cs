@@ -21,5 +21,16 @@ namespace Frostbyte.Extensions
         {
             return str.Replace("{0}", data);
         }
+
+        public static string GetSourceFromPrefix(this string str)
+        {
+            str = str.Replace("source", " ");
+            return str switch
+            {
+                "yt"    => "YouTube",
+                "sc"    => "SoundCloud",
+                "lcl"   => "Local"
+            };
+        }
     }
 }

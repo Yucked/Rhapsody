@@ -20,7 +20,6 @@ namespace Frostbyte.Websocket
     {
         private readonly ConcurrentDictionary<ulong, WsClient> _clients;
         private readonly HttpListener _listener;
-        private readonly LogHandler<WsServer> _log;
         private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _receiveTokens;
         private readonly SourceHandler _sourceHandler;
@@ -32,7 +31,6 @@ namespace Frostbyte.Websocket
         public WsServer(SourceHandler sourceHandler)
         {
             _listener = new HttpListener();
-            _log = new LogHandler<WsServer>();
             _clients = new ConcurrentDictionary<ulong, WsClient>();
             _receiveTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
             _wsCancellation = new CancellationTokenSource();
@@ -63,12 +61,12 @@ namespace Frostbyte.Websocket
         public async Task InitializeAsync(ConfigEntity config)
         {
             _config = config;
-            _log.LogInformation("Security protocol set to TLS11 & TLS12.");
+            LogHandler<WsServer>.Instance.LogInformation("Security protocol set to TLS11 & TLS12.");
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
             _listener.Prefixes.Add(config.Url);
             _listener.Start();
-            _log.LogInformation($"Server started on {config.Url}.");
+            LogHandler<WsServer>.Instance.LogInformation($"Server started on {config.Url}.");
 
             _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
             while (!_wsCancellation.IsCancellationRequested)
@@ -119,7 +117,7 @@ namespace Frostbyte.Websocket
                         return;
                     }
 
-                    _log.LogDebug($"Incoming websocket request coming from {remoteEndPoint}.");
+                    LogHandler<WsServer>.Instance.LogDebug($"Incoming websocket request coming from {remoteEndPoint}.");
 
                     var ws = await context.AcceptWebSocketAsync(default).ConfigureAwait(false);
                     ulong.TryParse(ws.Headers.Get("User-Id"), out var userId);
@@ -133,11 +131,11 @@ namespace Frostbyte.Websocket
                     _ = wsClient.ReceiveAsync(_receiveCancellation);
                     _receiveTokens.TryAdd(userId, _receiveCancellation);
 
-                    _log.LogInformation($"Websocket connected opened from {remoteEndPoint}.");
+                    LogHandler<WsServer>.Instance.LogInformation($"Websocket connected opened from {remoteEndPoint}.");
                     break;
 
                 default:
-                    _log.LogWarning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
+                    LogHandler<WsServer>.Instance.LogWarning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
                     response.Reason = "You are trying to access an unknown endpoint.";
                     await context.SendResponseAsync(response).ConfigureAwait(false);
                     context.Response.Close();
@@ -151,7 +149,7 @@ namespace Frostbyte.Websocket
             _receiveTokens.TryRemove(userId, out var token);
             token.Cancel(false);
 
-            _log.LogWarning($"Client {endPoint} closed websocket connection.");
+            LogHandler<WsServer>.Instance.LogWarning($"Client {endPoint} closed websocket connection.");
             return default;
         }
 

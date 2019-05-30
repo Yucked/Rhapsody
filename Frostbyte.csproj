@@ -12,6 +12,7 @@
     <PackageReference Include="NAudio" Version="1.9.0" />
     <PackageReference Include="System.Text.Formatting" Version="0.1.1-preview2-190117-2" />
     <PackageReference Include="System.Text.Json" Version="4.6.0-preview6.19259.10" />
+    <PackageReference Include="taglib" Version="2.1.0" />
   </ItemGroup>
 
 </Project>
