@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities
 {
@@ -8,6 +9,7 @@ namespace Frostbyte.Entities
         public string Host { get; set; }
         public string Password { get; set; }
         public SourcesEntity Sources { get; set; }
+        public LogLevel LogLevel { get; set; }
 
         [JsonIgnore]
         internal string Url
