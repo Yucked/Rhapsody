@@ -3,6 +3,7 @@ using Frostbyte.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json.Serialization;
 using System.IO;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Handlers
 {
@@ -15,30 +16,33 @@ namespace Frostbyte.Handlers
         {
             if (File.Exists("./Config.json"))
             {
-                LogHandler<ConfigHandler>.Instance.LogInformation("Loaded Configuration!");
                 var read = File.ReadAllText("./Config.json");
                 Config = JsonSerializer.Parse<ConfigEntity>(read);
-                return Config;
+                LogHandler<ConfigHandler>.Log.Information("Loaded Configuration!");
+            }
+            else
+            {
+                Config = new ConfigEntity
+                {
+                    Host = "127.0.0.1",
+                    Password = "foobar",
+                    Port = 8080,
+                    LogLevel = LogLevel.Information,
+                    Sources = new SourcesEntity
+                    {
+                        Soundcloud = true,
+                        Twitch = false,
+                        Vimeo = false,
+                        YouTube = true,
+                        Local = false
+                    }
+                };
+
+                var json = JsonSerializer.ToUtf8Bytes(Config);
+                File.WriteAllBytes("./Config.json", json);
+                LogHandler<ConfigHandler>.Log.Warning("Built default configuration.");
             }
 
-            Config = new ConfigEntity
-            {
-                Host = "127.0.0.1",
-                Password = "foobar",
-                Port = 8080,
-                Sources = new SourcesEntity
-                {
-                    Soundcloud = true,
-                    Twitch = false,
-                    Vimeo = false,
-                    YouTube = true,
-                    Local = false
-                }
-            };
-
-            var json = JsonSerializer.ToBytes(Config);
-            File.WriteAllBytes("./Config.json", json);
-            LogHandler<ConfigHandler>.Instance.LogWarning("Built and using default configuration.");
             return Config;
         }
     }

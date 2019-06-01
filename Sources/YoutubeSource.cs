@@ -5,8 +5,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
-using Frostbyte.Enums;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 

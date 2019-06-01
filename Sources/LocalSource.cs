@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
-using Frostbyte.Enums;
+using Frostbyte.Entities.Enums;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 

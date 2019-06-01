@@ -1,55 +1,60 @@
-﻿using Frostbyte.Enums;
-using Frostbyte.Extensions;
+﻿using Frostbyte.Extensions;
 using System;
 using System.Drawing;
 using System.IO;
+using Frostbyte.Entities.Enums;
 using Console = Colorful.Console;
 
 namespace Frostbyte.Handlers
 {
     public sealed class LogHandler<T>
     {
-        public static readonly LogHandler<T> Instance = new LogHandler<T>();
-        
-        private readonly DateTimeOffset _date;
-        private readonly object _lockObj;
-
+            public static LogHandler<T> Log => LazyHelper.Value;
+    
+            private readonly DateTimeOffset _date;
+            private readonly object _lockObj;
+            private static readonly Lazy<LogHandler<T>> LazyHelper 
+                = new Lazy<LogHandler<T>>(() => new LogHandler<T>());
+            
         private LogHandler()
         {
             _lockObj = new object();
             _date = DateTimeOffset.Now;
         }
 
-        public void LogInformation(string message, Exception exception = default)
+        public void Information(string message, Exception exception = default)
         {
-            Log(LogLevel.Information, message, exception);
+            RawLog(LogLevel.Information, message, exception);
         }
 
-        public void LogDebug(string message, Exception exception = default)
+        public void Debug(string message, Exception exception = default)
         {
-            Log(LogLevel.Debug, message, exception);
+            RawLog(LogLevel.Debug, message, exception);
         }
 
-        public void LogWarning(string message, Exception exception = default)
+        public void Warning(string message, Exception exception = default)
         {
-            Log(LogLevel.Warning, message, exception);
+            RawLog(LogLevel.Warning, message, exception);
         }
 
-        public void LogError(Exception exception)
+        public void Error(Exception exception)
         {
-            Log(LogLevel.Error, string.Empty, exception);
+            RawLog(LogLevel.Error, string.Empty, exception);
         }
 
-        public void Log(LogLevel logLevel, string message, Exception exception)
-        {
+        private void RawLog(LogLevel logLevel, string message, Exception exception)
+        {                
             var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
             var log = $" [{GetLogLevel(logLevel)}] ";
             var formatted = message.LogFormatter(exception);
-
-            Append(date, Color.Gray);
-            Append(log, GetColor(logLevel));
-            Append(message, Color.White);
-            Console.Write(Environment.NewLine);
+            
+            if (ConfigHandler.Config.LogLevel == logLevel && ConfigHandler.Config.LogLevel != LogLevel.None)
+            {
+                Append(date, Color.Gray);
+                Append(log, GetColor(logLevel));
+                Append(message, Color.White);
+                Console.Write(Environment.NewLine);
+            }
 
             var logMessage = $"{date}{log}[{typeof(T).Name}] {formatted}";
             WriteToFile(logMessage);
@@ -65,14 +70,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical => "CRIT",
-                LogLevel.Debug => "DBUG",
-                LogLevel.Error => "EROR",
-                LogLevel.Information => "INFO",
-                LogLevel.None => "NONE",
-                LogLevel.Trace => "TRCE",
-                LogLevel.Warning => "WARN",
-                _ => "NONE"
+                LogLevel.Critical       => "CRIT",
+                LogLevel.Debug          => "DBUG",
+                LogLevel.Error          => "EROR",
+                LogLevel.Information    => "INFO",
+                LogLevel.None           => "NONE",
+                LogLevel.Trace          => "TRCE",
+                LogLevel.Warning        => "WARN",
+                _                       => "NONE"
             };
         }
 
@@ -80,14 +85,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical => Color.Red,
-                LogLevel.Debug => Color.SlateBlue,
-                LogLevel.Error => Color.Red,
-                LogLevel.Information => Color.SpringGreen,
-                LogLevel.None => Color.BurlyWood,
-                LogLevel.Trace => Color.SlateBlue,
-                LogLevel.Warning => Color.Yellow,
-                _ => Color.SlateBlue
+                LogLevel.Critical       => Color.Red,
+                LogLevel.Debug          => Color.SlateBlue,
+                LogLevel.Error          => Color.Red,
+                LogLevel.Information    => Color.SpringGreen,
+                LogLevel.None           => Color.BurlyWood,
+                LogLevel.Trace          => Color.SlateBlue,
+                LogLevel.Warning        => Color.Yellow,
+                _                       => Color.SlateBlue
             };
         }
 

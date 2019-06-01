@@ -13,6 +13,12 @@ namespace Frostbyte.Entities.Results
     {
         [JsonPropertyName("sha")]
         public string Sha { get; set; }
+        
+        [JsonIgnore]
+        public string SHA
+        {
+            get => Sha.Substring(0, 34);
+        }
     }
 
     public sealed class GitHubRepo

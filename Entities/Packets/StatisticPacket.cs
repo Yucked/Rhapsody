@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
-using Frostbyte.Enums;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities.Packets
 {

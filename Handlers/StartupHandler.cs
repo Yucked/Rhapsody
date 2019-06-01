@@ -32,7 +32,7 @@ namespace Frostbyte.Handlers
             await PrintRepositoryInformationAsync().ConfigureAwait(false);
             Console.WriteLine(new string('-', 100), Color.Gray);
             PrintSystemInformation();
-            Console.Write(new string('-', 100), Color.Gray);
+            Console.WriteLine(new string('-', 100), Color.Gray);
             var config = _config.ValidateConfiguration();
             await _server.InitializeAsync(config).ConfigureAwait(false);
         }
@@ -68,7 +68,7 @@ namespace Frostbyte.Handlers
             get = await HttpHandler.Instance.GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte/commits").ConfigureAwait(false);
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(get.Span).FirstOrDefault();
 
-            Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit.Sha}",
+            Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit.SHA}",
                                        Color.White,
                                        new Formatter("Issues", Color.Plum),
                                        new Formatter("License", Color.Plum),

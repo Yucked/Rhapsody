@@ -1,5 +1,5 @@
-using Frostbyte.Enums;
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities.Packets
 {

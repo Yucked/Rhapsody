@@ -1,6 +1,6 @@
-﻿using Frostbyte.Enums;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities
 {

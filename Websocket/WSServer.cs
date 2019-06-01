@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
-using System.Text.Json.Serialization;
 
 namespace Frostbyte.Websocket
 {
@@ -61,12 +60,12 @@ namespace Frostbyte.Websocket
         public async Task InitializeAsync(ConfigEntity config)
         {
             _config = config;
-            LogHandler<WsServer>.Instance.LogInformation("Security protocol set to TLS11 & TLS12.");
+            LogHandler<WsServer>.Log.Information("Security protocol set to TLS11 & TLS12.");
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
             _listener.Prefixes.Add(config.Url);
             _listener.Start();
-            LogHandler<WsServer>.Instance.LogInformation($"Server started on {config.Url}.");
+            LogHandler<WsServer>.Log.Information($"Server started on {config.Url}.");
 
             _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
             while (!_wsCancellation.IsCancellationRequested)
@@ -81,10 +80,11 @@ namespace Frostbyte.Websocket
             var localPath = context.Request.Url.LocalPath;
             var remoteEndPoint = context.Request.RemoteEndPoint;
             var response = new ResponseEntity(false, string.Empty);
-
+            
             switch (localPath)
             {
                 case "/tracks":
+                    LogHandler<WsServer>.Log.Debug($"Incoming REST request from {remoteEndPoint}.");
                     if (context.Request.Headers.Get("Password") != _config.Password)
                     {
                         response.Reason = "Password header doesn't match value specified in configuration.";
@@ -106,6 +106,7 @@ namespace Frostbyte.Websocket
                     }
 
                     context.Response.Close();
+                    LogHandler<WsServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Reason}.");
                     break;
 
                 case "/":
@@ -117,7 +118,7 @@ namespace Frostbyte.Websocket
                         return;
                     }
 
-                    LogHandler<WsServer>.Instance.LogDebug($"Incoming websocket request coming from {remoteEndPoint}.");
+                    LogHandler<WsServer>.Log.Debug($"Incoming websocket request coming from {remoteEndPoint}.");
 
                     var ws = await context.AcceptWebSocketAsync(default).ConfigureAwait(false);
                     ulong.TryParse(ws.Headers.Get("User-Id"), out var userId);
@@ -131,11 +132,11 @@ namespace Frostbyte.Websocket
                     _ = wsClient.ReceiveAsync(_receiveCancellation);
                     _receiveTokens.TryAdd(userId, _receiveCancellation);
 
-                    LogHandler<WsServer>.Instance.LogInformation($"Websocket connected opened from {remoteEndPoint}.");
+                    LogHandler<WsServer>.Log.Information($"Websocket connection opened from {remoteEndPoint}.");
                     break;
 
                 default:
-                    LogHandler<WsServer>.Instance.LogWarning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
+                    LogHandler<WsServer>.Log.Warning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
                     response.Reason = "You are trying to access an unknown endpoint.";
                     await context.SendResponseAsync(response).ConfigureAwait(false);
                     context.Response.Close();
@@ -149,7 +150,7 @@ namespace Frostbyte.Websocket
             _receiveTokens.TryRemove(userId, out var token);
             token.Cancel(false);
 
-            LogHandler<WsServer>.Instance.LogWarning($"Client {endPoint} closed websocket connection.");
+            LogHandler<WsServer>.Log.Warning($"Client {endPoint} closed websocket connection.");
             return default;
         }
 
@@ -171,7 +172,7 @@ namespace Frostbyte.Websocket
                     PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count),
                     Uptime = (int) (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
-                
+
                 var sendTasks = _clients.Select(x => x.Value.SendAsync(stat));
                 await Task.WhenAll(sendTasks);
                 await Task.Delay(TimeSpan.FromSeconds(30));

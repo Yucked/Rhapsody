@@ -65,7 +65,7 @@ namespace Frostbyte.Handlers
                     }
                     catch (Exception ex)
                     {
-                        LogHandler<GuildHandler>.Instance.LogError(ex);
+                        LogHandler<GuildHandler>.Log.Error(ex);
                     }
 
                     break;
@@ -76,7 +76,7 @@ namespace Frostbyte.Handlers
         {
             if (task.IsCanceled || task.IsFaulted || task.Exception != null)
             {
-                LogHandler<GuildHandler>.Instance.LogError(task.Exception);
+                LogHandler<GuildHandler>.Log.Error(task.Exception);
             }
             else
             {
@@ -110,7 +110,7 @@ namespace Frostbyte.Handlers
             }
             catch (Exception ex)
             {
-                LogHandler<GuildHandler>.Instance.LogError(ex);
+                LogHandler<GuildHandler>.Log.Error(ex);
             }
             finally
             {
@@ -130,8 +130,8 @@ namespace Frostbyte.Handlers
                     break;
 
                 case 4:
-                    var sessDesc = payload.Data.TryCast<SessionDescriptionPayload>();
-                    if (sessDesc.Mode != "xsalsa20_poly1305")
+                    var sessionDescription = payload.Data.TryCast<SessionDescriptionPayload>();
+                    if (sessionDescription.Mode != "xsalsa20_poly1305")
                         return;
 
                     try
@@ -142,7 +142,7 @@ namespace Frostbyte.Handlers
                     }
                     catch (Exception ex)
                     {
-                        LogHandler<GuildHandler>.Instance.LogError(ex);
+                        LogHandler<GuildHandler>.Log.Error(ex);
                     }
 
                     break;
@@ -161,7 +161,7 @@ namespace Frostbyte.Handlers
                     break;
 
                 default:
-                    LogHandler<GuildHandler>.Instance.LogDebug($"Received {payload.OpCode} op code.");
+                    LogHandler<GuildHandler>.Log.Debug($"Received {payload.OpCode} op code.");
                     break;
             }
         }

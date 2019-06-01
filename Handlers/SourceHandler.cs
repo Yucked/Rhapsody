@@ -27,11 +27,11 @@ namespace Frostbyte.Handlers
             var query = split[1];
 
             var source = _sources.FirstOrDefault(x => x.Prefix == prefix);
-            var response = new ResponseEntity(false, source.IsEnabled ? $"{prefix.GetSourceFromPrefix()} endpoint is disabled in config." : "Success");
+            var response = new ResponseEntity(false, !source.IsEnabled ? $"{prefix.GetSourceFromPrefix()} endpoint is disabled in config." : "Success");
 
             if (!source.IsEnabled)
                 return response;
-
+            response.IsSuccess = true;
             response.AdditionObject = source switch
             {
                 YoutubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),

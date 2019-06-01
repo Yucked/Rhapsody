@@ -24,7 +24,7 @@ namespace Frostbyte.Extensions
 
         public static string GetSourceFromPrefix(this string str)
         {
-            str = str.Replace("source", " ");
+            str = str.Replace("search", "");
             return str switch
             {
                 "yt"    => "YouTube",

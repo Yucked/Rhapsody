@@ -55,7 +55,7 @@ namespace Frostbyte.Websocket
             catch (Exception ex)
             {
                 OnClosed?.Invoke(_endPoint, _userId);
-                LogHandler<WsClient>.Instance.LogError(ex);
+                LogHandler<WsClient>.Log.Error(ex);
             }
             finally
             {
