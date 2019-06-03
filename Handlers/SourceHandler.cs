@@ -13,11 +13,11 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class SourceHandler
     {
-        private readonly IEnumerable<BaseSource> _sources;
+        private readonly IEnumerable<ISource> _sources;
 
         public SourceHandler(IServiceProvider provider)
         {
-            _sources = provider.GetServices(typeof(BaseSource)).Cast<BaseSource>();
+            _sources = provider.GetServices(typeof(ISource)).Cast<ISource>();
         }
 
         public async Task<ResponseEntity> HandlerRequestAsync(string url)
@@ -27,14 +27,15 @@ namespace Frostbyte.Handlers
             var query = split[1];
 
             var source = _sources.FirstOrDefault(x => x.Prefix == prefix);
-            var response = new ResponseEntity(false, !source.IsEnabled ? $"{prefix.GetSourceFromPrefix()} endpoint is disabled in config." : "Success");
+            var response = new ResponseEntity(false, !source.IsEnabled ? $"{prefix.GetSourceFromPrefix()} endpoint is disabled in config" : "Success");
 
             if (!source.IsEnabled)
                 return response;
+
             response.IsSuccess = true;
             response.AdditionObject = source switch
             {
-                YoutubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),
+                YouTubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),
                 SoundCloudSource sc => await sc.PrepareResponseAsync(query).ConfigureAwait(false),
                 LocalSource lc      => await lc.PrepareResponseAsync(query).ConfigureAwait(false)
             };

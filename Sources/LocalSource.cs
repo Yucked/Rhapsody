@@ -4,25 +4,23 @@ using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
-    public sealed class LocalSource : BaseSource
+    [Service(ServiceLifetime.Singleton, typeof(ISource))]
+    public sealed class LocalSource : ISource
     {
-        public override bool IsEnabled
+        public string Prefix { get; }
+        public bool IsEnabled { get; }
+
+        public LocalSource(ConfigEntity config)
         {
-            get => ConfigHandler.Config.Sources.Local;
+            Prefix = "lclsearch";
+            IsEnabled = config.Sources.EnableLocal;
         }
 
-        public override string Prefix
-        {
-            get => "lclsearch";
-        }
-
-        public override async ValueTask<RESTEntity> PrepareResponseAsync(string query)
+        public ValueTask<RESTEntity> PrepareResponseAsync(string query)
         {
             var response = new RESTEntity();
 
@@ -31,7 +29,7 @@ namespace Frostbyte.Sources
                 var files = Directory.EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories).ToArray();
                 if (files.Length < 1)
                 {
-                    return response;
+                    return new ValueTask<RESTEntity>(response);
                 }
 
                 foreach (var file in files)
@@ -49,10 +47,15 @@ namespace Frostbyte.Sources
                 response.LoadType = LoadType.TrackLoaded;
             }
 
-            return response;
+            return new ValueTask<RESTEntity>(response);
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public async ValueTask<Stream> GetStreamAsync(string id)
         {
             throw new System.NotImplementedException();
         }
@@ -65,7 +68,7 @@ namespace Frostbyte.Sources
                 Id = file.Name,
                 Title = file.Tag.Title,
                 Author = file.Tag.FirstAlbumArtist,
-                TrackLength = (int) file.Properties.Duration.TotalMilliseconds
+                TrackLength = (int)file.Properties.Duration.TotalMilliseconds
             };
 
             return track;

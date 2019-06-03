@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.WebSockets;
+using System.Text;
 using System.Text.Json.Serialization;
-using System.Text.Utf8;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Handlers;
@@ -19,8 +19,8 @@ namespace Frostbyte.Extensions
         {
             var bytes = JsonSerializer.ToUtf8Bytes(data);
             await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
-            var str = new Utf8String(bytes);
-            LogHandler<T>.Log.Debug(str.ToString());
+            var str = Encoding.UTF8.GetString(bytes);
+            LogHandler<T>.Log.Debug(str);
         }
 
         public static T TryCast<T>(this object @object)

@@ -7,34 +7,33 @@ using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
+using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
-    public sealed class SoundCloudSource : BaseSource
+    [Service(ServiceLifetime.Singleton, typeof(ISource))]
+    public sealed class SoundCloudSource : ISource
     {
+        public string Prefix { get; }
+        public bool IsEnabled { get; }
         private const string BASE_URL = "https://api.soundcloud.com",
-                             CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
-                             REGEX_PATTERN = @"/^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/";
+                     CLIENT_ID = "client_id=a3dd183a357fcff9a6943c0d65664087",
+                     REGEX_PATTERN = @"/^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/";
 
-        public override bool IsEnabled
+        public SoundCloudSource(ConfigEntity config)
         {
-            get => ConfigHandler.Config.Sources.Soundcloud;
+            Prefix = "scsearch";
+            IsEnabled = config.Sources.EnableSoundCloud;
         }
 
-        public override string Prefix
-        {
-            get => "scsearch";
-        }
-
-        public override async ValueTask<RESTEntity> PrepareResponseAsync(string query)
+        public async ValueTask<RESTEntity> PrepareResponseAsync(string query)
         {
             var response = new RESTEntity();
-            if (Regex(REGEX_PATTERN).Match(query).Success)
+            if (query.IsMatch(REGEX_PATTERN))
             {
-                query = $"{BASE_URL}/resolve?url={query}&client_id={CLIENT_ID}";
+                query = $"{BASE_URL}/resolve?url={query}&{CLIENT_ID}";
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
                 response.Tracks.Add(result.ToTrack);
@@ -42,7 +41,7 @@ namespace Frostbyte.Sources
             }
             else
             {
-                query = $"{BASE_URL}/tracks?q={query}&client_id={CLIENT_ID}";
+                query = $"{BASE_URL}/tracks?q={query}&{CLIENT_ID}";
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<IList<SoundCloudTrack>>(bytes.Span);
                 var tracks = result.Select(x => x.ToTrack).ToArray();
@@ -53,9 +52,17 @@ namespace Frostbyte.Sources
             return response;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public ValueTask<Stream> GetStreamAsync(TrackEntity track)
         {
-            throw new System.NotImplementedException();
+            return GetStreamAsync(track.Id);
+        }
+
+        public async ValueTask<Stream> GetStreamAsync(string id)
+        {
+            var bytes = await HttpHandler.Instance.GetBytesAsync($"{BASE_URL}/tracks/stream?{CLIENT_ID}").ConfigureAwait(false);
+            var read = JsonSerializer.Parse<SoundCloudDirectUrl>(bytes.Span);
+            var stream = await HttpHandler.Instance.GetStreamAsync(read.Url).ConfigureAwait(false);
+            return stream;
         }
     }
 }

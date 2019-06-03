@@ -12,22 +12,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
-    public sealed class YoutubeSource : BaseSource
+    [Service(ServiceLifetime.Singleton, typeof(ISource))]
+    public sealed class YouTubeSource : ISource
     {
-        private const string ID_REGEX = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";
+        public string Prefix { get; }
+        public bool IsEnabled { get; }
+        private const string ID_REGEX
+            = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";
 
-        public override bool IsEnabled
+        public YouTubeSource(ConfigEntity config)
         {
-            get => ConfigHandler.Config.Sources.YouTube;
+            Prefix = "ytsearch";
+            IsEnabled = config.Sources.EnableYouTube;
         }
 
-        public override string Prefix
-        {
-            get => "ytsearch";
-        }
-
-        public override async ValueTask<RESTEntity> PrepareResponseAsync(string query)
+        public async ValueTask<RESTEntity> PrepareResponseAsync(string query)
         {
             var queryUrl = $"https://www.youtube.com/search_ajax?style=json&search_query={WebUtility.UrlEncode(query)}";
             var bytes = await HttpHandler.Instance.GetBytesAsync(queryUrl).ConfigureAwait(false);
@@ -36,7 +35,12 @@ namespace Frostbyte.Sources
             return new RESTEntity(tracks.Length == 0 ? LoadType.NoMatches : LoadType.SearchResult, tracks);
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public async ValueTask<Stream> GetStreamAsync(string id)
         {
             throw new System.NotImplementedException();
         }

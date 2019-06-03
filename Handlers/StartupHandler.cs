@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Colorful;
 using Frostbyte.Attributes;
+using Frostbyte.Entities;
 using Frostbyte.Entities.Results;
 using Frostbyte.Websocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,12 +17,14 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class StartupHandler
     {
-        private readonly ConfigHandler _config;
-        private readonly WsServer _server;
+        private readonly ConfigEntity _config;
+        private readonly RatelimitHandler _rateLimitHandler;
+        private readonly WsServer _server;        
 
-        public StartupHandler(ConfigHandler config, WsServer wsServer)
+        public StartupHandler(ConfigEntity config, RatelimitHandler rateLimitHandler, WsServer wsServer)
         {
             _config = config;
+            _rateLimitHandler = rateLimitHandler;
             _server = wsServer;
         }
 
@@ -33,8 +36,9 @@ namespace Frostbyte.Handlers
             Console.WriteLine(new string('-', 100), Color.Gray);
             PrintSystemInformation();
             Console.WriteLine(new string('-', 100), Color.Gray);
-            var config = _config.ValidateConfiguration();
-            await _server.InitializeAsync(config).ConfigureAwait(false);
+
+
+            _ = _server.InitializeAsync(_config);
         }
 
         private void SetupConsole()

@@ -14,9 +14,11 @@ namespace Frostbyte
 
         private async Task InitializeAsync()
         {
-            var services = new ServiceCollection().AddAttributeServices();
-            var provider = services.BuildServiceProvider();
+            var services = new ServiceCollection()
+                .AddConfiguration()
+                .AddAttributeServices();
 
+            var provider = services.BuildServiceProvider();
             await provider.GetRequiredService<StartupHandler>().InitializeAsync();
 
             await Task.Delay(-1);

@@ -43,6 +43,18 @@ namespace Frostbyte.Handlers
             return memStream.ToArray();
         }
 
+        public async ValueTask<Stream> GetStreamAsync(string url)
+        {
+            CheckClient();
+
+            var get = await _client.GetAsync(url).ConfigureAwait(false);
+            if (get.IsSuccessStatusCode)
+                return default;
+
+            using var content = get.Content;
+            return await content.ReadAsStreamAsync().ConfigureAwait(false);
+        }
+
         public HttpHandler WithCustomHeader(string key, string value)
         {
             CheckClient();

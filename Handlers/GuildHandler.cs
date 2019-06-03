@@ -80,6 +80,7 @@ namespace Frostbyte.Handlers
             }
             else
             {
+                _receiveToken ??= new CancellationTokenSource();
                 _receiveTask = Task.Run(ReceiveTaskAsync, _receiveToken.Token);
                 var payload = new BasePayload(0, new IdentifyPayload(_guildId, _userId, packet.SessionId, packet.Token));
                 await _socket.SendAsync<GuildHandler>(payload).ConfigureAwait(false);
