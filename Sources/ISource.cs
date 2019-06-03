@@ -6,9 +6,6 @@ namespace Frostbyte.Sources
 {
     public interface ISource
     {
-        public const string NO_EMBED_URL
-            = "http://noembed.com/embed?url={0}&callback=my_embed_function";
-
         string Prefix { get; }
 
         bool IsEnabled { get; }
