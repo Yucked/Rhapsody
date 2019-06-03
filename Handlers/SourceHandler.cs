@@ -34,7 +34,7 @@ namespace Frostbyte.Handlers
             response.IsSuccess = true;
             response.AdditionObject = source switch
             {
-                YoutubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),
+                YouTubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),
                 SoundCloudSource sc => await sc.PrepareResponseAsync(query).ConfigureAwait(false),
                 LocalSource lc      => await lc.PrepareResponseAsync(query).ConfigureAwait(false)
             };

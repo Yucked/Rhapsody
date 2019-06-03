@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Entities.Results
 {
@@ -23,8 +24,8 @@ namespace Frostbyte.Entities.Results
         public string OriginalFormat { get; set; }
 
         [JsonIgnore]
-        public TrackEntity ToTrack
-            => new TrackEntity
+        public Track ToTrack
+            => new Track
             {
                 Id = $"{Id}",
                 Title = Title,

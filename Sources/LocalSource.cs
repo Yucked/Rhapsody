@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +38,7 @@ namespace Frostbyte.Sources
                 foreach (var file in files)
                 {
                     var track = BuildTrack(file);
-                    response.Tracks.Add(track);
+                    response.audioItems.Add(track);
                 }
 
                 response.LoadType = LoadType.SearchResult;
@@ -45,26 +46,26 @@ namespace Frostbyte.Sources
             else
             {
                 var track = BuildTrack(query);
-                response.Tracks.Add(track);
+                response.audioItems.Add(track);
                 response.LoadType = LoadType.TrackLoaded;
             }
 
             return response;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public override async ValueTask<Stream> GetStreamAsync(Track track)
         {
             throw new System.NotImplementedException();
         }
 
-        private TrackEntity BuildTrack(string filePath)
+        private Track BuildTrack(string filePath)
         {
             using var file = TagLib.File.Create(filePath);
-            var track = new TrackEntity
+            var track = new Track
             {
                 Id = file.Name,
                 Title = file.Tag.Title,
-                Author = file.Tag.FirstAlbumArtist,
+                Author = new Author(file.Tag.FirstAlbumArtist),
                 TrackLength = (int) file.Properties.Duration.TotalMilliseconds
             };
 

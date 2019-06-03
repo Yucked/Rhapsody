@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Handlers;
@@ -13,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Frostbyte.Sources
 {
     [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
-    public sealed class YoutubeSource : BaseSource
+    public sealed class YouTubeSource : BaseSource
     {
         private const string ID_REGEX = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";
 
@@ -36,7 +37,7 @@ namespace Frostbyte.Sources
             return new RESTEntity(tracks.Length == 0 ? LoadType.NoMatches : LoadType.SearchResult, tracks);
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public override async ValueTask<Stream> GetStreamAsync(Track track)
         {
             throw new System.NotImplementedException();
         }

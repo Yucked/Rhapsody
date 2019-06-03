@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Handlers;
@@ -37,7 +38,7 @@ namespace Frostbyte.Sources
                 query = $"{BASE_URL}/resolve?url={query}&client_id={CLIENT_ID}";
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
-                response.Tracks.Add(result.ToTrack);
+                response.audioItems.Add(result.ToTrack);
                 response.LoadType = LoadType.TrackLoaded;
             }
             else
@@ -46,14 +47,14 @@ namespace Frostbyte.Sources
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<IList<SoundCloudTrack>>(bytes.Span);
                 var tracks = result.Select(x => x.ToTrack).ToArray();
-                response.Tracks = tracks;
+                response.audioItems = tracks;
                 response.LoadType = LoadType.SearchResult;
             }
 
             return response;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public override async ValueTask<Stream> GetStreamAsync(Track track)
         {
             throw new System.NotImplementedException();
         }

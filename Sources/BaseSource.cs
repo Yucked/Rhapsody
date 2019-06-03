@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Sources
 {
@@ -20,6 +21,6 @@ namespace Frostbyte.Sources
 
         public abstract ValueTask<RESTEntity> PrepareResponseAsync(string query);
 
-        public abstract ValueTask<Stream> GetStreamAsync(TrackEntity track);
+        public abstract ValueTask<Stream> GetStreamAsync(Track track);
     }
 }
