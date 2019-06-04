@@ -34,7 +34,10 @@ namespace Frostbyte.Handlers
 
             var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
+            {
+                LogHandler<HttpHandler>.Log.Warning($"Requesting {url} threw {get.ReasonPhrase}.");
                 return default;
+            }
 
             using var content = get.Content;
             await using var readStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -49,10 +52,28 @@ namespace Frostbyte.Handlers
 
             var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (get.IsSuccessStatusCode)
+            {
+                LogHandler<HttpHandler>.Log.Warning($"Requesting {url} threw {get.ReasonPhrase}.");
                 return default;
+            }
 
             using var content = get.Content;
             return await content.ReadAsStreamAsync().ConfigureAwait(false);
+        }
+
+        public async ValueTask<string> GetStringAsync(string url)
+        {
+            CheckClient();
+
+            var get = await _client.GetAsync(url).ConfigureAwait(false);
+            if (get.IsSuccessStatusCode)
+            {
+                LogHandler<HttpHandler>.Log.Warning($"Requesting {url} threw {get.ReasonPhrase}.");
+                return default;
+            }
+
+            using var content = get.Content;
+            return await content.ReadAsStringAsync().ConfigureAwait(false);
         }
 
         public HttpHandler WithCustomHeader(string key, string value)
