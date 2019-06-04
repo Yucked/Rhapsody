@@ -67,37 +67,6 @@ namespace Frostbyte.Extensions
             return services;
         }
 
-        /*
-        public static IServiceProvider InjectRequiredServices(this IServiceProvider provider)
-        {
-            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
-
-            if (matches.Length is 0)
-                return provider;
-
-            foreach (var match in matches)
-            {
-                var attr = match.GetCustomAttribute<ServiceAttribute>();
-                if (attr.InjectableTypes is null || attr.InjectableTypes.Length is 0)
-                    continue;
-
-                var properties = match.GetRuntimeProperties().ToArray();
-
-                foreach (var type in attr.InjectableTypes)
-                {
-                    var service = provider.GetService(type);
-                    if (service is null)
-                        continue;
-
-                    var property = properties.FirstOrDefault(x => x.PropertyType == type);
-                    property?.SetValue(match, service);
-                }
-            }
-
-            return provider;
-        }
-        */
-
         /// <summary>
         /// Adds <see cref="ConfigEntity"/> to <paramref name="services"/>.
         /// </summary>
