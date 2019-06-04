@@ -8,6 +8,7 @@ using Frostbyte.Entities;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
 using Microsoft.Extensions.DependencyInjection;
+using TagLib.Matroska;
 
 namespace Frostbyte.Handlers
 {
@@ -43,6 +44,18 @@ namespace Frostbyte.Handlers
                 LocalSource lc      => await lc.PrepareResponseAsync(query).ConfigureAwait(false)
             };
 
+            _ = Task.Run(() =>
+            {
+                var rest = response.AdditionObject.TryCast<RESTEntity>();
+                foreach (var track in rest.Tracks)
+                {
+                    if (Tracks.ContainsKey(track.Id))
+                        continue;
+
+                    Tracks.TryAdd(track.Id, track);
+                }
+            }).ConfigureAwait(false);
+            
             return response;
         }
     }
