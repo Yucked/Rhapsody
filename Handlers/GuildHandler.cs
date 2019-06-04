@@ -38,6 +38,7 @@ namespace Frostbyte.Handlers
             switch (packet)
             {
                 case PlayPacket play:
+                    
                     break;
 
                 case PausePacket pause:

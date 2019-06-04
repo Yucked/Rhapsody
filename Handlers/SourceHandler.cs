@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,10 +15,12 @@ namespace Frostbyte.Handlers
     public sealed class SourceHandler
     {
         private readonly IEnumerable<ISource> _sources;
+        public ConcurrentDictionary<string, TrackEntity> Tracks { get; }
 
         public SourceHandler(IServiceProvider provider)
         {
             _sources = provider.GetServices(typeof(ISource)).Cast<ISource>();
+            Tracks = new ConcurrentDictionary<string, TrackEntity>();
         }
 
         public async Task<ResponseEntity> HandlerRequestAsync(string url)

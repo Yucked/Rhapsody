@@ -11,12 +11,6 @@ clone_folder: C:\Projects\Frostbyte
 skip_commits:
   message: /Update/
 
-dotnet_csproj:
-  patch: true
-  file: '**\*.csproj'
-  version: '{version}'
-  package_version: '{version}'
-
 before_build:
   - cmd: dotnet restore
     
