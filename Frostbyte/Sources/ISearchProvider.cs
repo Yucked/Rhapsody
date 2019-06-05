@@ -4,7 +4,7 @@ using Frostbyte.Entities;
 
 namespace Frostbyte.Sources
 {
-    public interface ISearchProvider
+    public interface ISearchProvider : ISourceProvider
     {
         ValueTask<RESTEntity> SearchAsync(
             string query,

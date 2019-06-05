@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
@@ -14,30 +15,28 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Frostbyte.Sources
 {
     [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
-    public sealed class YouTubeSource : BaseSource
+    public sealed class YouTubeSource : ISearchProvider, IStreamProvider
     {
         private const string ID_REGEX = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";
 
-        public override bool IsEnabled
-        {
-            get => ConfigHandler.Config.Sources.YouTube;
-        }
+        public bool IsEnabled => ConfigHandler.Config.Sources.YouTube;
 
-        public override string Prefix
-        {
-            get => "ytsearch";
-        }
+        public string Prefix => "ytsearch";
 
-        public override async ValueTask<RESTEntity> PrepareResponseAsync(string query)
+        public async ValueTask<RESTEntity> SearchAsync(
+            string query,
+            CancellationToken cancellationToken = default)
         {
             var queryUrl = $"https://www.youtube.com/search_ajax?style=json&search_query={WebUtility.UrlEncode(query)}";
-            var bytes = await HttpHandler.Instance.GetBytesAsync(queryUrl).ConfigureAwait(false);
+            var bytes = await HttpHandler.Instance.GetBytesAsync(queryUrl, cancellationToken).ConfigureAwait(false);
             var result = JsonSerializer.Parse<YouTubeResult>(bytes.Span);
             IAudioItem[] tracks = result.Video.Select(x => x.ToTrack).ToArray();
             return new RESTEntity(tracks.Length == 0 ? LoadType.NoMatches : LoadType.SearchResult, tracks);
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(Track track)
+        public ValueTask<Stream> GetStreamAsync(
+            IAudioItem audioItem,
+            CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
         }

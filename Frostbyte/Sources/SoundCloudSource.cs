@@ -20,15 +20,9 @@ namespace Frostbyte.Sources
                              CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
                              REGEX_PATTERN = @"/^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/";
 
-        public override bool IsEnabled
-        {
-            get => ConfigHandler.Config.Sources.Soundcloud;
-        }
+        public override bool IsEnabled => ConfigHandler.Config.Sources.Soundcloud;
 
-        public override string Prefix
-        {
-            get => "scsearch";
-        }
+        public override string Prefix => "scsearch";
 
         public override async ValueTask<RESTEntity> PrepareResponseAsync(string query)
         {
