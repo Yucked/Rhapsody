@@ -8,6 +8,6 @@ namespace Frostbyte.Sources
     {
         ValueTask<Playlist> GetPlaylistAsync(
             string id,
-            CancellationToken cancellationToken = default);
+            CancellationToken token = default);
     }
 }

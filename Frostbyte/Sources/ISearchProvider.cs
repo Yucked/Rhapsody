@@ -8,6 +8,6 @@ namespace Frostbyte.Sources
     {
         ValueTask<RESTEntity> SearchAsync(
             string query,
-            CancellationToken cancellationToken = default);
+            CancellationToken token = default);
     }
 }

@@ -7,9 +7,12 @@ namespace Frostbyte.Entities.Packets
 {
     public sealed class StatisticPacket : BasePacket
     {
-        public StatisticPacket() : base(Operation.Statistics)
+        public StatisticPacket() : base(OperationType.Statistics)
         {
         }
+
+        [JsonPropertyName("cc")]
+        public int ConnectedClients { get; set; }
 
         [JsonPropertyName("pp")]
         public int PlayingPlayers { get; set; }

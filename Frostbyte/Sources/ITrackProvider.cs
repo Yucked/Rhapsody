@@ -10,6 +10,6 @@ namespace Frostbyte.Sources
 
         ValueTask<Track> GetTrackAsync(
             string id,
-            CancellationToken cancellationToken = default);
+            CancellationToken token = default);
     }
 }

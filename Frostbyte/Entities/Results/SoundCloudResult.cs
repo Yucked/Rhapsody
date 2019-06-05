@@ -34,4 +34,10 @@ namespace Frostbyte.Entities.Results
                 Url = PermalinkUrl
             };
     }
+
+    public sealed class SoundCloudDirectUrl
+    {
+        [JsonPropertyName("http_mp3_128_url")]
+        public string Url { get; set; }
+    }
 }

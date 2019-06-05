@@ -60,8 +60,8 @@ namespace Frostbyte.Websocket
         public async Task InitializeAsync(ConfigEntity config)
         {
             _config = config;
-            LogHandler<WsServer>.Log.Information("Security protocol set to TLS11 & TLS12.");
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            LogHandler<WsServer>.Log.Information("Security protocol set to TLS11, TLS12 & TLS13.");
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
 
             _listener.Prefixes.Add(config.Url);
             _listener.Start();
@@ -80,14 +80,14 @@ namespace Frostbyte.Websocket
             var localPath = context.Request.Url.LocalPath;
             var remoteEndPoint = context.Request.RemoteEndPoint;
             var response = new ResponseEntity(false, string.Empty);
-            
+
             switch (localPath)
             {
                 case "/tracks":
                     LogHandler<WsServer>.Log.Debug($"Incoming REST request from {remoteEndPoint}.");
                     if (context.Request.Headers.Get("Password") != _config.Password)
                     {
-                        response.Reason = "Password header doesn't match value specified in configuration.";
+                        response.Reason = "Password header doesn't match value specified in configuration";
                         await context.SendResponseAsync(response).ConfigureAwait(false);
                     }
                     else
@@ -95,7 +95,7 @@ namespace Frostbyte.Websocket
                         var query = context.Request.QueryString.Get("query");
                         if (query is null)
                         {
-                            response.Reason = "Please use the `?query={id}:{YOUR_QUERY} argument after /tracks.";
+                            response.Reason = "Please use the `?query={id}:{YOUR_QUERY} argument after /tracks";
                             await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                         else
@@ -168,9 +168,10 @@ namespace Frostbyte.Websocket
 
                 var stat = new StatisticPacket
                 {
-                    ConnectedPlayers = _clients.Count,
-                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count),
-                    Uptime = (int) (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
+                    ConnectedClients = _clients.Count,
+                    ConnectedPlayers = _clients.Values.Sum(x => x.Guilds.Count),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(x => x.Value.IsPlaying)),
+                    Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
                 var sendTasks = _clients.Select(x => x.Value.SendAsync(stat));

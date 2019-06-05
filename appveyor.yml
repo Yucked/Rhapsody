@@ -8,18 +8,12 @@ pull_requests:
 shallow_clone: true
 clone_folder: C:\Projects\Frostbyte
 
-skip_commits: 
+skip_commits:
   message: /Update/
-
-dotnet_csproj:
-  patch: true
-  file: '**\*.csproj'
-  version: '{version}'
-  package_version: '{version}'
 
 before_build:
   - cmd: dotnet restore
-
+    
 build:
   parallel: true
   verbosity: minimal

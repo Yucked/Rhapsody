@@ -47,14 +47,11 @@ namespace Frostbyte.Handlers
             var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
             var log = $" [{GetLogLevel(logLevel)}] ";
             var formatted = message.LogFormatter(exception);
-            
-            if (ConfigHandler.Config.LogLevel == logLevel && ConfigHandler.Config.LogLevel != LogLevel.None)
-            {
                 Append(date, Color.Gray);
                 Append(log, GetColor(logLevel));
                 Append(message, Color.White);
                 Console.Write(Environment.NewLine);
-            }
+            
 
             var logMessage = $"{date}{log}[{typeof(T).Name}] {formatted}";
             WriteToFile(logMessage);

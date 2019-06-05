@@ -10,15 +10,17 @@ using Frostbyte.Extensions;
 
 namespace Frostbyte.Handlers
 {
-    public sealed class GuildHandler
+    public sealed class GuildHandler : IAsyncDisposable
     {
-        public bool IsPlaying { get; set; }
+        public bool IsPlaying { get; private set; }
+        public event Func<ulong, bool> OnClosed;
 
         private readonly int _shards;
-        private readonly int _baseVolume;
-        private ClientWebSocket _socket;
         private readonly ulong _guildId, _userId;
-        private CancellationTokenSource _heartBeatToken, _receiveToken;
+
+
+        private ClientWebSocket _socket;
+        private CancellationTokenSource _mainToken, _heartBeatToken, _receiveToken;
         private Task _receiveTask, _heartBeatTask;
         private UdpClient UdpClient;
         private VoiceReadyPayload VoiceReadyPayload;
@@ -28,9 +30,9 @@ namespace Frostbyte.Handlers
             _shards = shards;
             _guildId = guildId;
             _userId = userId;
-            _baseVolume = 100;
             _heartBeatToken = new CancellationTokenSource();
             _receiveToken = new CancellationTokenSource();
+            _mainToken = CancellationTokenSource.CreateLinkedTokenSource(_heartBeatToken.Token, _receiveToken.Token);
         }
 
         public async Task HandlePacketAsync(PlayerPacket packet)
@@ -44,6 +46,15 @@ namespace Frostbyte.Handlers
                     break;
 
                 case StopPacket stop:
+                    break;
+
+                case DestroyPacket destroy:
+                    break;
+
+                case SeekPacket seek:
+                    break;
+
+                case EqualizerPacket equalizer:
                     break;
 
                 case VoiceUpdatePacket voiceUpdate:
@@ -80,6 +91,7 @@ namespace Frostbyte.Handlers
             }
             else
             {
+                _receiveToken ??= new CancellationTokenSource();
                 _receiveTask = Task.Run(ReceiveTaskAsync, _receiveToken.Token);
                 var payload = new BasePayload(0, new IdentifyPayload(_guildId, _userId, packet.SessionId, packet.Token));
                 await _socket.SendAsync<GuildHandler>(payload).ConfigureAwait(false);
@@ -179,16 +191,25 @@ namespace Frostbyte.Handlers
         private async Task HandleUdpAsync()
         {
             var packet = new byte[70];
-            packet[0] = (byte) (VoiceReadyPayload.SSRC >> 24);
-            packet[1] = (byte) (VoiceReadyPayload.SSRC >> 16);
-            packet[2] = (byte) (VoiceReadyPayload.SSRC >> 8);
-            packet[3] = (byte) (VoiceReadyPayload.SSRC >> 0);
+            packet[0] = (byte)(VoiceReadyPayload.SSRC >> 24);
+            packet[1] = (byte)(VoiceReadyPayload.SSRC >> 16);
+            packet[2] = (byte)(VoiceReadyPayload.SSRC >> 8);
+            packet[3] = (byte)(VoiceReadyPayload.SSRC >> 0);
             await SendUdpPacketAsync(packet).ConfigureAwait(false);
         }
 
         private Task SendUdpPacketAsync(byte[] data)
         {
             return UdpClient.SendAsync(data, data.Length);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            UdpClient.Close();
+            UdpClient.Dispose();
+            _mainToken.Cancel(false);
+            _heartBeatTask.Dispose();
+            _receiveTask.Dispose();
         }
     }
 }

@@ -6,11 +6,11 @@ namespace Frostbyte.Entities.Packets
     public abstract class BasePacket
     {
         [JsonPropertyName("op")]
-        public Operation Operation { get; set; }
+        public OperationType OperationType { get; set; }
 
-        protected BasePacket(Operation operation)
+        protected BasePacket(OperationType operation)
         {
-            Operation = operation;
+            OperationType = operation;
         }
     }
 }

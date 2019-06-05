@@ -9,6 +9,10 @@ namespace Frostbyte.Sources
     {
         ValueTask<Stream> GetStreamAsync(
             IAudioItem audioItem,
-            CancellationToken cancellationToken = default);
+            CancellationToken token = default);
+        
+        ValueTask<Stream> GetStreamAsync(
+            string id,
+            CancellationToken token = default);
     }
 }

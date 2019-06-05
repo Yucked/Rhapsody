@@ -4,14 +4,14 @@
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Colorful.Console" Version="1.2.9" />
+    <PackageReference Include="CSCore" Version="1.2.1.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.0.0-preview5.19227.9" />
-    <PackageReference Include="NAudio" Version="1.9.0" />
-    <PackageReference Include="System.Text.Formatting" Version="0.1.1-preview2-190117-2" />
-    <PackageReference Include="System.Text.Json" Version="4.6.0-preview7.19302.5" />
+    <PackageReference Include="System.Text.Json" Version="4.6.0-preview6.19259.10" />
     <PackageReference Include="taglib" Version="2.1.0" />
   </ItemGroup>
 

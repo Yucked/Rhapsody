@@ -15,11 +15,16 @@ namespace Frostbyte.Sources
     [Service(ServiceLifetime.Singleton, typeof(ISourceProvider))]
     public sealed class LocalSource : ISearchProvider, IStreamProvider
     {
-        public bool IsEnabled => ConfigHandler.Config.Sources.Local;
+        public bool IsEnabled { get; }
 
         public string Prefix => "lclsearch";
 
-        public async ValueTask<RESTEntity> SearchAsync(string query, CancellationToken cancellationToken = default)
+        public LocalSource(ConfigEntity config)
+        {
+            IsEnabled = config.Sources.EnableLocal;
+        }
+
+        public async ValueTask<RESTEntity> SearchAsync(string query, CancellationToken token = default)
         {
             var response = new RESTEntity();
 
@@ -49,12 +54,17 @@ namespace Frostbyte.Sources
             return response;
         }
 
-        public ValueTask<Stream> GetStreamAsync(IAudioItem audioItem, CancellationToken cancellationToken = default)
+        public ValueTask<Stream> GetStreamAsync(IAudioItem audioItem, CancellationToken token = default)
         {
             throw new System.NotImplementedException();
         }
 
-        private static Track BuildTrack(string filePath)
+        public ValueTask<Stream> GetStreamAsync(string id, CancellationToken token = default)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        private Track BuildTrack(string filePath)
         {
             using var file = TagLib.File.Create(filePath);
             var track = new Track
@@ -62,7 +72,7 @@ namespace Frostbyte.Sources
                 Id = file.Name,
                 Title = file.Tag.Title,
                 Author = new Author(file.Tag.FirstAlbumArtist),
-                TrackLength = (int) file.Properties.Duration.TotalMilliseconds
+                TrackLength = (int)file.Properties.Duration.TotalMilliseconds
             };
 
             return track;

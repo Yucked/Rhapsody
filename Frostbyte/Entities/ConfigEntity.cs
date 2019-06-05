@@ -8,8 +8,9 @@ namespace Frostbyte.Entities
         public int Port { get; set; }
         public string Host { get; set; }
         public string Password { get; set; }
-        public SourcesEntity Sources { get; set; }
         public LogLevel LogLevel { get; set; }
+        public MediaSources Sources { get; set; }
+        public RatelimitPolicy RatelimitPolicy { get; set; }
 
         [JsonIgnore]
         internal string Url

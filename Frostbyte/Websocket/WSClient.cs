@@ -19,7 +19,7 @@ namespace Frostbyte.Websocket
         private readonly IPEndPoint _endPoint;
 
         public event Func<IPEndPoint, ulong, Task> OnClosed;
-        public ConcurrentDictionary<ulong, GuildHandler> Guilds { get; }
+        public ConcurrentDictionary<ulong, GuildHandler> Guilds { get; private set; }
 
         public WsClient(WebSocketContext socketContext, ulong userId, int shards, IPEndPoint endPoint)
         {
@@ -47,6 +47,7 @@ namespace Frostbyte.Websocket
                         case WebSocketMessageType.Text:
                             var packet = JsonSerializer.Parse<PlayerPacket>(memory.Span);
                             var guild = Guilds[packet.GuildId] ??= new GuildHandler(packet.GuildId, _userId, _shards);
+                            guild.OnClosed += OnGuildClosed;
                             await guild.HandlePacketAsync(packet).ConfigureAwait(false);
                             break;
                     }
@@ -64,6 +65,13 @@ namespace Frostbyte.Websocket
             }
         }
 
+        private bool OnGuildClosed(ulong guildId)
+        {
+            Guilds.TryRemove(guildId, out var guild);
+            guild.DisposeAsync().ConfigureAwait(false);
+            return true;
+        }
+
         public async Task SendAsync(object @object)
         {
             await _socket.SendAsync<WsClient>(@object).ConfigureAwait(false);
@@ -71,6 +79,13 @@ namespace Frostbyte.Websocket
 
         public async ValueTask DisposeAsync()
         {
+            foreach (var (key, value) in Guilds)
+            {
+                await value.DisposeAsync().ConfigureAwait(false);
+                Guilds.TryRemove(key, out _);
+            }
+            Guilds.Clear();
+            Guilds = null;
             await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
             _socket.Dispose();
         }
