@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Entities.Results
 {
@@ -22,6 +23,12 @@ namespace Frostbyte.Entities.Results
 
         [JsonPropertyName("likes")]
         public long Likes { get; set; }
+        
+        [JsonPropertyName("dislikes")]
+        public long Dislikes { get; set; }
+        
+        [JsonPropertyName("comments")]
+        public long Comments { get; set; }
 
         [JsonPropertyName("title")]
         public string Title { get; set; }
@@ -33,11 +40,11 @@ namespace Frostbyte.Entities.Results
         public string Views { get; set; }
 
         [JsonIgnore]
-        public TrackEntity ToTrack
-            => new TrackEntity
+        public Track ToTrack
+            => new Track
             {
                 Id = EncryptedId,
-                Author = Author,
+                Author = new Author(Author),
                 ThumbnailUrl = $"https://img.youtube.com/vi/{EncryptedId}/maxresdefault.jpg",
                 Title = Title,
                 TrackLength = LengthSeconds,

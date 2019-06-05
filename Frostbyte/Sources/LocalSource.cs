@@ -1,26 +1,30 @@
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
+using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton, typeof(ISource))]
-    public sealed class LocalSource : ISource
+    [Service(ServiceLifetime.Singleton, typeof(ISourceProvider))]
+    public sealed class LocalSource : ISearchProvider, IStreamProvider
     {
-        public string Prefix { get; }
         public bool IsEnabled { get; }
+
+        public string Prefix => "lclsearch";
 
         public LocalSource(ConfigEntity config)
         {
-            Prefix = "lclsearch";
             IsEnabled = config.Sources.EnableLocal;
         }
 
-        public ValueTask<RESTEntity> PrepareResponseAsync(string query)
+        public async ValueTask<RESTEntity> SearchAsync(string query, CancellationToken token = default)
         {
             var response = new RESTEntity();
 
@@ -29,13 +33,13 @@ namespace Frostbyte.Sources
                 var files = Directory.EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories).ToArray();
                 if (files.Length < 1)
                 {
-                    return new ValueTask<RESTEntity>(response);
+                    return response;
                 }
 
                 foreach (var file in files)
                 {
                     var track = BuildTrack(file);
-                    response.Tracks.Add(track);
+                    response.AudioItems.Add(track);
                 }
 
                 response.LoadType = LoadType.SearchResult;
@@ -43,31 +47,31 @@ namespace Frostbyte.Sources
             else
             {
                 var track = BuildTrack(query);
-                response.Tracks.Add(track);
+                response.AudioItems.Add(track);
                 response.LoadType = LoadType.TrackLoaded;
             }
 
-            return new ValueTask<RESTEntity>(response);
+            return response;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(TrackEntity track)
+        public ValueTask<Stream> GetStreamAsync(IAudioItem audioItem, CancellationToken token = default)
         {
             throw new System.NotImplementedException();
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string id)
+        public ValueTask<Stream> GetStreamAsync(string id, CancellationToken token = default)
         {
             throw new System.NotImplementedException();
         }
 
-        private TrackEntity BuildTrack(string filePath)
+        private Track BuildTrack(string filePath)
         {
             using var file = TagLib.File.Create(filePath);
-            var track = new TrackEntity
+            var track = new Track
             {
                 Id = file.Name,
                 Title = file.Tag.Title,
-                Author = file.Tag.FirstAlbumArtist,
+                Author = new Author(file.Tag.FirstAlbumArtist),
                 TrackLength = (int)file.Properties.Duration.TotalMilliseconds
             };
 

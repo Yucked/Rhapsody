@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Audio;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,13 +15,13 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class SourceHandler
     {
-        private readonly IEnumerable<ISource> _sources;
-        public ConcurrentDictionary<string, TrackEntity> Tracks { get; }
+        private readonly IEnumerable<ISourceProvider> _sources;
+        public ConcurrentDictionary<string, Track> Tracks { get; }
 
         public SourceHandler(IServiceProvider provider)
         {
-            _sources = provider.GetServices(typeof(ISource)).Cast<ISource>();
-            Tracks = new ConcurrentDictionary<string, TrackEntity>();
+            _sources = provider.GetServices<ISourceProvider>();
+            Tracks = new ConcurrentDictionary<string, Track>();
         }
 
         public async Task<ResponseEntity> HandlerRequestAsync(string url)
@@ -36,12 +37,20 @@ namespace Frostbyte.Handlers
                 return response;
 
             response.IsSuccess = true;
-            response.AdditionObject = await source.PrepareResponseAsync(query).ConfigureAwait(false);
+            response.AdditionObject = source switch
+            {
+                ISearchProvider searchProvider => await searchProvider.SearchAsync(query)
+                    .ConfigureAwait(false),
+//                ITrackProvider trackProvider => await trackProvider.GetTrackAsync(query)
+//                    .ConfigureAwait(false),
+//                IPlaylistProvider playlistProvider => await playlistProvider.GetPlaylistAsync(query)
+//                    .ConfigureAwait(false)
+            };
 
             _ = Task.Run(() =>
             {
                 var rest = response.AdditionObject.TryCast<RESTEntity>();
-                foreach (var track in rest.Tracks)
+                foreach (var track in rest.AudioItems.Where(iAudioItem => iAudioItem is Track).Cast<Track>())
                 {
                     if (Tracks.ContainsKey(track.Id))
                         continue;

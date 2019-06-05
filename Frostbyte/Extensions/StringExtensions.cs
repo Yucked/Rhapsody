@@ -38,5 +38,8 @@ namespace Frostbyte.Extensions
                 "lcl"   => "Local"
             };
         }
+
+        public static Regex ToRegex(this string str) 
+            => new Regex(str, RegexOptions.Compiled | RegexOptions.IgnoreCase);
     }
 }
