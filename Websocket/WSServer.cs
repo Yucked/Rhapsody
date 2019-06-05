@@ -22,13 +22,12 @@ namespace Frostbyte.Websocket
         private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _receiveTokens;
         private readonly SourceHandler _sourceHandler;
-        private readonly RatelimitHandler _rateLimitHandler;
 
         private ConfigEntity _config;
         private CancellationTokenSource _receiveCancellation;
         private Task _statsSenderTask;
 
-        public WsServer(SourceHandler sourceHandler, RatelimitHandler rateLimitHandler)
+        public WsServer(SourceHandler sourceHandler)
         {
             _listener = new HttpListener();
             _clients = new ConcurrentDictionary<ulong, WsClient>();
@@ -37,7 +36,6 @@ namespace Frostbyte.Websocket
             _statsCancellation = new CancellationTokenSource();
             _mainCancellation = CancellationTokenSource.CreateLinkedTokenSource(_wsCancellation.Token, _statsCancellation.Token);
             _sourceHandler = sourceHandler;
-            _rateLimitHandler = rateLimitHandler;
         }
 
         public async ValueTask DisposeAsync()
@@ -170,8 +168,9 @@ namespace Frostbyte.Websocket
 
                 var stat = new StatisticPacket
                 {
-                    ConnectedPlayers = _clients.Count,
-                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count),
+                    ConnectedClients = _clients.Count,
+                    ConnectedPlayers = _clients.Values.Sum(x => x.Guilds.Count),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(x => x.Value.IsPlaying)),
                     Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
