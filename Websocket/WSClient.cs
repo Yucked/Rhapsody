@@ -47,6 +47,7 @@ namespace Frostbyte.Websocket
                         case WebSocketMessageType.Text:
                             var packet = JsonSerializer.Parse<PlayerPacket>(memory.Span);
                             var guild = Guilds[packet.GuildId] ??= new GuildHandler(packet.GuildId, _userId, _shards);
+                            guild.OnClosed += OnGuildClosed;
                             await guild.HandlePacketAsync(packet).ConfigureAwait(false);
                             break;
                     }
@@ -62,6 +63,13 @@ namespace Frostbyte.Websocket
                 await DisposeAsync().ConfigureAwait(false);
                 OnClosed?.Invoke(_endPoint, _userId);
             }
+        }
+
+        private bool OnGuildClosed(ulong guildId)
+        {
+            Guilds.TryRemove(guildId, out var guild);
+            guild.DisposeAsync().ConfigureAwait(false);
+            return true;
         }
 
         public async Task SendAsync(object @object)
