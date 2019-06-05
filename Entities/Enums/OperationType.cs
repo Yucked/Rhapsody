@@ -2,7 +2,7 @@ using System.Runtime.Serialization;
 
 namespace Frostbyte.Entities.Enums
 {
-    public enum Operation
+    public enum OperationType
     {
         [EnumMember(Value = "VoiceUpdate")]
         VoiceUpdate = 11,

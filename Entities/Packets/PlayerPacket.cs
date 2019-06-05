@@ -8,7 +8,7 @@ namespace Frostbyte.Entities.Packets
         [JsonPropertyName("g_id")]
         public ulong GuildId { get; }
 
-        protected PlayerPacket(ulong guildId, Operation operation) : base(operation)
+        protected PlayerPacket(ulong guildId, OperationType operation) : base(operation)
         {
             GuildId = guildId;
         }

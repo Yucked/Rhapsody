@@ -14,7 +14,7 @@ namespace Frostbyte.Entities.Packets
         [JsonPropertyName("ep")]
         public string EndPoint { get; set; }
 
-        public VoiceUpdatePacket(ulong guildId) : base(guildId, Operation.VoiceUpdate)
+        public VoiceUpdatePacket(ulong guildId) : base(guildId, OperationType.VoiceUpdate)
         {
         }
     }

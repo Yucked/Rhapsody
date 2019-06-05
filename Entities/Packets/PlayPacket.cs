@@ -14,7 +14,7 @@ namespace Frostbyte.Entities.Packets
         [JsonPropertyName("endTime")]
         public int EndTime { get; set; }
 
-        public PlayPacket(ulong guildId) : base(guildId, Operation.Play)
+        public PlayPacket(ulong guildId) : base(guildId, OperationType.Play)
         {
             
         }
