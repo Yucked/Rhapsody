@@ -17,8 +17,6 @@ namespace Frostbyte.Sources
     {
         public string Prefix { get; }
         public bool IsEnabled { get; }
-        private const string ID_REGEX
-            = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";
 
         public YouTubeSource(ConfigEntity config)
         {

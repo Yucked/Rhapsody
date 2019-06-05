@@ -18,9 +18,7 @@ namespace Frostbyte.Sources
     {
         public string Prefix { get; }
         public bool IsEnabled { get; }
-        private const string BASE_URL = "https://api.soundcloud.com",
-                     CLIENT_ID = "client_id=a3dd183a357fcff9a6943c0d65664087",
-                     REGEX_PATTERN = @"/^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/";
+        private const string BASE_URL = "https://api.soundcloud.com";
 
         public SoundCloudSource(ConfigEntity config)
         {
@@ -31,9 +29,9 @@ namespace Frostbyte.Sources
         public async ValueTask<RESTEntity> PrepareResponseAsync(string query)
         {
             var response = new RESTEntity();
-            if (query.IsMatch(REGEX_PATTERN))
+            if (query.IsMatch(Constants.PATTERN_URL_SOUNDCLOUD))
             {
-                query = $"{BASE_URL}/resolve?url={query}&{CLIENT_ID}";
+                query = $"{BASE_URL}/resolve?url={query}&client_id={Constants.CLIENT_ID_SOUNDCLOUD}";
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
                 response.Tracks.Add(result.ToTrack);
@@ -41,7 +39,7 @@ namespace Frostbyte.Sources
             }
             else
             {
-                query = $"{BASE_URL}/tracks?q={query}&{CLIENT_ID}";
+                query = $"{BASE_URL}/tracks?q={query}&client_id={Constants.CLIENT_ID_SOUNDCLOUD}";
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<IList<SoundCloudTrack>>(bytes.Span);
                 var tracks = result.Select(x => x.ToTrack).ToArray();
@@ -59,10 +57,17 @@ namespace Frostbyte.Sources
 
         public async ValueTask<Stream> GetStreamAsync(string id)
         {
-            var bytes = await HttpHandler.Instance.GetBytesAsync($"{BASE_URL}/tracks/stream?{CLIENT_ID}").ConfigureAwait(false);
+            var bytes = await HttpHandler.Instance.GetBytesAsync($"{BASE_URL}/tracks/stream?client_id={Constants.CLIENT_ID_SOUNDCLOUD}")
+                                         .ConfigureAwait(false);
             var read = JsonSerializer.Parse<SoundCloudDirectUrl>(bytes.Span);
             var stream = await HttpHandler.Instance.GetStreamAsync(read.Url).ConfigureAwait(false);
             return stream;
+        }
+
+        private async Task FetchClientId()
+        {
+            var raw= await HttpHandler.Instance.GetStringAsync("https://soundcloud.com").ConfigureAwait(false);
+            raw.IsMatch(Constants.PATTERN_SOUNDCLOUD_SCRIPT);
         }
     }
 }
