@@ -8,7 +8,6 @@ using Frostbyte.Entities;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
 using Microsoft.Extensions.DependencyInjection;
-using TagLib.Matroska;
 
 namespace Frostbyte.Handlers
 {
@@ -37,13 +36,7 @@ namespace Frostbyte.Handlers
                 return response;
 
             response.IsSuccess = true;
-            response.AdditionObject = source switch
-            {
-                YouTubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),
-                SoundCloudSource sc => await sc.PrepareResponseAsync(query).ConfigureAwait(false),
-                LocalSource lc      => await lc.PrepareResponseAsync(query).ConfigureAwait(false),
-                TwitchSource tw => await tw.PrepareResponseAsync(query).ConfigureAwait(false)
-            };
+            response.AdditionObject = await source.PrepareResponseAsync(query).ConfigureAwait(false);
 
             _ = Task.Run(() =>
             {
@@ -56,7 +49,7 @@ namespace Frostbyte.Handlers
                     Tracks.TryAdd(track.Id, track);
                 }
             }).ConfigureAwait(false);
-            
+
             return response;
         }
     }
