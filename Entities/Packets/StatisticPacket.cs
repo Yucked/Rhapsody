@@ -11,6 +11,9 @@ namespace Frostbyte.Entities.Packets
         {
         }
 
+        [JsonPropertyName("cc")]
+        public int ConnectedClients { get; set; }
+
         [JsonPropertyName("pp")]
         public int PlayingPlayers { get; set; }
 
