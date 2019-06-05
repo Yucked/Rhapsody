@@ -5,14 +5,17 @@ namespace Frostbyte.Entities.Packets
 {
     public sealed class PlayPacket : PlayerPacket
     {
-        [JsonPropertyName("track")]
-        public string Hash { get; set; }
+        [JsonPropertyName("q")]
+        public string Query { get; set; }
 
-        [JsonPropertyName("startTime")]
+        [JsonPropertyName("sTime")]
         public int StartTime { get; set; }
 
-        [JsonPropertyName("endTime")]
+        [JsonPropertyName("eTime")]
         public int EndTime { get; set; }
+
+        [JsonPropertyName("sr")]
+        public bool ShouldReplace { get; set; }
 
         public PlayPacket(ulong guildId) : base(guildId, OperationType.Play)
         {
