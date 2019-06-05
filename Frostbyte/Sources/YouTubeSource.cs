@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton)]
+    [Service(ServiceLifetime.Singleton, typeof(ISourceProvider))]
     public sealed class YouTubeSource : ISearchProvider, IStreamProvider
     {
         private const string ID_REGEX = @"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^""&?\/ ]{11})";

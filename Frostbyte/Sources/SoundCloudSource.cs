@@ -15,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton)]
+    [Service(ServiceLifetime.Singleton, typeof(ISourceProvider))]
     public sealed class SoundCloudSource : ISearchProvider, IStreamProvider
     {
         private const string BASE_URL = "https://api.soundcloud.com",

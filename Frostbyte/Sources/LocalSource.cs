@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton)]
+    [Service(ServiceLifetime.Singleton, typeof(ISourceProvider))]
     public sealed class LocalSource : ISearchProvider, IStreamProvider
     {
         public bool IsEnabled => ConfigHandler.Config.Sources.Local;
