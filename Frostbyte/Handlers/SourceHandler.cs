@@ -13,11 +13,11 @@ namespace Frostbyte.Handlers
     [Service(ServiceLifetime.Singleton)]
     public sealed class SourceHandler
     {
-        private readonly IEnumerable<BaseSource> _sources;
+        private readonly IEnumerable<ISourceProvider> _sources;
 
         public SourceHandler(IServiceProvider provider)
         {
-            _sources = provider.GetServices(typeof(BaseSource)).Cast<BaseSource>();
+            _sources = provider.GetServices<ISourceProvider>();
         }
 
         public async Task<ResponseEntity> HandlerRequestAsync(string url)
@@ -34,9 +34,12 @@ namespace Frostbyte.Handlers
             response.IsSuccess = true;
             response.AdditionObject = source switch
             {
-                YouTubeSource yt    => await yt.PrepareResponseAsync(query).ConfigureAwait(false),
-                SoundCloudSource sc => await sc.PrepareResponseAsync(query).ConfigureAwait(false),
-                LocalSource lc      => await lc.PrepareResponseAsync(query).ConfigureAwait(false)
+                ISearchProvider searchProvider => await searchProvider.SearchAsync(query)
+                    .ConfigureAwait(false),
+//                ITrackProvider trackProvider => await trackProvider.GetTrackAsync(query)
+//                    .ConfigureAwait(false),
+//                IPlaylistProvider playlistProvider => await playlistProvider.GetPlaylistAsync(query)
+//                    .ConfigureAwait(false)
             };
 
             return response;

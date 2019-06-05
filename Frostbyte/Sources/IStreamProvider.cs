@@ -1,15 +1,14 @@
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Sources
 {
-    public interface ITrackProvider : ISourceProvider
+    public interface IStreamProvider : ISourceProvider
     {
-        bool ValidateTrack(string id);
-
-        ValueTask<Track> GetTrackAsync(
-            string id,
+        ValueTask<Stream> GetStreamAsync(
+            IAudioItem audioItem,
             CancellationToken cancellationToken = default);
     }
 }

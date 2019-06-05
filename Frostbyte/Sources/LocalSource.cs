@@ -1,5 +1,7 @@
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
@@ -10,20 +12,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton, typeof(BaseSource))]
-    public sealed class LocalSource : BaseSource
+    [Service(ServiceLifetime.Singleton)]
+    public sealed class LocalSource : ISearchProvider, IStreamProvider
     {
-        public override bool IsEnabled
-        {
-            get => ConfigHandler.Config.Sources.Local;
-        }
+        public bool IsEnabled => ConfigHandler.Config.Sources.Local;
 
-        public override string Prefix
-        {
-            get => "lclsearch";
-        }
+        public string Prefix => "lclsearch";
 
-        public override async ValueTask<RESTEntity> PrepareResponseAsync(string query)
+        public async ValueTask<RESTEntity> SearchAsync(string query, CancellationToken cancellationToken = default)
         {
             var response = new RESTEntity();
 
@@ -53,12 +49,12 @@ namespace Frostbyte.Sources
             return response;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(Track track)
+        public ValueTask<Stream> GetStreamAsync(IAudioItem audioItem, CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
         }
 
-        private Track BuildTrack(string filePath)
+        private static Track BuildTrack(string filePath)
         {
             using var file = TagLib.File.Create(filePath);
             var track = new Track

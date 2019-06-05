@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Frostbyte.Handlers
@@ -28,18 +29,19 @@ namespace Frostbyte.Handlers
             _client.DefaultRequestHeaders.Add("User-Agent", "Frostbyte");
         }
 
-        public async ValueTask<ReadOnlyMemory<byte>> GetBytesAsync(string url)
+        public async ValueTask<ReadOnlyMemory<byte>> GetBytesAsync(string url, CancellationToken cancellationToken = default)
         {
             CheckClient();
 
-            var get = await _client.GetAsync(url).ConfigureAwait(false);
+            var get = await _client.GetAsync(url, cancellationToken).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
                 return default;
 
             using var content = get.Content;
             await using var readStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             await using var memStream = new MemoryStream();
-            await readStream.CopyToAsync(memStream).ConfigureAwait(false);
+            await readStream.CopyToAsync(memStream, cancellationToken).ConfigureAwait(false);
             return memStream.ToArray();
         }
 

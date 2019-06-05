@@ -23,6 +23,12 @@ namespace Frostbyte.Entities.Results
 
         [JsonPropertyName("likes")]
         public long Likes { get; set; }
+        
+        [JsonPropertyName("dislikes")]
+        public long Dislikes { get; set; }
+        
+        [JsonPropertyName("comments")]
+        public long Comments { get; set; }
 
         [JsonPropertyName("title")]
         public string Title { get; set; }

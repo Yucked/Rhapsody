@@ -4,7 +4,7 @@ using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Sources
 {
-    public interface IPlaylistProvider
+    public interface IPlaylistProvider : ISourceProvider 
     {
         ValueTask<Playlist> GetPlaylistAsync(
             string id,

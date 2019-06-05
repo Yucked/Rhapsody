@@ -15,16 +15,16 @@ namespace Frostbyte.Tests
     [TestClass]
     public class SourceTests
     {
-        private readonly BaseSource _youTube = new YouTubeSource();
-        private readonly BaseSource _soundCloud = new SoundCloudSource();
+        private readonly ISearchProvider _youTube = new YouTubeSource();
+        private readonly ISearchProvider _soundCloud = new SoundCloudSource();
 
         [TestMethod]
         public async Task TestYouTube() 
-            => CheckRestResult(await _youTube.PrepareResponseAsync("Test"));
+            => CheckRestResult(await _youTube.SearchAsync("Test"));
         
         [TestMethod]
         public async Task TestSoundCloud() 
-            => CheckRestResult(await _soundCloud.PrepareResponseAsync("Test"));
+            => CheckRestResult(await _soundCloud.SearchAsync("Test"));
 
         private static void CheckRestResult(RESTEntity result)
         {
