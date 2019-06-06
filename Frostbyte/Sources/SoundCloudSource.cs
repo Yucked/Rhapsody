@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
@@ -42,11 +42,12 @@ namespace Frostbyte.Sources
                 query = $"{BASE_URL}/tracks?q={query}&client_id={Constants.CLIENT_ID_SOUNDCLOUD}";
                 var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
                 var result = JsonSerializer.Parse<IList<SoundCloudTrack>>(bytes.Span);
-                var tracks = result.Select(x => x.ToTrack).ToArray();                
+                var tracks = result.Select(x => x.ToTrack).ToArray();
                 response.AudioItems = tracks;
                 response.LoadType = LoadType.SearchResult;
             }
 
+            AddToCache(response.AudioItems);
             return response;
         }
 
@@ -62,7 +63,7 @@ namespace Frostbyte.Sources
 
         public async ValueTask<Stream> GetStreamAsync(string id)
         {
-            var bytes = await HttpHandler.Instance.GetBytesAsync($"{BASE_URL}/tracks/stream?client_id={Constants.CLIENT_ID_SOUNDCLOUD}")
+            var bytes = await HttpHandler.Instance.GetBytesAsync($"{BASE_URL}/tracks/{id}/stream?client_id={Constants.CLIENT_ID_SOUNDCLOUD}")
                                          .ConfigureAwait(false);
             var read = JsonSerializer.Parse<SoundCloudDirectUrl>(bytes.Span);
             var stream = await HttpHandler.Instance.GetStreamAsync(read.Url).ConfigureAwait(false);

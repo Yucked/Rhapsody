@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
@@ -25,23 +25,12 @@ namespace Frostbyte.Sources
             IsEnabled = config.Sources.EnableYouTube;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(Track track)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public async ValueTask<Stream> GetStreamAsync(string id)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public async ValueTask<RESTEntity> SearchAsync(string query)
         {
             var queryUrl = $"https://www.youtube.com/search_ajax?style=json&search_query={WebUtility.UrlEncode(query)}";
             var bytes = await HttpHandler.Instance.GetBytesAsync(queryUrl).ConfigureAwait(false);
             var result = JsonSerializer.Parse<YouTubeResult>(bytes.Span);
             var tracks = result.Video.Select(x => x.ToTrack).ToArray();
-            AddToCache(tracks);
             return new RESTEntity(tracks.Length == 0 ? LoadType.NoMatches : LoadType.SearchResult, tracks);
         }
 
@@ -53,6 +42,16 @@ namespace Frostbyte.Sources
             }
 
             return default;
+        }
+
+        public async ValueTask<Stream> GetStreamAsync(Track track)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public async ValueTask<Stream> GetStreamAsync(string id)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

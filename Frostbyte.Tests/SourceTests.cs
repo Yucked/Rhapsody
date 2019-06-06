@@ -15,7 +15,7 @@ namespace Frostbyte.Tests
     [TestClass]
     public class SourceTests
     {
-        private static readonly ConfigEntity Config = new ConfigEntity()
+        private static readonly Configuration Config = new Configuration()
         {
             Sources = new MediaSources()
             {
@@ -24,8 +24,8 @@ namespace Frostbyte.Tests
             }
         };
         
-        private readonly ISearchProvider _youTube = new YouTubeSource(Config);
-        private readonly ISearchProvider _soundCloud = new SoundCloudSource(Config);
+        private readonly ISourceProvider _youTube = new YouTubeSource(Config);
+        private readonly ISourceProvider _soundCloud = new SoundCloudSource(Config);
 
         [TestMethod]
         public async Task TestYouTube() 

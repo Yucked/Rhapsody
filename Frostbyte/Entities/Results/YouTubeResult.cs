@@ -21,14 +21,14 @@ namespace Frostbyte.Entities.Results
         [JsonPropertyName("author")]
         public string Author { get; set; }
 
-        [JsonPropertyName("likes")]
-        public long Likes { get; set; }
+        //[JsonPropertyName("likes")]
+        //public long Likes { get; set; }
         
-        [JsonPropertyName("dislikes")]
-        public long Dislikes { get; set; }
+        //[JsonPropertyName("dislikes")]
+        //public long Dislikes { get; set; }
         
-        [JsonPropertyName("comments")]
-        public long Comments { get; set; }
+        //[JsonPropertyName("comments")]
+        //public long Comments { get; set; }
 
         [JsonPropertyName("title")]
         public string Title { get; set; }
@@ -36,8 +36,8 @@ namespace Frostbyte.Entities.Results
         [JsonPropertyName("length_seconds")]
         public long LengthSeconds { get; set; }
 
-        [JsonPropertyName("views")]
-        public string Views { get; set; }
+        //[JsonPropertyName("views")]
+        //public string Views { get; set; }
 
         [JsonIgnore]
         public Track ToTrack

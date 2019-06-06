@@ -9,7 +9,7 @@ using Frostbyte.Entities.Enums;
 namespace Frostbyte.Sources
 {
     [RegisterService(typeof(ISourceProvider))]
-    public sealed class LocalSource : ISourceProvider
+    public sealed class LocalSource : SourceCache, ISourceProvider
     {
         public string Prefix { get; }
         public bool IsEnabled { get; }
@@ -47,6 +47,7 @@ namespace Frostbyte.Sources
                 response.LoadType = LoadType.TrackLoaded;
             }
 
+            AddToCache(response.AudioItems);
             return new ValueTask<RESTEntity>(response);
         }
 

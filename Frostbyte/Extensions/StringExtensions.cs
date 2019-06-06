@@ -39,7 +39,7 @@ namespace Frostbyte.Extensions
             };
         }
 
-        public static Regex ToRegex(this string str) 
+        public static Regex ToRegex(this string str)
             => new Regex(str, RegexOptions.Compiled | RegexOptions.IgnoreCase);
     }
 }

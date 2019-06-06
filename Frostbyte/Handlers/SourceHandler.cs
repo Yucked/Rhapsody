@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
-using Frostbyte.Entities.Audio;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +33,7 @@ namespace Frostbyte.Handlers
                 return response;
 
             response.IsSuccess = true;
-            response.AdditionObject = null;
+            response.AdditionObject = await source.SearchAsync(query).ConfigureAwait(false);
 
             return response;
         }
