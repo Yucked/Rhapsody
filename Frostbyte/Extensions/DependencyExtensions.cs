@@ -1,6 +1,7 @@
 ﻿using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
+using Frostbyte.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using System.Linq;
@@ -16,68 +17,41 @@ namespace Frostbyte.Extensions
         /// </summary>
         public static IServiceCollection AddAttributeServices(this IServiceCollection services)
         {
-            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<ServiceAttribute>() != null).ToArray();
+            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<RegisterServiceAttribute>() != null).ToArray();
 
             if (matches.Length is 0)
                 return services;
 
             foreach (var match in matches)
             {
-                var attr = match.GetCustomAttribute<ServiceAttribute>();
-                switch (attr.Lifetime)
+                var attr = match.GetCustomAttribute<RegisterServiceAttribute>();
+                if (attr.BaseType != null)
                 {
-                    case ServiceLifetime.Scoped:
-                        if (attr.BaseType != null)
-                        {
-                            services.AddScoped(attr.BaseType, match);
-                        }
-                        else
-                        {
-                            services.AddScoped(match);
-                        }
-
-                        break;
-
-                    case ServiceLifetime.Singleton:
-                        if (attr.BaseType != null)
-                        {
-                            services.AddSingleton(attr.BaseType, match);
-                        }
-                        else
-                        {
-                            services.AddSingleton(match);
-                        }
-
-                        break;
-
-                    case ServiceLifetime.Transient:
-                        if (attr.BaseType != null)
-                        {
-                            services.AddTransient(attr.BaseType, match);
-                        }
-                        else
-                        {
-                            services.AddTransient(match);
-                        }
-
-                        break;
+                    services.AddSingleton(attr.BaseType, match);
                 }
+                else
+                {
+                    services.AddSingleton(match);
+                }
+
+                LogHandler<IServiceCollection>.Log.Debug($"Added {match.Name} as Singleton" +
+                    (attr.BaseType != null ? $" with {attr.BaseType.Name} as ServiceType." : "."));
             }
 
             return services;
         }
 
         /// <summary>
-        /// Adds <see cref="ConfigEntity"/> to <paramref name="services"/>.
+        /// Adds <see cref="Configuration"/> to <paramref name="services"/>.
         /// </summary>
         /// <param name="config">Replaces the existing config.</param>
         /// <returns></returns>
-        public static IServiceCollection AddConfiguration(this IServiceCollection services, ConfigEntity config = default)
+        public static IServiceCollection AddConfiguration(this IServiceCollection services, Configuration config = default)
         {
             if (config == default && File.Exists("./Config.json"))
             {
                 var read = File.ReadAllBytes("./Config.json");
-                config = JsonSerializer.Parse<ConfigEntity>(read);
+                config = JsonSerializer.Parse<Configuration>(read);
             }
             else if (config != default && !File.Exists("./Config.json"))
             {
@@ -85,7 +59,7 @@ namespace Frostbyte.Extensions
             }
             else
             {
-                config = new ConfigEntity
+                config = new Configuration
                 {
                     Host = "127.0.0.1",
                     Port = 6666,

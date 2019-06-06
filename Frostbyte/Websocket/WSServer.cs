@@ -1,7 +1,6 @@
 ﻿using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Handlers;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ using Frostbyte.Extensions;
 
 namespace Frostbyte.Websocket
 {
-    [Service(ServiceLifetime.Singleton)]
+    [RegisterService]
     public sealed class WsServer : IAsyncDisposable
     {
         private readonly ConcurrentDictionary<ulong, WsClient> _clients;
@@ -23,7 +22,7 @@ namespace Frostbyte.Websocket
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _receiveTokens;
         private readonly SourceHandler _sourceHandler;
 
-        private ConfigEntity _config;
+        private Configuration _config;
         private CancellationTokenSource _receiveCancellation;
         private Task _statsSenderTask;
 
@@ -57,7 +56,7 @@ namespace Frostbyte.Websocket
             _statsSenderTask.Dispose();
         }
 
-        public async Task InitializeAsync(ConfigEntity config)
+        public async Task InitializeAsync(Configuration config)
         {
             _config = config;
             LogHandler<WsServer>.Log.Information("Security protocol set to TLS11, TLS12 & TLS13.");

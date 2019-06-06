@@ -1,30 +1,26 @@
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Handlers;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Sources
 {
-    [Service(ServiceLifetime.Singleton, typeof(ISourceProvider))]
-    public sealed class LocalSource : ISearchProvider, IStreamProvider
+    [RegisterService(typeof(ISourceProvider))]
+    public sealed class LocalSource : ISourceProvider
     {
+        public string Prefix { get; }
         public bool IsEnabled { get; }
 
-        public string Prefix => "lclsearch";
-
-        public LocalSource(ConfigEntity config)
+        public LocalSource(Configuration config)
         {
+            Prefix = "lclsearch";
             IsEnabled = config.Sources.EnableLocal;
         }
 
-        public async ValueTask<RESTEntity> SearchAsync(string query, CancellationToken token = default)
+        public ValueTask<RESTEntity> SearchAsync(string query)
         {
             var response = new RESTEntity();
 
@@ -33,7 +29,7 @@ namespace Frostbyte.Sources
                 var files = Directory.EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories).ToArray();
                 if (files.Length < 1)
                 {
-                    return response;
+                    return new ValueTask<RESTEntity>(response);
                 }
 
                 foreach (var file in files)
@@ -51,15 +47,21 @@ namespace Frostbyte.Sources
                 response.LoadType = LoadType.TrackLoaded;
             }
 
-            return response;
+            return new ValueTask<RESTEntity>(response);
         }
 
-        public ValueTask<Stream> GetStreamAsync(IAudioItem audioItem, CancellationToken token = default)
+        public ValueTask<Track> GetTrackAsync(string id)
         {
             throw new System.NotImplementedException();
         }
 
-        public ValueTask<Stream> GetStreamAsync(string id, CancellationToken token = default)
+
+        public ValueTask<Stream> GetStreamAsync(string id)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public ValueTask<Stream> GetStreamAsync(Track track)
         {
             throw new System.NotImplementedException();
         }

@@ -1,33 +1,39 @@
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
+using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Sources
 {
-    public sealed class TwitchSource : ISearchProvider, IStreamProvider
+    [RegisterService(typeof(ISourceProvider))]
+    public sealed class TwitchSource : ISourceProvider
     {
-        public string Prefix => "twsearch";
-
+        public string Prefix { get; }
         public bool IsEnabled { get; }
 
-        public TwitchSource(ConfigEntity config)
+        public TwitchSource(Configuration config)
         {
+            Prefix = "twsearch";
             IsEnabled = config.Sources.EnableTwitch;
         }
-        
-        public ValueTask<RESTEntity> SearchAsync(string query, CancellationToken token = default)
+
+        public ValueTask<RESTEntity> SearchAsync(string query)
         {
             throw new System.NotImplementedException();
         }
 
-        public ValueTask<Stream> GetStreamAsync(IAudioItem audioItem, CancellationToken token = default)
+        public ValueTask<Track> GetTrackAsync(string id)
         {
             throw new System.NotImplementedException();
         }
 
-        public ValueTask<Stream> GetStreamAsync(string id, CancellationToken token = default)
+        public ValueTask<Stream> GetStreamAsync(string id)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public ValueTask<Stream> GetStreamAsync(Track track)
         {
             throw new System.NotImplementedException();
         }
