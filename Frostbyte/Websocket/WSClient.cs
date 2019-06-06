@@ -55,8 +55,8 @@ namespace Frostbyte.Websocket
             }
             catch (Exception ex)
             {
-                OnClosed?.Invoke(_endPoint, _userId);
-                LogHandler<WsClient>.Log.Error(ex);
+                LogHandler<GuildHandler>.Log.Error(ex?.InnerException ?? ex);
+                OnClosed?.Invoke(_endPoint, _userId);                
             }
             finally
             {
@@ -74,7 +74,7 @@ namespace Frostbyte.Websocket
 
         public async Task SendAsync(object @object)
         {
-            await _socket.SendAsync<WsClient>(@object).ConfigureAwait(false);
+            await _socket.SendAsync(@object).ConfigureAwait(false);
         }
 
         public async ValueTask DisposeAsync()

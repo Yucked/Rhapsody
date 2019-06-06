@@ -16,7 +16,7 @@ namespace Frostbyte.Handlers
                 case 2:
                     VoiceReadyPayload = payload.Data.TryCast<VoiceReadyPayload>();
                     var basePayload = new BaseDiscordPayload(1, new SelectPayload(VoiceReadyPayload.IPAddress, VoiceReadyPayload.Port));
-                    await _socket.SendAsync<GuildHandler>(basePayload);
+                    await _socket.SendAsync(basePayload);
                     break;
 
                 case 4:
@@ -32,7 +32,7 @@ namespace Frostbyte.Handlers
                     }
                     catch (Exception ex)
                     {
-                        LogHandler<GuildHandler>.Log.Error(ex);
+                        LogHandler<GuildHandler>.Log.Error(ex?.InnerException ?? ex);
                     }
 
                     break;
@@ -62,7 +62,7 @@ namespace Frostbyte.Handlers
             {
                 await Task.Delay(interval).ConfigureAwait(false);
                 var payload = new BaseDiscordPayload(3, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-                await _socket.SendAsync<GuildHandler>(payload).ConfigureAwait(false);
+                await _socket.SendAsync(payload).ConfigureAwait(false);
             }
         }
     }

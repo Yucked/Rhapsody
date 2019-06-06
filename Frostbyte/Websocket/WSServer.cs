@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
+using System.Text.Json;
 
 namespace Frostbyte.Websocket
 {
@@ -147,9 +148,6 @@ namespace Frostbyte.Websocket
         {
             _clients.TryRemove(userId, out _);
             _receiveTokens.TryRemove(userId, out var token);
-            token.Cancel(false);
-
-            LogHandler<WsServer>.Log.Warning($"Client {endPoint} closed websocket connection.");
             return default;
         }
 
@@ -173,6 +171,8 @@ namespace Frostbyte.Websocket
                     Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
+                var rawString = JsonSerializer.ToString(stat);
+                LogHandler<StatisticPacket>.Log.Debug(rawString);
                 var sendTasks = _clients.Select(x => x.Value.SendAsync(stat));
                 await Task.WhenAll(sendTasks);
                 await Task.Delay(TimeSpan.FromSeconds(30));

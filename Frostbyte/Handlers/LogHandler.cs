@@ -9,16 +9,17 @@ namespace Frostbyte.Handlers
 {
     public sealed class LogHandler<T>
     {
-            public static LogHandler<T> Log => LazyHelper.Value;
-    
-            private readonly DateTimeOffset _date;
-            private readonly object _lockObj;
-            private static readonly Lazy<LogHandler<T>> LazyHelper 
-                = new Lazy<LogHandler<T>>(() => new LogHandler<T>());
-            
+        public static LogHandler<T> Log => LazyHelper.Value;
+
+        private readonly DateTimeOffset _date;
+        private readonly object _fileLock, _logLock;
+        private static readonly Lazy<LogHandler<T>> LazyHelper
+            = new Lazy<LogHandler<T>>(() => new LogHandler<T>());
+
         private LogHandler()
         {
-            _lockObj = new object();
+            _fileLock = new object();
+            _logLock = new object();
             _date = DateTimeOffset.Now;
         }
 
@@ -43,18 +44,22 @@ namespace Frostbyte.Handlers
         }
 
         private void RawLog(LogLevel logLevel, string message, Exception exception)
-        {                
-            var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
-            var log = $" [{GetLogLevel(logLevel)}] ";
-            var formatted = message.LogFormatter(exception);
+        {
+            lock (_logLock)
+            {
+                var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
+                var log = $" [{GetLogLevel(logLevel)}] ";
+                var msg = exception?.ToString() ?? message;
+
                 Append(date, Color.Gray);
                 Append(log, GetColor(logLevel));
-                Append(message, Color.White);
+                Append(msg, Color.White);
                 Console.Write(Environment.NewLine);
-            
 
-            var logMessage = $"{date}{log}[{typeof(T).Name}] {formatted}";
-            WriteToFile(logMessage);
+
+                var logMessage = $"{date}{log}[{typeof(T).Name}] {msg}";
+                WriteToFile(logMessage);
+            }
         }
 
         private void Append(string message, Color color)
@@ -67,14 +72,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical       => "CRIT",
-                LogLevel.Debug          => "DBUG",
-                LogLevel.Error          => "EROR",
-                LogLevel.Information    => "INFO",
-                LogLevel.None           => "NONE",
-                LogLevel.Trace          => "TRCE",
-                LogLevel.Warning        => "WARN",
-                _                       => "NONE"
+                LogLevel.Critical => "CRIT",
+                LogLevel.Debug => "DBUG",
+                LogLevel.Error => "EROR",
+                LogLevel.Information => "INFO",
+                LogLevel.None => "NONE",
+                LogLevel.Trace => "TRCE",
+                LogLevel.Warning => "WARN",
+                _ => "NONE"
             };
         }
 
@@ -82,23 +87,21 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical       => Color.Red,
-                LogLevel.Debug          => Color.SlateBlue,
-                LogLevel.Error          => Color.Red,
-                LogLevel.Information    => Color.SpringGreen,
-                LogLevel.None           => Color.BurlyWood,
-                LogLevel.Trace          => Color.SlateBlue,
-                LogLevel.Warning        => Color.Yellow,
-                _                       => Color.SlateBlue
+                LogLevel.Critical => Color.Red,
+                LogLevel.Debug => Color.SlateBlue,
+                LogLevel.Error => Color.Red,
+                LogLevel.Information => Color.SpringGreen,
+                LogLevel.None => Color.BurlyWood,
+                LogLevel.Trace => Color.SlateBlue,
+                LogLevel.Warning => Color.Yellow,
+                _ => Color.SlateBlue
             };
         }
 
         private void WriteToFile(string message)
         {
-            lock (_lockObj)
-            {
-                File.AppendAllText($"{_date.Year}-{_date.Month}-{_date.Day}.log", message);
-            }
+            File.AppendAllText($"{_date.Year}-{_date.Month}-{_date.Day}.log", message);
+
         }
     }
 }

@@ -52,7 +52,7 @@ namespace Frostbyte.Handlers
                     }
                     catch (Exception ex)
                     {
-                        LogHandler<GuildHandler>.Log.Error(ex);
+                        LogHandler<GuildHandler>.Log.Error(ex?.InnerException ?? ex);
                     }
 
                     break;
@@ -69,8 +69,8 @@ namespace Frostbyte.Handlers
             {
                 _receiveToken ??= new CancellationTokenSource();
                 _receiveTask = Task.Run(ReceiveTaskAsync, _receiveToken.Token);
-                var payload = new BasePayload(0, new IdentifyPayload(_guildId, _userId, packet.SessionId, packet.Token));
-                await _socket.SendAsync<GuildHandler>(payload).ConfigureAwait(false);
+                var payload = new BaseDiscordPayload(0, new IdentifyPayload(_guildId, _userId, packet.SessionId, packet.Token));
+                await _socket.SendAsync(payload).ConfigureAwait(false);
             }
         }
 
@@ -98,7 +98,7 @@ namespace Frostbyte.Handlers
             }
             catch (Exception ex)
             {
-                LogHandler<GuildHandler>.Log.Error(ex);
+                LogHandler<GuildHandler>.Log.Error(ex?.InnerException ?? ex);
             }
             finally
             {

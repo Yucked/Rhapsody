@@ -10,7 +10,7 @@ namespace Frostbyte.Entities.Discord
         [JsonPropertyName("d")]
         public object Data { get; }
 
-        public BasePayload(int opCode, object data)
+        public BaseDiscordPayload(int opCode, object data)
         {
             OpCode = opCode;
             Data = data;

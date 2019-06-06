@@ -13,16 +13,6 @@ namespace Frostbyte.Extensions
             return _reg.IsMatch(input);
         }
 
-        public static string LogFormatter(this string str, Exception exception)
-        {
-            return $"{str}" + (exception != null
-                                   ? $"      Message   : {exception.Message}\n" +
-                                     $"      Target    : {exception.TargetSite?.Name ?? "Unknown site."}\n" +
-                                     $"      Source    : {exception.Source ?? "Unknown source."}\n" +
-                                     $"      Trace     : {exception.StackTrace ?? "Unavailable."}"
-                                   : string.Empty);
-        }
-
         public static string ReplaceArgument(this string str, string data)
         {
             return str.Replace("{0}", data);

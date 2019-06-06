@@ -3,18 +3,24 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Colorful.Console" Version="1.2.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.0.0-preview7.19305.3" />
+    <PackageReference Include="NAudio" Version="1.9.0" />
     <PackageReference Include="System.Text.Json" Version="4.6.0-preview7.19305.9" />
     <PackageReference Include="taglib" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Icon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="libopus-0.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CustomToolNamespace>Opus</CustomToolNamespace>
