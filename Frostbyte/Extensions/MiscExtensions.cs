@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +25,11 @@ namespace Frostbyte.Extensions
         public static T TryCast<T>(this object @object)
         {
             return @object is T value ? value : default;
+        }
+
+        public static Regex Regex(this string pattern)
+        {
+            return new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
         }
     }
 }
