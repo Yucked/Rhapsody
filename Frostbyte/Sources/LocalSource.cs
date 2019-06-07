@@ -33,18 +33,14 @@ namespace Frostbyte.Sources
                     return new ValueTask<SearchResult>(response);
                 }
 
-                foreach (var file in files)
-                {
-                    var track = BuildTrack(file);
-                    response.Tracks.Add(track);
-                }
+                response.Tracks = files.Select(x => BuildTrack(x));
 
                 response.LoadType = LoadType.SearchResult;
             }
             else
             {
-                var track = BuildTrack(query);
-                response.Tracks.Add(track);
+                var track = new[] { BuildTrack(query) };
+                response.Tracks = track;
                 response.LoadType = LoadType.TrackLoaded;
             }
 
