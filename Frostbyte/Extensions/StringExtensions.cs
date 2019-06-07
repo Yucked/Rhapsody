@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace Frostbyte.Extensions
 {
@@ -18,18 +17,27 @@ namespace Frostbyte.Extensions
             return str.Replace("{0}", data);
         }
 
+        public static string WithPath(this string str, string path)
+        {
+            return $"{str}/{path}";
+        }
+
+        public static string WithParameter(this string str, string key, string value)
+        {
+            return str.Contains("?") ? 
+                str += $"&{key}={value}" : 
+                str += $"?{key}={value}";
+        }
+
         public static string GetSourceFromPrefix(this string str)
         {
             str = str.Replace("search", "");
             return str switch
             {
-                "yt"    => "YouTube",
-                "sc"    => "SoundCloud",
-                "lcl"   => "Local"
+                "yt" => "YouTube",
+                "sc" => "SoundCloud",
+                "lcl" => "Local"
             };
         }
-
-        public static Regex ToRegex(this string str)
-            => new Regex(str, RegexOptions.Compiled | RegexOptions.IgnoreCase);
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Frostbyte.Entities.Enums;
+using Frostbyte.Extensions;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -9,79 +11,49 @@ namespace Frostbyte.Handlers
 {
     public sealed class HttpHandler
     {
-        private static readonly Lazy<HttpHandler> LazyHelper = new Lazy<HttpHandler>(() => new HttpHandler());
+        private static Lazy<HttpHandler> _lazyInstance
+            = new Lazy<HttpHandler>(new HttpHandler());
 
-        private HttpClient _client;
+        public static HttpHandler Instance = _lazyInstance.Value;
 
-        public static HttpHandler Instance => LazyHelper.Value;
+        private string Url { get; set; }
 
-        private void CheckClient()
+        private readonly HttpClient _client;
+        private readonly CancellationTokenSource _cancellationToken;
+
+        public HttpHandler()
         {
-            if (!(_client is null))
-                return;
-
             _client = new HttpClient(new HttpClientHandler
             {
                 UseCookies = false,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             });
+
             _client.DefaultRequestHeaders.Clear();
             _client.DefaultRequestHeaders.Add("User-Agent", "Frostbyte");
+            _cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(7));
         }
 
-        public async ValueTask<ReadOnlyMemory<byte>> GetBytesAsync(string url, CancellationToken cancellationToken = default)
+        public HttpHandler WithUrl(string url)
         {
-            CheckClient();
-
-            var get = await _client.GetAsync(url, cancellationToken).ConfigureAwait(false);
-            if (!get.IsSuccessStatusCode)
-            {
-                LogHandler<HttpHandler>.Log.Warning($"Requesting {url} threw {get.ReasonPhrase}.");
-                return default;
-            }
-
-            using var content = get.Content;
-            await using var readStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-            await using var memStream = new MemoryStream();
-            await readStream.CopyToAsync(memStream, cancellationToken).ConfigureAwait(false);
-            return memStream.ToArray();
+            Url = url;
+            return this;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string url)
+        public HttpHandler WithPath(string path)
         {
-            CheckClient();
-
-            var get = await _client.GetAsync(url).ConfigureAwait(false);
-            if (get.IsSuccessStatusCode)
-            {
-                LogHandler<HttpHandler>.Log.Warning($"Requesting {url} threw {get.ReasonPhrase}.");
-                return default;
-            }
-
-            using var content = get.Content;
-            return await content.ReadAsStreamAsync().ConfigureAwait(false);
+            Url = Url.WithPath(path);
+            return this;
         }
 
-        public async ValueTask<string> GetStringAsync(string url)
+        public HttpHandler WithParameter(string key, string value)
         {
-            CheckClient();
-
-            var get = await _client.GetAsync(url).ConfigureAwait(false);
-            if (get.IsSuccessStatusCode)
-            {
-                LogHandler<HttpHandler>.Log.Warning($"Requesting {url} threw {get.ReasonPhrase}.");
-                return default;
-            }
-
-            using var content = get.Content;
-            return await content.ReadAsStringAsync().ConfigureAwait(false);
+            Url = Url.WithParameter(key, value);
+            return this;
         }
 
         public HttpHandler WithCustomHeader(string key, string value)
         {
-            CheckClient();
-
             if (_client.DefaultRequestHeaders.Contains(key))
             {
                 return this;
@@ -89,6 +61,66 @@ namespace Frostbyte.Handlers
 
             _client.DefaultRequestHeaders.Add(key, value);
             return this;
+        }
+
+        public async ValueTask<ReadOnlyMemory<byte>> GetBytesAsync(string url = default)
+        {
+            url = url ?? Url;
+            if (string.IsNullOrWhiteSpace(url))
+                return default;
+
+            var get = await _client.GetAsync(Url, _cancellationToken.Token).ConfigureAwait(false);
+            if (!get.IsSuccessStatusCode)
+            {
+                LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, get.ReasonPhrase, default);
+                return default;
+            }
+
+            using var content = get.Content;
+            var array = await content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            Url = string.Empty;
+
+            return new ReadOnlyMemory<byte>(array);
+        }
+
+        public async ValueTask<Stream> GetStreamAsync(string url = default)
+        {
+            url = url ?? Url;
+            if (string.IsNullOrWhiteSpace(url))
+                return default;
+
+            var get = await _client.GetAsync(Url, _cancellationToken.Token).ConfigureAwait(false);
+            if (!get.IsSuccessStatusCode)
+            {
+                LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, get.ReasonPhrase, default);
+                return default;
+            }
+
+            using var content = get.Content;
+            var stream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            Url = string.Empty;
+
+            return stream;
+        }
+
+        public async ValueTask<string> GetStringAsync(string url = default)
+        {
+            url = url ?? Url;
+            if (string.IsNullOrWhiteSpace(url))
+                return default;
+
+            var get = await _client.GetAsync(Url, _cancellationToken.Token).ConfigureAwait(false);
+            if (!get.IsSuccessStatusCode)
+            {
+                LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, get.ReasonPhrase, default);
+                return default;
+            }
+
+            using var content = get.Content;
+            var str = await content.ReadAsStringAsync().ConfigureAwait(false);
+            Url = string.Empty;
+
+            return str;
         }
     }
 }
