@@ -10,6 +10,7 @@ namespace Frostbyte.Handlers
     public sealed partial class GuildHandler : IAsyncDisposable
     {
         public bool IsPlaying { get; private set; }
+        public bool IsReady { get; private set; }
         public event Func<ulong, bool> OnClosed;
 
         private readonly int _shards;
@@ -21,6 +22,7 @@ namespace Frostbyte.Handlers
         private Task _receiveTask, _heartBeatTask;
         private UdpClient UdpClient;
         private VoiceReadyPayload VoiceReadyPayload;
+        private SessionDescriptionPayload SessionDescriptionPayload;
 
         public GuildHandler(ulong guildId, ulong userId, int shards)
         {

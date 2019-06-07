@@ -20,8 +20,8 @@ namespace Frostbyte.Handlers
                     break;
 
                 case 4:
-                    var sessionDescription = payload.Data.TryCast<SessionDescriptionPayload>();
-                    if (sessionDescription.Mode != "xsalsa20_poly1305")
+                    SessionDescriptionPayload = payload.Data.TryCast<SessionDescriptionPayload>();
+                    if (SessionDescriptionPayload.Mode != "xsalsa20_poly1305")
                         return;
 
                     try
@@ -35,6 +35,7 @@ namespace Frostbyte.Handlers
                         LogHandler<GuildHandler>.Log.Error(ex?.InnerException ?? ex);
                     }
 
+                    IsReady = true;
                     break;
 
                 case 8:

@@ -65,14 +65,6 @@ namespace Frostbyte.Extensions
                     Port = 6666,
                     LogLevel = LogLevel.None,
                     Password = "frostbyte",
-                    RatelimitPolicy = new RatelimitPolicy
-                    {
-                        IsEnabled = true,
-                        PerSecond = 5,
-                        PerMinute = 69,
-                        PerHour = 420,
-                        PerDay = 1447
-                    },
                     Sources = new MediaSources
                     {
                         EnableLocal = true,

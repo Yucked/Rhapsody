@@ -6,9 +6,6 @@ namespace Frostbyte.Entities.Results
 {
     public sealed class YouTubeResult
     {
-        [JsonPropertyName("hits")]
-        public long Hits { get; set; }
-
         [JsonPropertyName("video")]
         public IList<YouTubeVideo> Video { get; set; }
     }
@@ -21,33 +18,24 @@ namespace Frostbyte.Entities.Results
         [JsonPropertyName("author")]
         public string Author { get; set; }
 
-        //[JsonPropertyName("likes")]
-        //public long Likes { get; set; }
-        
-        //[JsonPropertyName("dislikes")]
-        //public long Dislikes { get; set; }
-        
-        //[JsonPropertyName("comments")]
-        //public long Comments { get; set; }
-
         [JsonPropertyName("title")]
         public string Title { get; set; }
 
         [JsonPropertyName("length_seconds")]
         public long LengthSeconds { get; set; }
 
-        //[JsonPropertyName("views")]
-        //public string Views { get; set; }
-
         [JsonIgnore]
-        public Track ToTrack
-            => new Track
+        public AudioTrack ToTrack
+            => new AudioTrack
             {
                 Id = EncryptedId,
-                Author = new Author(Author),
-                ThumbnailUrl = $"https://img.youtube.com/vi/{EncryptedId}/maxresdefault.jpg",
+                Author = new TrackAuthor
+                {
+                    Name = Author
+                },
+                ArtworkUrl = $"https://img.youtube.com/vi/{EncryptedId}/maxresdefault.jpg",
                 Title = Title,
-                TrackLength = LengthSeconds,
+                Duration = LengthSeconds,
                 Url = $"https://www.youtube.com/watch?v={EncryptedId}"
             };
     }

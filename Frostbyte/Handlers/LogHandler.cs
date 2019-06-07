@@ -43,7 +43,7 @@ namespace Frostbyte.Handlers
             RawLog(LogLevel.Error, string.Empty, exception);
         }
 
-        private void RawLog(LogLevel logLevel, string message, Exception exception)
+        public void RawLog(LogLevel logLevel, string message, Exception exception)
         {
             lock (_logLock)
             {
