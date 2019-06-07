@@ -92,15 +92,16 @@ namespace Frostbyte.Websocket
                     }
                     else
                     {
-                        var query = context.Request.QueryString.Get("query");
-                        if (query is null)
+                        var prov = context.Request.QueryString.Get("prov");
+                        var query = context.Request.QueryString.Get("q");
+                        if (query is null || prov is null)
                         {
-                            response.Reason = "Please use the `?query={id}:{YOUR_QUERY} argument after /tracks";
+                            response.Reason = "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
                             await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                         else
                         {
-                            response = await _sourceHandler.HandlerRequestAsync(query).ConfigureAwait(false);
+                            response = await _sourceHandler.HandlerRequestAsync(prov, query).ConfigureAwait(false);
                             await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                     }
