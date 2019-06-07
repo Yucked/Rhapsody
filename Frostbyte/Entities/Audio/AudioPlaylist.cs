@@ -7,5 +7,7 @@
         public string Url { get; set; }
 
         public long Duration { get; set; }
+
+        public string ArtworkUrl { get; set; }
     }
 }

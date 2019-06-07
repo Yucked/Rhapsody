@@ -35,32 +35,32 @@ namespace Frostbyte.Sources
         public async ValueTask<SearchResult> SearchAsync(string query)
         {
             var response = new SearchResult();
-            string url;
-
-            var playReg = PATTERN_PLAYLIST.Regex().Matches(query);
-            var trackReg = PATTERN_TRACK.Regex().Matches(query);
+            var url = string.Empty;
 
             switch (query)
             {
-                case var _ when !query.Contains("sets"):
-                    url = BASE_URL
-                        .WithPath("resolve")
-                        .WithParameter("url", query)
-                        .WithParameter("client_id", CLIENT_ID);
+                case var q when Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute):
+                    if (!q.Contains("sets"))
+                    {
+                        url = BASE_URL
+                              .WithPath("resolve")
+                              .WithParameter("url", query)
+                              .WithParameter("client_id", CLIENT_ID);
 
-                    response.LoadType = LoadType.TrackLoaded;
+                        response.LoadType = LoadType.TrackLoaded;
+                    }
+                    else
+                    {
+                        url = BASE_URL
+                            .WithPath("resolve")
+                            .WithParameter("url", query)
+                            .WithParameter("client_id", CLIENT_ID);
+
+                        response.LoadType = LoadType.PlaylistLoaded;
+                    }
                     break;
 
-                case var _ when query.Contains("sets"):
-                    url = BASE_URL
-                        .WithPath("resolve")
-                        .WithParameter("url", query)
-                        .WithParameter("client_id", CLIENT_ID);
-
-                    response.LoadType = LoadType.PlaylistLoaded;
-                    break;
-
-                default:
+                case var _ when !Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute):
                     url = BASE_URL
                         .WithPath("tracks")
                         .WithParameter("q", query)
@@ -103,7 +103,7 @@ namespace Frostbyte.Sources
                 .GetBytesAsync().ConfigureAwait(false);
 
             if (get.IsEmpty)
-            {                
+            {
                 return default;
             }
 

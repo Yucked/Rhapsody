@@ -15,6 +15,9 @@ namespace Frostbyte.Entities.Results
         [JsonPropertyName("duration")]
         public long Duration { get; set; }
 
+        [JsonPropertyName("streamable")]
+        public bool IsStreamable { get; set; }
+
         [JsonPropertyName("artwork_url")]
         public string ArtworkUrl { get; set; }
 
@@ -57,7 +60,8 @@ namespace Frostbyte.Entities.Results
             {
                 Name = Title,
                 Url = PermalinkUrl,
-                Duration = Duration
+                Duration = Duration,
+                ArtworkUrl = ArtworkUrl
             };
     }
 
@@ -69,11 +73,11 @@ namespace Frostbyte.Entities.Results
             {
                 Id = $"{Id}",
                 Title = Title,
-                CanStream = true,
                 Url = PermalinkUrl,
                 Duration = Duration,
                 Author = User.ToAuthor,
-                ArtworkUrl = ArtworkUrl
+                ArtworkUrl = ArtworkUrl,
+                CanStream = IsStreamable
             };
     }
 
