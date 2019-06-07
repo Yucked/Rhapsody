@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,20 +22,22 @@ namespace Frostbyte.Handlers
             _sources = provider.GetServices<ISourceProvider>();
         }
 
-        public async Task<ResponseEntity> HandlerRequestAsync(string url)
+        public async Task<ResponseEntity> HandlerRequestAsync(string prov, string query)
         {
-            var split = url.Split(':');
-            var prefix = split[0].ToLower();
-            var query = split[1];
-
-            var source = _sources.FirstOrDefault(x => x.Prefix == prefix);
-            var response = new ResponseEntity(false, !source.IsEnabled ? $"{prefix.GetSourceFromPrefix()} endpoint is disabled in config" : "Success");
+            var source = _sources.FirstOrDefault(x => x.Prefix == prov);
+            var response = new ResponseEntity(false, !source.IsEnabled ? $"{prov.GetSourceFromPrefix()} endpoint is disabled in config" : "Success");
 
             if (!source.IsEnabled)
                 return response;
 
             response.IsSuccess = true;
             response.AdditionObject = await source.SearchAsync(query).ConfigureAwait(false);
+
+            if (response.AdditionObject is SearchResult search && search.LoadType == LoadType.LoadFailed)
+            {
+                response.IsSuccess = false;
+                response.Reason = "Source returned no result.";
+            }
 
             return response;
         }
