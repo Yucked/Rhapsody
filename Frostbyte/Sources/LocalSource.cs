@@ -5,6 +5,7 @@ using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.Results;
 
 namespace Frostbyte.Sources
 {
@@ -20,22 +21,22 @@ namespace Frostbyte.Sources
             IsEnabled = config.Sources.EnableLocal;
         }
 
-        public ValueTask<RESTEntity> SearchAsync(string query)
+        public ValueTask<SearchResult> SearchAsync(string query)
         {
-            var response = new RESTEntity();
+            var response = new SearchResult();
 
             if (Directory.Exists(query))
             {
                 var files = Directory.EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories).ToArray();
                 if (files.Length < 1)
                 {
-                    return new ValueTask<RESTEntity>(response);
+                    return new ValueTask<SearchResult>(response);
                 }
 
                 foreach (var file in files)
                 {
                     var track = BuildTrack(file);
-                    response.AudioItems.Add(track);
+                    response.Tracks.Add(track);
                 }
 
                 response.LoadType = LoadType.SearchResult;
@@ -43,39 +44,30 @@ namespace Frostbyte.Sources
             else
             {
                 var track = BuildTrack(query);
-                response.AudioItems.Add(track);
+                response.Tracks.Add(track);
                 response.LoadType = LoadType.TrackLoaded;
             }
 
-            AddToCache(response.AudioItems);
-            return new ValueTask<RESTEntity>(response);
+            return new ValueTask<SearchResult>(response);
         }
-
-        public ValueTask<Track> GetTrackAsync(string id)
-        {
-            throw new System.NotImplementedException();
-        }
-
 
         public ValueTask<Stream> GetStreamAsync(string id)
         {
             throw new System.NotImplementedException();
         }
 
-        public ValueTask<Stream> GetStreamAsync(Track track)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        private Track BuildTrack(string filePath)
+        private AudioTrack BuildTrack(string filePath)
         {
             using var file = TagLib.File.Create(filePath);
-            var track = new Track
+            var track = new AudioTrack
             {
                 Id = file.Name,
                 Title = file.Tag.Title,
-                Author = new Author(file.Tag.FirstAlbumArtist),
-                TrackLength = (int)file.Properties.Duration.TotalMilliseconds
+                Author = new TrackAuthor
+                {
+                    Name = file.Tag.FirstAlbumArtist
+                },
+                Duration = (int)file.Properties.Duration.TotalMilliseconds
             };
 
             return track;

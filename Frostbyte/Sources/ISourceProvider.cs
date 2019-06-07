@@ -1,5 +1,5 @@
-﻿using Frostbyte.Entities;
-using Frostbyte.Entities.Audio;
+﻿using Frostbyte.Entities.Audio;
+using Frostbyte.Entities.Results;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -9,14 +9,13 @@ namespace Frostbyte.Sources
     {
         string Prefix { get; }
 
-        bool IsEnabled { get; }        
+        bool IsEnabled { get; }
 
-        ValueTask<RESTEntity> SearchAsync(string query);
-
-        ValueTask<Track> GetTrackAsync(string id);
+        ValueTask<SearchResult> SearchAsync(string query);
 
         ValueTask<Stream> GetStreamAsync(string id);
 
-        ValueTask<Stream> GetStreamAsync(Track track);
+        ValueTask<Stream> GetStreamAsync(AudioTrack track)
+            => GetStreamAsync(track.Id);
     }
 }
