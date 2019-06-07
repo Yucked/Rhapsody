@@ -31,7 +31,7 @@ namespace Frostbyte.Handlers
 
             _client.DefaultRequestHeaders.Clear();
             _client.DefaultRequestHeaders.Add("User-Agent", "Frostbyte");
-            _cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(7));
+            _cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         }
 
         public HttpHandler WithUrl(string url)
@@ -69,7 +69,7 @@ namespace Frostbyte.Handlers
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            var get = await _client.GetAsync(Url, _cancellationToken.Token).ConfigureAwait(false);
+            var get = await _client.GetAsync(url, _cancellationToken.Token).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, get.ReasonPhrase, default);
@@ -89,7 +89,7 @@ namespace Frostbyte.Handlers
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            var get = await _client.GetAsync(Url, _cancellationToken.Token).ConfigureAwait(false);
+            var get = await _client.GetAsync(url, _cancellationToken.Token).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, get.ReasonPhrase, default);
@@ -109,7 +109,7 @@ namespace Frostbyte.Handlers
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            var get = await _client.GetAsync(Url, _cancellationToken.Token).ConfigureAwait(false);
+            var get = await _client.GetAsync(url, _cancellationToken.Token).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, get.ReasonPhrase, default);

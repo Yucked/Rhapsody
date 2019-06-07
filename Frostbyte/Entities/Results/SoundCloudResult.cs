@@ -6,10 +6,13 @@ namespace Frostbyte.Entities.Results
 {
     public class SoundCloudResult
     {
+        [JsonPropertyName("id")]
         public long Id { get; set; }
 
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
+        [JsonPropertyName("duration")]
         public long Duration { get; set; }
 
         [JsonPropertyName("artwork_url")]
@@ -18,15 +21,19 @@ namespace Frostbyte.Entities.Results
         [JsonPropertyName("permalink_url")]
         public string PermalinkUrl { get; set; }
 
+        [JsonPropertyName("user")]
         public SoundCloudUser User { get; set; }
     }
 
     public sealed class SoundCloudUser
     {
+        [JsonPropertyName("permalink_url")]
         public string PermalinkUrl { get; set; }
 
+        [JsonPropertyName("username")]
         public string Username { get; set; }
 
+        [JsonPropertyName("avatar_url")]
         public string AvatarUrl { get; set; }
 
         [JsonIgnore]
@@ -41,6 +48,7 @@ namespace Frostbyte.Entities.Results
 
     public sealed class SoundCloudPlaylist : SoundCloudResult
     {
+        [JsonPropertyName("tracks")]
         public IList<SoundCloudTrack> Tracks { get; set; }
 
         [JsonIgnore]
@@ -61,9 +69,11 @@ namespace Frostbyte.Entities.Results
             {
                 Id = $"{Id}",
                 Title = Title,
-                ArtworkUrl = ArtworkUrl,
+                CanStream = true,
+                Url = PermalinkUrl,
                 Duration = Duration,
-                Url = PermalinkUrl
+                Author = User.ToAuthor,
+                ArtworkUrl = ArtworkUrl
             };
     }
 

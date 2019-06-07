@@ -5,18 +5,18 @@ namespace Frostbyte.Entities.Enums
     public enum LoadType
     {
         [EnumMember(Value = "TRACK_LOADED")]
-        TrackLoaded,
+        TrackLoaded          = 1,
 
         [EnumMember(Value = "PLAYLIST_LOADED")]
-        PlaylistLoaded,
+        PlaylistLoaded       = 2,
 
         [EnumMember(Value = "SEARCH_RESULT")]
-        SearchResult,
+        SearchResult         = 3,
 
         [EnumMember(Value = "NO_MATCHES")]
-        NoMatches,
+        NoMatches            = 4,
 
         [EnumMember(Value = "LOAD_FAILED")]
-        LoadFailed
+        LoadFailed           = 5
     }
 }
