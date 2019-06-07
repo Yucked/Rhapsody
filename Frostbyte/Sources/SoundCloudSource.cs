@@ -23,8 +23,8 @@ namespace Frostbyte.Sources
             CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
             PATTERN_SCRIPT = "https://[A-Za-z0-9-.]+/assets/app-[a-f0-9-]+\\.js",
             PATTERN_CLIENT_ID = "/,client_id:\"([a-zA-Z0-9-_]+)\"/",
-            PATTERN_TRACK = @"^(?:http://|https://|)(?:www\\.|)(?:m\\.|)soundcloud\\.com/([a-zA-Z0-9-_]+)/([a-zA-Z0-9-_]+)(?:\\?.*|)$",
-            PATTERN_PLAYLIST = @"^(?:http://|https://|)(?:www\\.|)(?:m\\.|)soundcloud\\.com/([a-zA-Z0-9-_]+)/sets/([a-zA-Z0-9-_]+)(?:\\?.*|)$";
+            PATTERN_TRACK = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)$",
+            PATTERN_PLAYLIST = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/(sets+)\/?([a-zA-Z0-9-_]+)$";
 
         public SoundCloudSource(Configuration config)
         {
@@ -37,9 +37,12 @@ namespace Frostbyte.Sources
             var response = new SearchResult();
             string url;
 
+            var playReg = PATTERN_PLAYLIST.Regex().Matches(query);
+            var trackReg = PATTERN_TRACK.Regex().Matches(query);
+
             switch (query)
             {
-                case var track when track.IsMatch(PATTERN_TRACK):
+                case var _ when !query.Contains("sets"):
                     url = BASE_URL
                         .WithPath("resolve")
                         .WithParameter("url", query)
@@ -48,7 +51,7 @@ namespace Frostbyte.Sources
                     response.LoadType = LoadType.TrackLoaded;
                     break;
 
-                case var playlist when playlist.IsMatch(PATTERN_PLAYLIST):
+                case var _ when query.Contains("sets"):
                     url = BASE_URL
                         .WithPath("resolve")
                         .WithParameter("url", query)
@@ -68,6 +71,12 @@ namespace Frostbyte.Sources
             }
 
             var get = await HttpHandler.Instance.GetBytesAsync(url).ConfigureAwait(false);
+            if (get.IsEmpty)
+            {
+                response.LoadType = LoadType.LoadFailed;
+                return response;
+            }
+
             switch (response.LoadType)
             {
                 case LoadType.TrackLoaded:
@@ -92,6 +101,11 @@ namespace Frostbyte.Sources
                 .WithUrl($"{BASE_URL}/tracks/{id}/stream")
                 .WithParameter("client_id", CLIENT_ID)
                 .GetBytesAsync().ConfigureAwait(false);
+
+            if (get.IsEmpty)
+            {                
+                return default;
+            }
 
             var read = JsonSerializer.Parse<SoundCloudDirectUrl>(get.Span);
             var stream = await HttpHandler.Instance
