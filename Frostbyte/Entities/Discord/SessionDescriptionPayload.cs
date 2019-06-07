@@ -8,6 +8,6 @@ namespace Frostbyte.Entities.Discord
         public string Mode { get; set; }
 
         [JsonPropertyName("secret_key")]
-        public int[] SecretKey { get; set; }
+        public byte[] SecretKey { get; set; }
     }
 }

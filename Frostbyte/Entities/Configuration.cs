@@ -10,7 +10,6 @@ namespace Frostbyte.Entities
         public string Password { get; set; }
         public LogLevel LogLevel { get; set; }
         public MediaSources Sources { get; set; }
-        public RatelimitPolicy RatelimitPolicy { get; set; }
 
         [JsonIgnore]
         internal string Url
