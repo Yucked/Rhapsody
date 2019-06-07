@@ -64,10 +64,14 @@ namespace Frostbyte
         private async Task PrintRepositoryInformationAsync()
         {
             var result = new GitHubResult();
-            var get = await HttpHandler.Instance.GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte").ConfigureAwait(false);
+            var get = await HttpHandler.Instance.
+                WithUrl("https://api.github.com/repos/Yucked/Frostbyte")
+                .GetBytesAsync().ConfigureAwait(false);
             result.Repo = JsonSerializer.Parse<GitHubRepo>(get.Span);
 
-            get = await HttpHandler.Instance.GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte/commits").ConfigureAwait(false);
+            get = await HttpHandler.Instance
+                .WithUrl("https://api.github.com/repos/Yucked/Frostbyte/commits")
+                .GetBytesAsync().ConfigureAwait(false);
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(get.Span).FirstOrDefault();
 
             Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.SHA}",

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -5,7 +6,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Frostbyte.Attributes;
 using Frostbyte.Entities;
-using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
@@ -18,7 +18,13 @@ namespace Frostbyte.Sources
     {
         public string Prefix { get; }
         public bool IsEnabled { get; }
-        private const string BASE_URL = "https://api.soundcloud.com";
+        private const string
+            BASE_URL = "https://api.soundcloud.com",
+            CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
+            PATTERN_SCRIPT = "https://[A-Za-z0-9-.]+/assets/app-[a-f0-9-]+\\.js",
+            PATTERN_CLIENT_ID = "/,client_id:\"([a-zA-Z0-9-_]+)\"/",
+            PATTERN_TRACK = @"^(?:http://|https://|)(?:www\\.|)(?:m\\.|)soundcloud\\.com/([a-zA-Z0-9-_]+)/([a-zA-Z0-9-_]+)(?:\\?.*|)$",
+            PATTERN_PLAYLIST = @"^(?:http://|https://|)(?:www\\.|)(?:m\\.|)soundcloud\\.com/([a-zA-Z0-9-_]+)/sets/([a-zA-Z0-9-_]+)(?:\\?.*|)$";
 
         public SoundCloudSource(Configuration config)
         {
@@ -26,54 +32,92 @@ namespace Frostbyte.Sources
             IsEnabled = config.Sources.EnableSoundCloud;
         }
 
-        public async ValueTask<RESTEntity> SearchAsync(string query)
+        public async ValueTask<SearchResult> SearchAsync(string query)
         {
-            var response = new RESTEntity();
-            if (query.IsMatch(Constants.PATTERN_URL_SOUNDCLOUD))
+            var response = new SearchResult();
+            string url;
+
+            switch (query)
             {
-                query = $"{BASE_URL}/resolve?url={query}&client_id={Constants.CLIENT_ID_SOUNDCLOUD}";
-                var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
-                var result = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
-                response.AudioItems.Add(result.ToTrack);
-                response.LoadType = LoadType.TrackLoaded;
-            }
-            else
-            {
-                query = $"{BASE_URL}/tracks?q={query}&client_id={Constants.CLIENT_ID_SOUNDCLOUD}";
-                var bytes = await HttpHandler.Instance.GetBytesAsync(query).ConfigureAwait(false);
-                var result = JsonSerializer.Parse<IList<SoundCloudTrack>>(bytes.Span);
-                var tracks = result.Select(x => x.ToTrack).ToArray();
-                response.AudioItems = tracks;
-                response.LoadType = LoadType.SearchResult;
+                case var track when track.IsMatch(PATTERN_TRACK):
+                    url = BASE_URL
+                        .WithPath("resolve")
+                        .WithParameter("url", query)
+                        .WithParameter("client_id", CLIENT_ID);
+
+                    response.LoadType = LoadType.TrackLoaded;
+                    break;
+
+                case var playlist when playlist.IsMatch(PATTERN_PLAYLIST):
+                    url = BASE_URL
+                        .WithPath("resolve")
+                        .WithParameter("url", query)
+                        .WithParameter("client_id", CLIENT_ID);
+
+                    response.LoadType = LoadType.PlaylistLoaded;
+                    break;
+
+                default:
+                    url = BASE_URL
+                        .WithPath("tracks")
+                        .WithParameter("q", query)
+                        .WithParameter("client_id", CLIENT_ID);
+
+                    response.LoadType = LoadType.SearchResult;
+                    break;
             }
 
-            AddToCache(response.AudioItems);
+            var get = await HttpHandler.Instance.GetBytesAsync(url).ConfigureAwait(false);
+            switch (response.LoadType)
+            {
+                case LoadType.TrackLoaded:
+                    GetTrack(get.Span, ref response);
+                    break;
+
+                case LoadType.PlaylistLoaded:
+                    GetPlaylist(get.Span, ref response);
+                    break;
+
+                case LoadType.SearchResult:
+                    GetSearch(get.Span, ref response);
+                    break;
+            }
+
             return response;
-        }
-
-        public ValueTask<Track> GetTrackAsync(string id)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public ValueTask<Stream> GetStreamAsync(Track track)
-        {
-            return GetStreamAsync(track.Id);
         }
 
         public async ValueTask<Stream> GetStreamAsync(string id)
         {
-            var bytes = await HttpHandler.Instance.GetBytesAsync($"{BASE_URL}/tracks/{id}/stream?client_id={Constants.CLIENT_ID_SOUNDCLOUD}")
-                                         .ConfigureAwait(false);
-            var read = JsonSerializer.Parse<SoundCloudDirectUrl>(bytes.Span);
-            var stream = await HttpHandler.Instance.GetStreamAsync(read.Url).ConfigureAwait(false);
+            var get = await HttpHandler.Instance
+                .WithUrl($"{BASE_URL}/tracks/{id}/stream")
+                .WithParameter("client_id", CLIENT_ID)
+                .GetBytesAsync().ConfigureAwait(false);
+
+            var read = JsonSerializer.Parse<SoundCloudDirectUrl>(get.Span);
+            var stream = await HttpHandler.Instance
+                .WithUrl(read.Url)
+                .GetStreamAsync().ConfigureAwait(false);
             return stream;
         }
 
-        private async Task FetchClientId()
+        private void GetSearch(ReadOnlySpan<byte> bytes, ref SearchResult result)
         {
-            var raw = await HttpHandler.Instance.GetStringAsync("https://soundcloud.com").ConfigureAwait(false);
-            raw.IsMatch(Constants.PATTERN_SOUNDCLOUD_SCRIPT);
+            var parse = JsonSerializer.Parse<IEnumerable<SoundCloudTrack>>(bytes);
+            result.Tracks = parse.Select(x => x.ToTrack);
+        }
+
+        private void GetTrack(ReadOnlySpan<byte> bytes, ref SearchResult result)
+        {
+            var parse = JsonSerializer.Parse<SoundCloudTrack>(bytes);
+            var tracks = new[] { parse.ToTrack };
+            result.Tracks = tracks;
+        }
+
+        private void GetPlaylist(ReadOnlySpan<byte> bytes, ref SearchResult result)
+        {
+            var parse = JsonSerializer.Parse<SoundCloudPlaylist>(bytes);
+            result.Playlist = parse.ToPlaylist;
+            result.Tracks = parse.Tracks.Select(x => x.ToTrack);
         }
     }
 }
