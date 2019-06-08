@@ -34,7 +34,7 @@ namespace Frostbyte.Extensions
                     services.AddSingleton(match);
                 }
 
-                LogHandler<IServiceCollection>.Log.Debug($"Added {match.Name} as Singleton" +
+                LogHandler<IServiceCollection>.Log.Debug($"Registered {match.Name} as singleton" +
                     (attr.BaseType != null ? $" with {attr.BaseType.Name} as ServiceType." : "."));
             }
 
@@ -52,6 +52,7 @@ namespace Frostbyte.Extensions
             {
                 var read = File.ReadAllBytes("./Config.json");
                 config = JsonSerializer.Parse<Configuration>(read);
+                LogHandler<IServiceCollection>.Log.Information("Loaded configuration.");
             }
             else if (config != default && !File.Exists("./Config.json"))
             {
@@ -79,9 +80,12 @@ namespace Frostbyte.Extensions
             {
                 var data = JsonSerializer.ToUtf8Bytes(config, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllBytes("./Config.json", data);
+                LogHandler<IServiceCollection>.Log.Information("Built new configuration.");
             }
 
-            return services.AddSingleton(config);
+            services.AddSingleton(config);
+            LogHandler<IServiceCollection>.Log.Debug($"Registered {nameof(Configuration)} as singleton.");
+            return services;
         }
     }
 }

@@ -98,7 +98,10 @@ namespace Frostbyte.Sources
         public async ValueTask<Stream> GetStreamAsync(string id)
         {
             var get = await HttpHandler.Instance
-                .WithUrl($"{BASE_URL}/tracks/{id}/stream")
+                .WithUrl(BASE_URL)
+                .WithPath("tracks")
+                .WithPath(id)
+                .WithPath("stream")
                 .WithParameter("client_id", CLIENT_ID)
                 .GetBytesAsync().ConfigureAwait(false);
 

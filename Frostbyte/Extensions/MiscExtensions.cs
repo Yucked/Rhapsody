@@ -26,10 +26,5 @@ namespace Frostbyte.Extensions
         {
             return @object is T value ? value : default;
         }
-
-        public static Regex Regex(this string pattern)
-        {
-            return new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        }
     }
 }
