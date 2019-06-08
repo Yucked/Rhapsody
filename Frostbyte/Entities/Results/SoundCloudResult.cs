@@ -58,6 +58,7 @@ namespace Frostbyte.Entities.Results
         public AudioPlaylist ToPlaylist
             => new AudioPlaylist
             {
+                Id = $"{Id}",
                 Name = Title,
                 Url = PermalinkUrl,
                 Duration = Duration,

@@ -4,39 +4,51 @@ using Frostbyte.Entities.Audio;
 
 namespace Frostbyte.Entities.Results
 {
-    public sealed class YouTubeResult
-    {
-        [JsonPropertyName("video")]
-        public IList<YouTubeVideo> Video { get; set; }
-    }
-
-    public sealed class YouTubeVideo
+    public class YouTubeResult
     {
         [JsonPropertyName("encrypted_id")]
-        public string EncryptedId { get; set; }
-
-        [JsonPropertyName("author")]
-        public string Author { get; set; }
+        public string Id { get; set; }
 
         [JsonPropertyName("title")]
         public string Title { get; set; }
 
+        [JsonPropertyName("author")]
+        public string Author { get; set; }
+    }
+
+    public sealed class YouTubePlaylist : YouTubeResult
+    {
+        [JsonPropertyName("video")]
+        public IEnumerable<YouTubeVideo> Videos { get; set; }
+    }
+
+    public sealed class YouTubeSearch
+    {
+        [JsonPropertyName("video")]
+        public IEnumerable<YouTubeVideo> Video { get; set; }
+    }
+
+    public sealed class YouTubeVideo : YouTubeResult
+    {
         [JsonPropertyName("length_seconds")]
-        public long LengthSeconds { get; set; }
+        public long Duration { get; set; }
+
+        [JsonPropertyName("user_id")]
+        public string UserId { get; set; }
 
         [JsonIgnore]
         public AudioTrack ToTrack
             => new AudioTrack
             {
-                Id = EncryptedId,
+                Id = Id,
                 Author = new TrackAuthor
                 {
                     Name = Author
                 },
-                ArtworkUrl = $"https://img.youtube.com/vi/{EncryptedId}/maxresdefault.jpg",
                 Title = Title,
-                Duration = LengthSeconds,
-                Url = $"https://www.youtube.com/watch?v={EncryptedId}"
+                Duration = Duration * 1000,
+                Url = $"https://www.youtube.com/watch?v={Id}",
+                ArtworkUrl = $"https://img.youtube.com/vi/{Id}/maxresdefault.jpg"
             };
     }
 }
