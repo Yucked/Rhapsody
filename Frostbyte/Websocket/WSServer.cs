@@ -168,7 +168,7 @@ namespace Frostbyte.Websocket
                 {
                     ConnectedClients = _clients.Count,
                     ConnectedPlayers = _clients.Values.Sum(x => x.Guilds.Count),
-                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(x => x.Value.IsPlaying)),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(g=> g.Value.IsPlaying)),
                     Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 

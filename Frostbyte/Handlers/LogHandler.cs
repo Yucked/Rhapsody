@@ -1,5 +1,4 @@
-﻿using Frostbyte.Extensions;
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using Frostbyte.Entities.Enums;
@@ -12,13 +11,12 @@ namespace Frostbyte.Handlers
         public static LogHandler<T> Log => LazyHelper.Value;
 
         private readonly DateTimeOffset _date;
-        private readonly object _fileLock, _logLock;
+        private readonly object _logLock;
         private static readonly Lazy<LogHandler<T>> LazyHelper
             = new Lazy<LogHandler<T>>(() => new LogHandler<T>());
 
         private LogHandler()
         {
-            _fileLock = new object();
             _logLock = new object();
             _date = DateTimeOffset.Now;
         }
@@ -58,7 +56,7 @@ namespace Frostbyte.Handlers
 
 
                 var logMessage = $"{date}{log}[{typeof(T).Name}] {msg}";
-                WriteToFile(logMessage);
+                File.AppendAllText($"{_date.Year}-{_date.Month}-{_date.Day}.log", $"{logMessage}\n");
             }
         }
 
@@ -96,12 +94,6 @@ namespace Frostbyte.Handlers
                 LogLevel.Warning => Color.Yellow,
                 _ => Color.SlateBlue
             };
-        }
-
-        private void WriteToFile(string message)
-        {
-            File.AppendAllText($"{_date.Year}-{_date.Month}-{_date.Day}.log", message);
-
         }
     }
 }

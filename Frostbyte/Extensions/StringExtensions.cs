@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace Frostbyte.Extensions
+﻿namespace Frostbyte.Extensions
 {
     public static class StringExtensions
     {
