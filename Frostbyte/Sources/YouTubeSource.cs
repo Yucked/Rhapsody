@@ -35,6 +35,7 @@ namespace Frostbyte.Sources
         {
             var search = new SearchResult();
             var url = string.Empty;
+            TryParseId(query, out var videoId, out var playlistId);
 
             switch (Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute))
             {
@@ -45,8 +46,7 @@ namespace Frostbyte.Sources
                             .WithPath("list_ajax")
                             .WithParameter("style", "json")
                             .WithParameter("action_get_list", "1")
-                            .WithParameter("list", "PLAYLIST_ID")
-                            .WithParameter("hl", "en");
+                            .WithParameter("list", playlistId);
 
                         search.LoadType = LoadType.PlaylistLoaded;
                     }
@@ -75,14 +75,10 @@ namespace Frostbyte.Sources
             var get = await HttpHandler.Instance
                 .GetBytesAsync(url).ConfigureAwait(false);
 
-            TryParseId(query, out var id);
-
             switch (search.LoadType)
             {
                 case LoadType.PlaylistLoaded:
-                    search.Playlist.Id = id;
-                    search.Playlist.Url = query;
-                    GetPlaylist(get.Span, ref search);
+                    GetPlaylist(get.Span, ref search, playlistId, query);
                     break;
 
                 case LoadType.SearchResult:
@@ -90,7 +86,7 @@ namespace Frostbyte.Sources
                     break;
 
                 case LoadType.TrackLoaded:
-                    GetTrack(get.Span, id, ref search);
+                    GetTrack(get.Span, videoId, ref search);
                     break;
             }
 
@@ -115,25 +111,33 @@ namespace Frostbyte.Sources
             result.Tracks = track;
         }
 
-        private void GetPlaylist(ReadOnlySpan<byte> span, ref SearchResult result)
+        private void GetPlaylist(ReadOnlySpan<byte> span, ref SearchResult result, string id, string url)
         {
             var playlist = JsonSerializer.Parse<YouTubePlaylist>(span);
-            result.Playlist.Name = playlist.Title;
+            result.Playlist = playlist.BuildPlaylist(id, url);
             result.Tracks = playlist.Videos.Select(x => x.ToTrack);
-            result.Playlist.Duration = result.Tracks.Sum(x => x.Duration);
         }
 
-        private bool TryParseId(string url, out string id)
+        private bool TryParseId(string url, out string videoId, out string playlistId)
         {
-            var match = _idRegex.Match(url);
-            if (!match.Success)
+            var matches = _idRegex.Matches(url);
+            var (vidId, plyId) = ("", "");
+
+            foreach (Match match in matches)
             {
-                id = default;
-                return false;
+                if (!match.Success)
+                    continue;
+
+                if (match.Length == 11)
+                    vidId = match.Value;
+                else
+                    plyId = match.Value;
             }
 
-            id = match.Value;
-            return true;
+            videoId = vidId;
+            playlistId = plyId;
+
+            return matches.Count == 0;
         }
     }
 }
