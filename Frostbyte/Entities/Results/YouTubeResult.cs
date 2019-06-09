@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Frostbyte.Entities.Audio;
 
@@ -20,6 +21,15 @@ namespace Frostbyte.Entities.Results
     {
         [JsonPropertyName("video")]
         public IEnumerable<YouTubeVideo> Videos { get; set; }
+
+        public AudioPlaylist BuildPlaylist(string id, string url)
+            => new AudioPlaylist
+            {
+                Id = id,
+                Url = url,
+                Name = Title,
+                Duration = Videos.Sum(x => x.Duration * 1000)
+            };
     }
 
     public sealed class YouTubeSearch
@@ -34,7 +44,7 @@ namespace Frostbyte.Entities.Results
         public long Duration { get; set; }
 
         [JsonPropertyName("user_id")]
-        public string UserId { get; set; }
+        public string UserId { get; set; } // Figure out what ID this is
 
         [JsonIgnore]
         public AudioTrack ToTrack
