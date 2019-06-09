@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -24,6 +25,30 @@ namespace Frostbyte.Extensions
         public static T TryCast<T>(this object @object)
         {
             return @object is T value ? value : default;
+        }
+
+        public static (string Provider, string Query) BuildQuery(this NameValueCollection collection)
+        {
+            var provider = collection.Get("prov");
+            collection.Remove("prov");
+            var query = string.Empty;
+
+            for (var i = 0; i < collection.Count; i++)
+            {
+                var key = collection.GetKey(i);
+                var keyValue = collection.Get(i);
+
+                if (key == "q")
+                {
+                    query += keyValue;
+                }
+                else
+                {
+                    query += $"&{key}={keyValue}";
+                }
+            }
+
+            return (provider, query);
         }
     }
 }

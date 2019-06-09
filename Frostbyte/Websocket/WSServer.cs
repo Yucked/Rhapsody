@@ -92,8 +92,8 @@ namespace Frostbyte.Websocket
                     }
                     else
                     {
-                        var prov = context.Request.QueryString.Get("prov");
-                        var query = context.Request.QueryString.Get("q");
+                        var (prov, query) = context.Request.QueryString.BuildQuery();
+
                         if (query is null || prov is null)
                         {
                             response.Reason = "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
@@ -168,7 +168,7 @@ namespace Frostbyte.Websocket
                 {
                     ConnectedClients = _clients.Count,
                     ConnectedPlayers = _clients.Values.Sum(x => x.Guilds.Count),
-                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(g=> g.Value.IsPlaying)),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(g => g.Value.IsPlaying)),
                     Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
