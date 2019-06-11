@@ -10,11 +10,6 @@ namespace Frostbyte.Handlers
 {
     public sealed class HttpHandler
     {
-        private static Lazy<HttpHandler> _lazyInstance
-            = new Lazy<HttpHandler>(new HttpHandler());
-
-        public static HttpHandler Instance = _lazyInstance.Value;
-
         private string Url { get; set; }
 
         private readonly HttpClient _client;

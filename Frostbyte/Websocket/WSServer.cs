@@ -1,4 +1,4 @@
-﻿using Frostbyte.Attributes;
+﻿
 using Frostbyte.Entities;
 using Frostbyte.Handlers;
 using System;
@@ -14,7 +14,7 @@ using System.Text.Json;
 
 namespace Frostbyte.Websocket
 {
-    [RegisterService]
+
     public sealed class WsServer : IAsyncDisposable
     {
         private readonly ConcurrentDictionary<ulong, WsClient> _clients;
@@ -22,12 +22,13 @@ namespace Frostbyte.Websocket
         private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _receiveTokens;
         private readonly SourceHandler _sourceHandler;
+        private readonly IServiceProvider _provider;
 
         private Configuration _config;
         private CancellationTokenSource _receiveCancellation;
         private Task _statsSenderTask;
 
-        public WsServer(SourceHandler sourceHandler)
+        public WsServer(SourceHandler sourceHandler, Configuration configuration, IServiceProvider provider)
         {
             _listener = new HttpListener();
             _clients = new ConcurrentDictionary<ulong, WsClient>();
@@ -36,6 +37,9 @@ namespace Frostbyte.Websocket
             _statsCancellation = new CancellationTokenSource();
             _mainCancellation = CancellationTokenSource.CreateLinkedTokenSource(_wsCancellation.Token, _statsCancellation.Token);
             _sourceHandler = sourceHandler;
+            _provider = provider;
+            _config = configuration;
+            Singletons.SetConfig(configuration);
         }
 
         public async ValueTask DisposeAsync()
@@ -57,15 +61,14 @@ namespace Frostbyte.Websocket
             _statsSenderTask.Dispose();
         }
 
-        public async Task InitializeAsync(Configuration config)
+        public async Task InitializeAsync()
         {
-            _config = config;
             LogHandler<WsServer>.Log.Information("Security protocol set to TLS11, TLS12 & TLS13.");
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
 
-            _listener.Prefixes.Add(config.Url);
+            _listener.Prefixes.Add(_config.Url);
             _listener.Start();
-            LogHandler<WsServer>.Log.Information($"Server started on {config.Url}.");
+            LogHandler<WsServer>.Log.Information($"Server started on {_config.Url}.");
 
             _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
             while (!_wsCancellation.IsCancellationRequested)
@@ -101,7 +104,7 @@ namespace Frostbyte.Websocket
                         }
                         else
                         {
-                            response = await _sourceHandler.HandlerRequestAsync(prov, query).ConfigureAwait(false);
+                            response = await _sourceHandler.HandleRequestAsync(prov, query, _provider).ConfigureAwait(false);
                             await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                     }

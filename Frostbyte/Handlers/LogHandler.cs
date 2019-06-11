@@ -8,14 +8,14 @@ namespace Frostbyte.Handlers
 {
     public sealed class LogHandler<T>
     {
-        public static LogHandler<T> Log => LazyHelper.Value;
+        public static LogHandler<T> Log => _lazyLog.Value;
 
         private readonly DateTimeOffset _date;
         private readonly object _logLock;
-        private static readonly Lazy<LogHandler<T>> LazyHelper
-            = new Lazy<LogHandler<T>>(() => new LogHandler<T>());
+        private static readonly Lazy<LogHandler<T>> _lazyLog
+            = new Lazy<LogHandler<T>>(() => new LogHandler<T>(), true);
 
-        private LogHandler()
+        public LogHandler()
         {
             _logLock = new object();
             _date = DateTimeOffset.Now;

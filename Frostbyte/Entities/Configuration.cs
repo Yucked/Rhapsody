@@ -9,7 +9,7 @@ namespace Frostbyte.Entities
         public string Host { get; set; }
         public string Password { get; set; }
         public LogLevel LogLevel { get; set; }
-        public MediaSources Sources { get; set; }
+        public AudioSources Sources { get; set; }
 
         [JsonIgnore]
         internal string Url
@@ -18,21 +18,19 @@ namespace Frostbyte.Entities
         }
     }
 
-    public sealed class MediaSources
+    public sealed class AudioSources
     {
-        [JsonPropertyName("use_yt")]
-        public bool EnableYouTube { get; set; }
-
-        [JsonPropertyName("use_sc")]
-        public bool EnableSoundCloud { get; set; }
-
-        [JsonPropertyName("use_twi")]
-        public bool EnableTwitch { get; set; }
-
-        [JsonPropertyName("use_vim")]
-        public bool EnableVimeo { get; set; }
-
-        [JsonPropertyName("use_lcl")]
+        public bool EnableAppleMusic { get; set; }
+        public bool EnableAudiomack { get; set; }
+        public bool EnableBandCamp { get; set; }
+        public bool EnableHttp { get; set; }
         public bool EnableLocal { get; set; }
+        public bool EnableMixCloud { get; set; }
+        public bool EnableMixer { get; set; }
+        public bool EnableMusicBed { get; set; }
+        public bool EnableSoundCloud { get; set; }
+        public bool EnableTwitch { get; set; }
+        public bool EnableVimeo { get; set; }
+        public bool EnableYouTube { get; set; }
     }
 }

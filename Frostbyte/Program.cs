@@ -37,11 +37,12 @@ namespace Frostbyte
 
             var services = new ServiceCollection()
                 .AddConfiguration()
-                .AddAttributeServices();
+                .RegisterSources()
+                .AddSingleton<WsServer>()
+                .AddSingleton<SourceHandler>();
 
             var provider = services.BuildServiceProvider();
-            var config = provider.GetRequiredService<Configuration>();
-            _ = provider.GetRequiredService<WsServer>().InitializeAsync(config).ConfigureAwait(false);
+            _ = provider.GetRequiredService<WsServer>().InitializeAsync().ConfigureAwait(false);
 
             await Task.Delay(-1);
         }
@@ -64,12 +65,12 @@ namespace Frostbyte
         private async Task PrintRepositoryInformationAsync()
         {
             var result = new GitHubResult();
-            var get = await HttpHandler.Instance.
-                WithUrl("https://api.github.com/repos/Yucked/Frostbyte")
+            var get = await Singletons.Http
+                .WithUrl("https://api.github.com/repos/Yucked/Frostbyte")
                 .GetBytesAsync().ConfigureAwait(false);
             result.Repo = JsonSerializer.Parse<GitHubRepo>(get.Span);
 
-            get = await HttpHandler.Instance
+            get = await Singletons.Http
                 .WithUrl("https://api.github.com/repos/Yucked/Frostbyte/commits")
                 .GetBytesAsync().ConfigureAwait(false);
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(get.Span).FirstOrDefault();

@@ -1,12 +1,10 @@
-﻿namespace Frostbyte.Extensions
+﻿using Frostbyte.Sources;
+using System;
+
+namespace Frostbyte.Extensions
 {
     public static class StringExtensions
     {
-        public static string ReplaceArgument(this string str, string data)
-        {
-            return str.Replace("{0}", data);
-        }
-
         public static string WithPath(this string str, string path)
         {
             return $"{str}/{path}";
@@ -19,14 +17,24 @@
                 str += $"?{key}={value}";
         }
 
-        public static string GetSourceFromPrefix(this string str)
+        public static (string Name, Type SourceType) GetSourceInfo(this string prefix)
         {
-            str = str.Replace("search", "");
-            return str switch
+            prefix = prefix.Replace("search", "");
+            return prefix switch
             {
-                "yt" => "YouTube",
-                "sc" => "SoundCloud",
-                "lcl" => "Local"
+                "apm"   => ("AppleMusic", typeof(AppleMusicSource)),
+                "am"    => ("Audiomack", typeof(AudiomackSource)),
+                "bc"    => ("BandCamp", typeof(BandCampSource)),
+                "ht"    => ("HTTP", typeof(HttpSource)),
+                "lcl"   => ("Local", typeof(LocalSource)),
+                "mxc"   => ("MixCloud", typeof(MixCloudSource)),
+                "mx"    => ("Mixer", typeof(MixerSource)),
+                "mb"    => ("MusicBed", typeof(MusicBedSource)),
+                "sc"    => ("SoundCloud", typeof(SoundCloudSource)),
+                "tw"    => ("Twitch", typeof(TwitchSource)),
+                "vm"    => ("Vimeo", typeof(VimeoSource)),
+                "yt"    => ("YouTube", typeof(YouTubeSource)),
+                _       => ("Unknown", null)
             };
         }
     }

@@ -1,43 +1,35 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Frostbyte.Attributes;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Frostbyte.Handlers
 {
-    [RegisterService]
     public sealed class SourceHandler
     {
-        private readonly IEnumerable<ISourceProvider> _sources;
-
-        public SourceHandler(IServiceProvider provider)
+        public async Task<ResponseEntity> HandleRequestAsync(string prefix, string query, IServiceProvider provider)
         {
-            _sources = provider.GetServices<ISourceProvider>();
-        }
+            var sourceInfo = prefix.GetSourceInfo();
+            var source = provider.GetService(sourceInfo.SourceType).TryCast<SourceBase>();
 
-        public async Task<ResponseEntity> HandlerRequestAsync(string prov, string query)
-        {
-            var source = _sources.FirstOrDefault(x => x.Prefix == prov);
-            var response = new ResponseEntity(false, !source.IsEnabled ? $"{prov.GetSourceFromPrefix()} endpoint is disabled in config" : "Success");
+            var isEnabled = Singletons.Config.Sources.IsSourceEnabled($"Enable{sourceInfo.Name}");
+            var response = new ResponseEntity(isEnabled, isEnabled ? $"{sourceInfo.Name} source is disable in configuration" : "Success");
 
-            if (!source.IsEnabled)
+            if (!isEnabled)
                 return response;
 
-            response.IsSuccess = true;
             response.AdditionObject = await source.SearchAsync(query).ConfigureAwait(false);
+            var searchResult = response.AdditionObject.TryCast<SearchResult>();
 
-            if (response.AdditionObject is SearchResult search && search.LoadType == LoadType.LoadFailed)
-            {
-                response.IsSuccess = false;
-                response.Reason = "Source returned no result.";
-            }
+            response.IsSuccess = searchResult.LoadType == LoadType.LoadFailed || searchResult.LoadType == LoadType.NoMatches;
+            response.Reason = searchResult.LoadType == LoadType.LoadFailed ?
+                 $"{sourceInfo.Name} was unable to load anything" :
+                searchResult.LoadType == LoadType.NoMatches ?
+                $"{sourceInfo.Name} was failed to find any matches for {query}"
+                : "Success";
 
             return response;
         }

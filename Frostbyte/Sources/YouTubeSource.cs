@@ -5,7 +5,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Frostbyte.Attributes;
+
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
@@ -14,24 +14,22 @@ using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    [RegisterService(typeof(ISourceProvider))]
-    public sealed class YouTubeSource : SourceCache, ISourceProvider
+    
+    public sealed class YouTubeSource : SourceBase
     {
-        public string Prefix { get; }
-        public bool IsEnabled { get; }
+        public override string Prefix { get; }
 
         private const string BASE_URL = "https://www.youtube.com";
 
         private readonly Regex _idRegex;
 
-        public YouTubeSource(Configuration config)
+        public YouTubeSource(Configuration config) : base(config)
         {
             Prefix = "ytsearch";
-            IsEnabled = config.Sources.EnableYouTube;
             _idRegex = new Regex("(?!videoseries)[a-zA-Z0-9_-]{11,42}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         }
 
-        public async ValueTask<SearchResult> SearchAsync(string query)
+        public override async ValueTask<SearchResult> SearchAsync(string query)
         {
             var search = new SearchResult();
             var url = string.Empty;
@@ -72,7 +70,7 @@ namespace Frostbyte.Sources
                     break;
             }
 
-            var get = await HttpHandler.Instance
+            var get = await Singletons.Http
                 .GetBytesAsync(url).ConfigureAwait(false);
 
             switch (search.LoadType)
@@ -93,7 +91,7 @@ namespace Frostbyte.Sources
             return search;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string id)
+        public override async ValueTask<Stream> GetStreamAsync(string id)
         {
             throw new System.NotImplementedException();
         }

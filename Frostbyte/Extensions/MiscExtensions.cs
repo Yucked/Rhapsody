@@ -1,3 +1,6 @@
+using Frostbyte.Entities;
+using Frostbyte.Sources;
+using System;
 using System.Collections.Specialized;
 using System.Net;
 using System.Net.WebSockets;
@@ -49,6 +52,12 @@ namespace Frostbyte.Extensions
             }
 
             return (provider, query);
+        }
+
+        public static bool IsSourceEnabled(this AudioSources sources, string source)
+        {
+            var prop = sources.GetType().GetProperty(source);
+            return prop.GetValue(sources).TryCast<bool>();
         }
     }
 }

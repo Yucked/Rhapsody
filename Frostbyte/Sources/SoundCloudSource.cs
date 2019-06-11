@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Frostbyte.Attributes;
+
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
@@ -13,11 +13,10 @@ using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    [RegisterService(typeof(ISourceProvider))]
-    public sealed class SoundCloudSource : SourceCache, ISourceProvider
+    
+    public sealed class SoundCloudSource : SourceBase
     {
-        public string Prefix { get; }
-        public bool IsEnabled { get; }
+        public override string Prefix { get; }
         private const string
             BASE_URL = "https://api.soundcloud.com",
             CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
@@ -26,13 +25,12 @@ namespace Frostbyte.Sources
             PATTERN_TRACK = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)$",
             PATTERN_PLAYLIST = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/(sets+)\/?([a-zA-Z0-9-_]+)$";
 
-        public SoundCloudSource(Configuration config)
+        public SoundCloudSource(Configuration config) : base(config)
         {
             Prefix = "scsearch";
-            IsEnabled = config.Sources.EnableSoundCloud;
         }
 
-        public async ValueTask<SearchResult> SearchAsync(string query)
+        public override async ValueTask<SearchResult> SearchAsync(string query)
         {
             var response = new SearchResult();
             var url = string.Empty;
@@ -70,7 +68,7 @@ namespace Frostbyte.Sources
                     break;
             }
 
-            var get = await HttpHandler.Instance.GetBytesAsync(url).ConfigureAwait(false);
+            var get = await Singletons.Http.GetBytesAsync(url).ConfigureAwait(false);
             if (get.IsEmpty)
             {
                 response.LoadType = LoadType.LoadFailed;
@@ -95,9 +93,9 @@ namespace Frostbyte.Sources
             return response;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string id)
+        public override async ValueTask<Stream> GetStreamAsync(string id)
         {
-            var get = await HttpHandler.Instance
+            var get = await Singletons.Http
                 .WithUrl(BASE_URL)
                 .WithPath("tracks")
                 .WithPath(id)
@@ -111,7 +109,7 @@ namespace Frostbyte.Sources
             }
 
             var read = JsonSerializer.Parse<SoundCloudDirectUrl>(get.Span);
-            var stream = await HttpHandler.Instance
+            var stream = await Singletons.Http
                 .WithUrl(read.Url)
                 .GetStreamAsync().ConfigureAwait(false);
             return stream;

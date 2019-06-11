@@ -1,7 +1,8 @@
-﻿using Frostbyte.Attributes;
+﻿
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Handlers;
+using Frostbyte.Sources;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using System.Linq;
@@ -12,30 +13,18 @@ namespace Frostbyte.Extensions
 {
     public static class DependencyExtensions
     {
-        /// <summary>
-        /// Adds all classes that have <see cref="ServiceAttribute"/> declared.
-        /// </summary>
-        public static IServiceCollection AddAttributeServices(this IServiceCollection services)
+        public static IServiceCollection RegisterSources(this IServiceCollection services)
         {
-            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.GetCustomAttribute<RegisterServiceAttribute>() != null).ToArray();
+            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsSubclassOf(typeof(SourceBase))).ToArray();
 
             if (matches.Length is 0)
                 return services;
 
             foreach (var match in matches)
             {
-                var attr = match.GetCustomAttribute<RegisterServiceAttribute>();
-                if (attr.BaseType != null)
-                {
-                    services.AddSingleton(attr.BaseType, match);
-                }
-                else
-                {
-                    services.AddSingleton(match);
-                }
+                services.AddSingleton(match);
 
-                LogHandler<IServiceCollection>.Log.Debug($"Registered {match.Name} as singleton" +
-                    (attr.BaseType != null ? $" with {attr.BaseType.Name} as ServiceType." : "."));
+                LogHandler<IServiceCollection>.Log.Debug($"Registered {match.Name} as singleton.");
             }
 
             return services;
@@ -66,9 +55,10 @@ namespace Frostbyte.Extensions
                     Port = 6666,
                     LogLevel = LogLevel.None,
                     Password = "frostbyte",
-                    Sources = new MediaSources
+                    Sources = new AudioSources
                     {
                         EnableLocal = true,
+                        EnableHttp = true,
                         EnableSoundCloud = true,
                         EnableYouTube = true
                     }
