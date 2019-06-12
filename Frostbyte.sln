@@ -5,7 +5,16 @@ VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Frostbyte", "Frostbyte\Frostbyte.csproj", "{7238491E-87A2-4D59-82A1-8BA407E602DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frostbyte.Tests", "Frostbyte.Tests\Frostbyte.Tests.csproj", "{3F1BEE62-DEA8-46AC-AF20-280F0D693B53}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3D6E0F98-05A6-4719-B1E0-BE129AA208FC}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		.travis.yml = .travis.yml
+		LICENSE = LICENSE
+		nuget.config = nuget.config
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frostbyte.Tests", "Frostbyte.Tests\Frostbyte.Tests.csproj", "{A26105CB-BE0F-482D-9B9C-0776892F4C11}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +26,10 @@ Global
 		{7238491E-87A2-4D59-82A1-8BA407E602DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7238491E-87A2-4D59-82A1-8BA407E602DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7238491E-87A2-4D59-82A1-8BA407E602DD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3F1BEE62-DEA8-46AC-AF20-280F0D693B53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3F1BEE62-DEA8-46AC-AF20-280F0D693B53}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3F1BEE62-DEA8-46AC-AF20-280F0D693B53}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3F1BEE62-DEA8-46AC-AF20-280F0D693B53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

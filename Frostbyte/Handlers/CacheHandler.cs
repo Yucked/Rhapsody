@@ -40,7 +40,7 @@ namespace Frostbyte.Handlers
                 Add(track);
         }
 
-        public bool ExistsInCache(string query, out AudioTrack track)
+        public bool TryGetFromCache(string query, out AudioTrack track)
         {
             var cache = _cache.FirstOrDefault(x =>
             x.Id.Equals(query, StringComparison.InvariantCultureIgnoreCase) ||

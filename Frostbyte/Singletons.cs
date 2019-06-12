@@ -1,9 +1,11 @@
-﻿using Frostbyte.Entities;
+﻿using AngleSharp;
 using Frostbyte.Handlers;
 using System;
 
 namespace Frostbyte
 {
+    using Frostbyte.Entities;
+
     public sealed class Singletons
     {
         private static Lazy<HttpHandler> _lazyHttp
@@ -17,6 +19,9 @@ namespace Frostbyte
         public static CacheHandler Cache => _lazyCache.Value;
 
         public static Configuration Config { get; private set; }
+
+        public static IBrowsingContext BrowsingContext
+            => AngleSharp.BrowsingContext.New(AngleSharp.Configuration.Default.WithDefaultLoader());
 
         public static void SetConfig(Configuration config)
         {
