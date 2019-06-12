@@ -15,7 +15,7 @@ namespace Frostbyte.Extensions
     {
         public static IServiceCollection RegisterSources(this IServiceCollection services)
         {
-            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsSubclassOf(typeof(SourceBase))).ToArray();
+            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsAssignableFrom(typeof(ISourceProvider))).ToArray();
 
             if (matches.Length is 0)
                 return services;

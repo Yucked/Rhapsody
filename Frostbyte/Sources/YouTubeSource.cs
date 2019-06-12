@@ -5,31 +5,20 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
-using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
-using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    
-    public sealed class YouTubeSource : SourceBase
+    public sealed class YouTubeSource : ISourceProvider
     {
-        public override string Prefix { get; }
-
         private const string BASE_URL = "https://www.youtube.com";
 
-        private readonly Regex _idRegex;
+        private readonly Regex _idRegex
+            = new Regex("(?!videoseries)[a-zA-Z0-9_-]{11,42}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        public YouTubeSource(Configuration config) : base(config)
-        {
-            Prefix = "ytsearch";
-            _idRegex = new Regex("(?!videoseries)[a-zA-Z0-9_-]{11,42}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        }
-
-        public override async ValueTask<SearchResult> SearchAsync(string query)
+        public async ValueTask<SearchResult> SearchAsync(string query)
         {
             var search = new SearchResult();
             var url = string.Empty;
@@ -73,47 +62,40 @@ namespace Frostbyte.Sources
             var get = await Singletons.Http
                 .GetBytesAsync(url).ConfigureAwait(false);
 
+            if (get.IsEmpty)
+            {
+                search.LoadType = LoadType.LoadFailed;
+                return search;
+            }
+
             switch (search.LoadType)
             {
                 case LoadType.PlaylistLoaded:
-                    GetPlaylist(get.Span, ref search, playlistId, query);
+                    var playlist = JsonSerializer.Parse<YouTubePlaylist>(get.Span);
+                    search.Playlist = playlist.BuildPlaylist(playlistId, url);
+                    search.Tracks = playlist.Videos.Select(x => x.ToTrack);
                     break;
 
                 case LoadType.SearchResult:
-                    GetSearch(get.Span, ref search);
+                    var ytSearch = JsonSerializer.Parse<YouTubeSearch>(get.Span);
+                    search.Tracks = ytSearch.Video.Select(x => x.ToTrack);
                     break;
 
                 case LoadType.TrackLoaded:
-                    GetTrack(get.Span, videoId, ref search);
+                    ytSearch = JsonSerializer.Parse<YouTubeSearch>(get.Span);
+                    search.Tracks = new[] { ytSearch.Video.FirstOrDefault(x => x.Id == videoId).ToTrack };
                     break;
             }
 
             return search;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(string id)
+        public async ValueTask<Stream> GetStreamAsync(string query)
         {
+            if (query.Length != 11)
+                return default;
+
             throw new System.NotImplementedException();
-        }
-
-        private void GetSearch(ReadOnlySpan<byte> span, ref SearchResult result)
-        {
-            var search = JsonSerializer.Parse<YouTubeSearch>(span);
-            result.Tracks = search.Video.Select(x => x.ToTrack);
-        }
-
-        private void GetTrack(ReadOnlySpan<byte> span, string id, ref SearchResult result)
-        {
-            var search = JsonSerializer.Parse<YouTubeSearch>(span);
-            var track = new[] { search.Video.FirstOrDefault(x => x.Id == id).ToTrack };
-            result.Tracks = track;
-        }
-
-        private void GetPlaylist(ReadOnlySpan<byte> span, ref SearchResult result, string id, string url)
-        {
-            var playlist = JsonSerializer.Parse<YouTubePlaylist>(span);
-            result.Playlist = playlist.BuildPlaylist(id, url);
-            result.Tracks = playlist.Videos.Select(x => x.ToTrack);
         }
 
         private bool TryParseId(string url, out string videoId, out string playlistId)

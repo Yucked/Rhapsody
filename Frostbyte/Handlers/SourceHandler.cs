@@ -13,7 +13,7 @@ namespace Frostbyte.Handlers
         public async Task<ResponseEntity> HandleRequestAsync(string prefix, string query, IServiceProvider provider)
         {
             var sourceInfo = prefix.GetSourceInfo();
-            var source = provider.GetService(sourceInfo.SourceType).TryCast<SourceBase>();
+            var source = provider.GetService(sourceInfo.SourceType).TryCast<ISourceProvider>();
 
             var isEnabled = Singletons.Config.Sources.IsSourceEnabled($"Enable{sourceInfo.Name}");
             var response = new ResponseEntity(isEnabled, isEnabled ? $"{sourceInfo.Name} source is disable in configuration" : "Success");
@@ -28,7 +28,7 @@ namespace Frostbyte.Handlers
             response.Reason = searchResult.LoadType == LoadType.LoadFailed ?
                  $"{sourceInfo.Name} was unable to load anything" :
                 searchResult.LoadType == LoadType.NoMatches ?
-                $"{sourceInfo.Name} was failed to find any matches for {query}"
+                $"{sourceInfo.Name} failed to find any matches for {query}"
                 : "Success";
 
             return response;

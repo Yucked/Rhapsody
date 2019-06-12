@@ -4,19 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-
-using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
-using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    
-    public sealed class SoundCloudSource : SourceBase
+    public sealed class SoundCloudSource : ISourceProvider
     {
-        public override string Prefix { get; }
         private const string
             BASE_URL = "https://api.soundcloud.com",
             CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
@@ -25,14 +20,9 @@ namespace Frostbyte.Sources
             PATTERN_TRACK = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)$",
             PATTERN_PLAYLIST = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/(sets+)\/?([a-zA-Z0-9-_]+)$";
 
-        public SoundCloudSource(Configuration config) : base(config)
+        public async ValueTask<SearchResult> SearchAsync(string query)
         {
-            Prefix = "scsearch";
-        }
-
-        public override async ValueTask<SearchResult> SearchAsync(string query)
-        {
-            var response = new SearchResult();
+            var result = new SearchResult();
             var url = string.Empty;
 
             switch (query)
@@ -45,7 +35,7 @@ namespace Frostbyte.Sources
                               .WithParameter("url", query)
                               .WithParameter("client_id", CLIENT_ID);
 
-                        response.LoadType = LoadType.TrackLoaded;
+                        result.LoadType = LoadType.TrackLoaded;
                     }
                     else
                     {
@@ -54,7 +44,7 @@ namespace Frostbyte.Sources
                             .WithParameter("url", query)
                             .WithParameter("client_id", CLIENT_ID);
 
-                        response.LoadType = LoadType.PlaylistLoaded;
+                        result.LoadType = LoadType.PlaylistLoaded;
                     }
                     break;
 
@@ -64,41 +54,46 @@ namespace Frostbyte.Sources
                         .WithParameter("q", query)
                         .WithParameter("client_id", CLIENT_ID);
 
-                    response.LoadType = LoadType.SearchResult;
+                    result.LoadType = LoadType.SearchResult;
                     break;
             }
 
             var get = await Singletons.Http.GetBytesAsync(url).ConfigureAwait(false);
             if (get.IsEmpty)
             {
-                response.LoadType = LoadType.LoadFailed;
-                return response;
+                result.LoadType = LoadType.LoadFailed;
+                return result;
             }
 
-            switch (response.LoadType)
+            switch (result.LoadType)
             {
                 case LoadType.TrackLoaded:
-                    GetTrack(get.Span, ref response);
+                    var scTrack = JsonSerializer.Parse<SoundCloudTrack>(get.Span);
+                    var tracks = new[] { scTrack.ToTrack };
+                    result.Tracks = tracks;
                     break;
 
                 case LoadType.PlaylistLoaded:
-                    GetPlaylist(get.Span, ref response);
+                    var scPly = JsonSerializer.Parse<SoundCloudPlaylist>(get.Span);
+                    result.Playlist = scPly.ToPlaylist;
+                    result.Tracks = scPly.Tracks.Select(x => x.ToTrack);
                     break;
 
                 case LoadType.SearchResult:
-                    GetSearch(get.Span, ref response);
+                    var scTracks = JsonSerializer.Parse<IEnumerable<SoundCloudTrack>>(get.Span);
+                    result.Tracks = scTracks.Select(x => x.ToTrack);
                     break;
             }
 
-            return response;
+            return result;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(string id)
+        public async ValueTask<Stream> GetStreamAsync(string query)
         {
             var get = await Singletons.Http
                 .WithUrl(BASE_URL)
                 .WithPath("tracks")
-                .WithPath(id)
+                .WithPath(query)
                 .WithPath("stream")
                 .WithParameter("client_id", CLIENT_ID)
                 .GetBytesAsync().ConfigureAwait(false);
@@ -113,26 +108,6 @@ namespace Frostbyte.Sources
                 .WithUrl(read.Url)
                 .GetStreamAsync().ConfigureAwait(false);
             return stream;
-        }
-
-        private void GetSearch(ReadOnlySpan<byte> bytes, ref SearchResult result)
-        {
-            var parse = JsonSerializer.Parse<IEnumerable<SoundCloudTrack>>(bytes);
-            result.Tracks = parse.Select(x => x.ToTrack);
-        }
-
-        private void GetTrack(ReadOnlySpan<byte> bytes, ref SearchResult result)
-        {
-            var parse = JsonSerializer.Parse<SoundCloudTrack>(bytes);
-            var tracks = new[] { parse.ToTrack };
-            result.Tracks = tracks;
-        }
-
-        private void GetPlaylist(ReadOnlySpan<byte> bytes, ref SearchResult result)
-        {
-            var parse = JsonSerializer.Parse<SoundCloudPlaylist>(bytes);
-            result.Playlist = parse.ToPlaylist;
-            result.Tracks = parse.Tracks.Select(x => x.ToTrack);
         }
     }
 }

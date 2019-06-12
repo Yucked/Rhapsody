@@ -1,25 +1,17 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 
 namespace Frostbyte.Sources
 {
-    
-    public sealed class LocalSource : SourceBase
+
+    public sealed class LocalSource : ISourceProvider
     {
-        public override string Prefix { get; }
 
-        public LocalSource(Configuration config) : base(config)
-        {
-            Prefix = "lclsearch";
-        }
-
-        public override ValueTask<SearchResult> SearchAsync(string query)
+        public ValueTask<SearchResult> SearchAsync(string query)
         {
             var response = new SearchResult();
 
@@ -45,7 +37,7 @@ namespace Frostbyte.Sources
             return new ValueTask<SearchResult>(response);
         }
 
-        public override ValueTask<Stream> GetStreamAsync(string id)
+        public ValueTask<Stream> GetStreamAsync(string id)
         {
             throw new System.NotImplementedException();
         }
