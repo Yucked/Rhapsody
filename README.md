@@ -9,23 +9,25 @@
   </p> 
 </p>
 
+> 
+
 ### ⚗ `Building`
-Frostbyte targets .NET Core SDK Preview 6 and Runtime Preview 7. Both of these can be obtained below:
+You will need to obtain the latest SDK and Runtime for .NET Core in order to run Frostbyte. Please keep in mind Frostbyte is still under development.
 
-SDK: https://github.com/dotnet/core-setup#daily-builds
+SDK: https://github.com/dotnet/core-sdk/blob/master/README.md#installers-and-binaries
 
-Runtime: https://github.com/dotnet/core/blob/master/daily-builds.md
+Runtime: https://github.com/dotnet/core-setup/blob/master/README.md#daily-builds
 
 ###  ✒ `Planned / Underdevelopment Features`
 - [ ] UDP Discord stuff and handling OP codes.
-- [ ] Implement the following sources: BandCamp, MixCloud, Audiomack, MusicBed, Twitch, Vimeo, Mixer, HTTP files, Apple Music(?)
+- [ ] Implement the following sources: MixCloud, Audiomack, MusicBed, Twitch, Vimeo, Mixer, HTTP files, Apple Music(?)
 - [ ] Building streams from above sources.
 - [ ] Ratelimiter for REST requests with IP restrictions.
 - [ ] Downloading audio files.
 - [ ] Compatible with Lavalink entities and Victoria.
 - [ ] Providing user with several audio options.
 - [x] HttpListener handling Websocket and REST requests.
-- [x] Building Track entity from SoundCloud, YouTube and local source.
+- [x] Sources that are done: SoundCloud, YouTube, LocalSource, BandCamp.
 - [x] Detailed logging along with beautiful console output that was necessary.
 - [x] Automatic configuration building and handling.
 - [x] Other stuff that I probably forgot to mention.
@@ -38,18 +40,18 @@ Runtime: https://github.com/dotnet/core/blob/master/daily-builds.md
   "Password": "frostbyte",
   "LogLevel": 0,
   "Sources": {
-    "use_yt": true,
-    "use_sc": true,
-    "use_twi": false,
-    "use_vim": false,
-    "use_lcl": true
-  },
-  "RatelimitPolicy": {
-    "IsEnabled": true,
-    "PerSecond": 5,
-    "PerMinute": 69,
-    "PerHour": 420,
-    "PerDay": 1447
+    "EnableAppleMusic": false,
+    "EnableAudiomack": false,
+    "EnableBandCamp": false,
+    "EnableHttp": true,
+    "EnableLocal": true,
+    "EnableMixCloud": false,
+    "EnableMixer": false,
+    "EnableMusicBed": false,
+    "EnableSoundCloud": true,
+    "EnableTwitch": false,
+    "EnableVimeo": false,
+    "EnableYouTube": true
   }
 }
 ```

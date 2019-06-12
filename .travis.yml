@@ -1,0 +1,26 @@
+dist: xenial
+sudo: required
+
+mono: none
+language: csharp
+solution: Frostbyte.sln
+
+addons:
+  snaps:
+  - name: dotnet-sdk
+    classic: true
+    channel: latest/beta
+
+script:
+  - sudo snap alias dotnet-sdk.dotnet dotnet
+  - dotnet build
+
+after_success:
+  - wget https://raw.githubusercontent.com/Yucked/Krypts/master/TravisHook.sh
+  - chmod +x TravisHook.sh
+  - ./TravisHook.sh success $WEBHOOK_URL
+
+after_failure:
+  - wget https://raw.githubusercontent.com/Yucked/Krypts/master/TravisHook.sh
+  - chmod +x TravisHook.sh
+  - ./TravisHook.sh failure $WEBHOOK_URL
