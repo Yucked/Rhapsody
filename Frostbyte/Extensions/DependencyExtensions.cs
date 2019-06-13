@@ -1,5 +1,4 @@
-﻿
-using Frostbyte.Entities;
+﻿using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Handlers;
 using Frostbyte.Sources;
@@ -13,9 +12,12 @@ namespace Frostbyte.Extensions
 {
     public static class DependencyExtensions
     {
-        public static IServiceCollection RegisterSources(this IServiceCollection services)
+        public static IServiceCollection AddServicesFrom<T>(this IServiceCollection services)
         {
-            var matches = Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsAssignableFrom(typeof(ISourceProvider))).ToArray();
+            var matches = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(x => typeof(T).IsAssignableFrom(x) && !x.IsInterface)
+                .ToArray();
 
             if (matches.Length is 0)
                 return services;
@@ -23,18 +25,12 @@ namespace Frostbyte.Extensions
             foreach (var match in matches)
             {
                 services.AddSingleton(match);
-
-                LogHandler<IServiceCollection>.Log.Debug($"Registered {match.Name} as singleton.");
+                LogHandler<IServiceCollection>.Log.Debug($"Added service OfType<{typeof(T).Name}>: {match.Name}");
             }
 
             return services;
         }
 
-        /// <summary>
-        /// Adds <see cref="Configuration"/> to <paramref name="services"/>.
-        /// </summary>
-        /// <param name="config">Replaces the existing config.</param>
-        /// <returns></returns>
         public static IServiceCollection AddConfiguration(this IServiceCollection services, Configuration config = default)
         {
             if (config == default && File.Exists("./Config.json"))

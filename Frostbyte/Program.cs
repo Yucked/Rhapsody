@@ -3,6 +3,7 @@ using Frostbyte.Entities;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
+using Frostbyte.Sources;
 using Frostbyte.Websocket;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
@@ -37,7 +38,7 @@ namespace Frostbyte
 
             var services = new ServiceCollection()
                 .AddConfiguration()
-                .RegisterSources()
+                .AddServicesFrom<ISourceProvider>()
                 .AddSingleton<WsServer>()
                 .AddSingleton<SourceHandler>();
 
@@ -65,15 +66,14 @@ namespace Frostbyte
         private async Task PrintRepositoryInformationAsync()
         {
             var result = new GitHubResult();
-            var get = await Singletons.Http
-                .WithUrl("https://api.github.com/repos/Yucked/Frostbyte")
-                .GetBytesAsync().ConfigureAwait(false);
-            result.Repo = JsonSerializer.Parse<GitHubRepo>(get.Span);
+            var getBytes = await Singletons.Http
+                .GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte").ConfigureAwait(false);
+            result.Repo = JsonSerializer.Parse<GitHubRepo>(getBytes.Span);
 
-            get = await Singletons.Http
+            getBytes = await Singletons.Http
                 .WithUrl("https://api.github.com/repos/Yucked/Frostbyte/commits")
                 .GetBytesAsync().ConfigureAwait(false);
-            result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(get.Span).FirstOrDefault();
+            result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(getBytes.Span).FirstOrDefault();
 
             Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.SHA}",
                                        Color.White,
