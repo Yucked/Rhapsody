@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://i.imgur.com/9C1lvQA.png"/>
   <a href="https://discord.gg/ZJaVXK8"> </br> <img src="https://img.shields.io/badge/Discord-Support-%237289DA.svg?logo=discord&amp;style=for-the-badge&amp;logoWidth=20" /> </a> 
-  <a href="https://travis-ci.com/Yucked/Frostbyte"> <img src="https://img.shields.io/travis/com/yucked/frostbyte.svg?color=1ac9ed&label=Travis-CI&logo=appveyor&style=for-the-badge&logoWidth=40" /> </a>
+  <a href="https://travis-ci.com/Yucked/Frostbyte"> <img src="https://img.shields.io/travis/com/yucked/frostbyte.svg?color=1ac9ed&label=Travis-CI&logo=travis&style=for-the-badge" /> </a>
   
   <p align="center">
     Lavalink but this time it's better and provides a lot more options and also doesn't require JAVA. That's some good shit right there 
@@ -9,10 +9,8 @@
   </p> 
 </p>
 
-> 
-
 ### ⚗ `Building`
-You will need to obtain the latest SDK and Runtime for .NET Core in order to run Frostbyte. Please keep in mind Frostbyte is still under development.
+You will need to obtain the latest SDK and Runtime for .NET Core in order to run Frostbyte. ***Please keep in mind Frostbyte is still under development.***
 
 SDK: https://github.com/dotnet/core-sdk/blob/master/README.md#installers-and-binaries
 
@@ -24,6 +22,7 @@ Runtime: https://github.com/dotnet/core-setup/blob/master/README.md#daily-builds
 - [ ] Building streams from above sources.
 - [ ] Ratelimiter for REST requests with IP restrictions.
 - [ ] Downloading audio files.
+- [ ] Auto Updater.
 - [ ] Compatible with Lavalink entities and Victoria.
 - [ ] Providing user with several audio options.
 - [x] HttpListener handling Websocket and REST requests.

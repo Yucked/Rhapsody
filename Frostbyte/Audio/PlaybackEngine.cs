@@ -1,5 +1,6 @@
 ﻿using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using System.Threading.Tasks;
 
 namespace Frostbyte.Audio
 {
@@ -16,5 +17,35 @@ namespace Frostbyte.Audio
         private readonly IWavePlayer outputDevice;
         private readonly BufferedWaveProvider bufferedWave;
         private readonly MixingSampleProvider mixer;
+
+        public async Task PlayAsync()
+        {
+
+        }
+
+        public async Task PauseAsync()
+        {
+
+        }
+
+        public async Task StopAsync()
+        {
+
+        }
+
+        public async Task DestroyAsync()
+        {
+
+        }
+
+        public async Task SeekAsync()
+        {
+
+        }
+
+        public async Task EqualizeAsync()
+        {
+
+        }
     }
 }
