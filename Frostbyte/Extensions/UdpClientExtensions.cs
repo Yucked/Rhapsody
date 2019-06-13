@@ -1,5 +1,4 @@
 ﻿using Frostbyte.Entities.Discord;
-using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 

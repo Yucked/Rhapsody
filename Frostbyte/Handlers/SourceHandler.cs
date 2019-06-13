@@ -16,7 +16,7 @@ namespace Frostbyte.Handlers
             var source = provider.GetService(sourceInfo.SourceType).TryCast<ISourceProvider>();
 
             var isEnabled = Singletons.Config.Sources.IsSourceEnabled($"Enable{sourceInfo.Name}");
-            var response = new ResponseEntity(isEnabled, isEnabled ? $"{sourceInfo.Name} source is disable in configuration" : "Success");
+            var response = new ResponseEntity(isEnabled, !isEnabled ? $"{sourceInfo.Name} source is disable in configuration" : "Success");
 
             if (!isEnabled)
                 return response;

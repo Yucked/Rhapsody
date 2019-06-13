@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
+using Frostbyte.Audio;
 
 namespace Frostbyte.Websocket
 {
@@ -61,9 +62,14 @@ namespace Frostbyte.Websocket
 
         private async Task ProcessPacketAsync(PlayerPacket packet)
         {
+            var handler = GetHandler(packet.GuildId, out var isNew);
+            if (isNew && !(packet is VoiceUpdatePacket))
+                return;
+
             switch (packet)
             {
                 case PlayPacket play:
+                    await handler.PlaybackEngine.PlayAsync(play).ConfigureAwait(false);
                     break;
 
                 case PausePacket pause:
@@ -84,17 +90,22 @@ namespace Frostbyte.Websocket
                 case VoiceUpdatePacket voiceUpdate:
                     if (string.IsNullOrWhiteSpace(voiceUpdate.EndPoint))
                         return;
-                    await GetHandler(voiceUpdate.GuildId).HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
+
+                    await handler.HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
                     break;
             }
         }
 
-        private DiscordHandler GetHandler(ulong guildId)
+        private DiscordHandler GetHandler(ulong guildId, out bool isNew)
         {
             if (Handlers.TryGetValue(guildId, out var handler))
+            {
+                isNew = false;
                 return handler;
+            }
 
             handler = new DiscordHandler();
+            isNew = true;
             return handler;
         }
 

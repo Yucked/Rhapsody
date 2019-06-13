@@ -1,4 +1,5 @@
-﻿using Frostbyte.Entities.Discord;
+﻿using Frostbyte.Audio;
+using Frostbyte.Entities.Discord;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
 using System;
@@ -18,6 +19,8 @@ namespace Frostbyte.Handlers
         private Task _receiveTask, _heartBeatTask;
         private UdpClient _udp;
         private VoiceReadyPayload _vrp;
+
+        public PlaybackEngine PlaybackEngine { get; private set; }
 
         public async Task HandleVoiceUpdateAsync(VoiceUpdatePacket voiceUpdate)
         {
@@ -114,7 +117,7 @@ namespace Frostbyte.Handlers
                         LogHandler<DiscordHandler>.Log.Error(ex?.InnerException ?? ex);
                     }
 
-                    // SET IS READY TO TRUE
+                    PlaybackEngine.IsReady = true;
                     break;
 
                 case 8:
@@ -148,8 +151,10 @@ namespace Frostbyte.Handlers
 
         public async ValueTask DisposeAsync()
         {
-
-
+            _heartBeatCancel.Cancel(false);
+            _receiveCancel.Cancel(true);
+            _heartBeatTask?.Dispose();
+            _receiveTask?.Dispose();
         }
     }
 }

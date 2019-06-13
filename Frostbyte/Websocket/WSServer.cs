@@ -134,6 +134,7 @@ namespace Frostbyte.Websocket
             {
                 response.IsSuccess = false;
                 response.Reason = $"Frostbyte threw an inner exception: {ex?.InnerException?.Message ?? ex?.Message}";
+                await context.SendResponseAsync(response).ConfigureAwait(false);
                 LogHandler<WsServer>.Log.Error(ex);
             }
             finally
@@ -163,8 +164,8 @@ namespace Frostbyte.Websocket
                 var stat = new StatisticPacket
                 {
                     ConnectedClients = _clients.Count,
-                    //ConnectedPlayers = _clients.Values.Sum(x => x.Guilds.Count),
-                    //PlayingPlayers = _clients.Values.Sum(x => x.Guilds.Count(g => g.Value.IsPlaying)),
+                    ConnectedPlayers = _clients.Values.Sum(x => x.Handlers.Count),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Handlers.Values.Count(g => g.PlaybackEngine.IsPlaying is true)),
                     Uptime = (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds.TryCast<int>()
                 }.Populate(process);
 
