@@ -1,5 +1,7 @@
-﻿using Frostbyte.Entities.Packets;
+﻿using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
+using Frostbyte.Handlers;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using System.Threading.Tasks;
@@ -24,25 +26,51 @@ namespace Frostbyte.Audio
         public bool IsPaused { get; private set; }
         public bool IsPlaying { get; private set; }
 
+        public PlaybackEngine()
+        {
+            outputDevice.Init(bufferedWave);
+            outputDevice.PlaybackStopped += OnPlaybackStopped;
+        }
 
         public async Task PlayAsync(PlayPacket play)
         {
             if (!Singletons.Cache.TryGetFromCache(play.Hash, out var track))
             {
-
+                if (play.StartTime > track.Duration)
+                {
+                    LogHandler<PlaybackEngine>.Log.RawLog(LogLevel.Error, $"{play.GuildId} specified out of range start time.", default);
+                    return;
+                }
             }
 
             var decode = play.Hash.DecodeHash();
+            // GET TRACK FROM SOURCE HANDLER AND PLAY IT
+            outputDevice.Play();
         }
 
-        public async Task PauseAsync(PausePacket pause)
+        private void OnPlaybackStopped(object sender, StoppedEventArgs e)
         {
+            IsPlaying = false;
+        }
+
+        public Task PauseAsync(PausePacket pause)
+        {
+            outputDevice.Pause();
             IsPaused = pause.IsPaused;
+            return Task.CompletedTask;
         }
 
-        public async Task StopAsync()
+        public Task StopAsync(StopPacket stop)
         {
+            outputDevice.Stop();
+            IsPlaying = false;
+            return Task.CompletedTask;
+        }
 
+        public Task VolumeAsync(VolumePacket volume)
+        {
+            //outputDevice.Volume = volume;
+            return Task.CompletedTask;
         }
 
         public async Task DestroyAsync()
@@ -52,7 +80,6 @@ namespace Frostbyte.Audio
 
         public async Task SeekAsync()
         {
-
         }
 
         public async Task EqualizeAsync()
