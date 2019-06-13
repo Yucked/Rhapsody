@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://i.imgur.com/9C1lvQA.png"/>
   <a href="https://discord.gg/ZJaVXK8"> </br> <img src="https://img.shields.io/badge/Discord-Support-%237289DA.svg?logo=discord&amp;style=for-the-badge&amp;logoWidth=20" /> </a> 
-  <a href="https://ci.appveyor.com/project/Yucked/frostbyte"> <img src="https://img.shields.io/appveyor/ci/yucked/frostbyte.svg?color=1ac9ed&label=Cooking&logo=appveyor&style=for-the-badge&logoWidth=40" /> </a>
+  <a href="https://travis-ci.com/Yucked/Frostbyte"> <img src="https://img.shields.io/travis/com/yucked/frostbyte.svg?color=1ac9ed&label=Travis-CI&logo=appveyor&style=for-the-badge&logoWidth=40" /> </a>
   
   <p align="center">
     Lavalink but this time it's better and provides a lot more options and also doesn't require JAVA. That's some good shit right there 
