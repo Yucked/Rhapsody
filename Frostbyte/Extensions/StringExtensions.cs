@@ -1,5 +1,6 @@
 ﻿using Frostbyte.Sources;
 using System;
+using System.Text;
 
 namespace Frostbyte.Extensions
 {
@@ -36,6 +37,17 @@ namespace Frostbyte.Extensions
                 "yt"    => ("YouTube", typeof(YouTubeSource)),
                 _       => ("Unknown", null)
             };
+        }
+
+        public static (string Provider, string Title, string Url) DecodeHash(this string hash)
+        {
+            if (string.IsNullOrWhiteSpace(hash))
+                return default;
+
+            var base64 = Convert.FromBase64String(hash);
+            var raw = Encoding.UTF8.GetString(base64);
+            var split = raw.Split(':');
+            return (split[0], split[2], split[3]);
         }
     }
 }

@@ -1,5 +1,5 @@
 using Frostbyte.Entities;
-using Frostbyte.Sources;
+using Frostbyte.Entities.Audio;
 using System;
 using System.Collections.Specialized;
 using System.Net;
@@ -58,6 +58,13 @@ namespace Frostbyte.Extensions
         {
             var prop = sources.GetType().GetProperty(source);
             return prop.GetValue(sources).TryCast<bool>();
+        }
+
+        public static string EncodeTrack(this AudioTrack track, string provider)
+        {
+            var str = $"{provider}:{track.Id}:{track.Title}:{track.Url}";
+            var bytes = Encoding.UTF8.GetBytes(str);
+            return Convert.ToBase64String(bytes, Base64FormattingOptions.None);
         }
     }
 }

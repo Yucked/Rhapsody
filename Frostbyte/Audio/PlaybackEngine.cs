@@ -1,4 +1,6 @@
-﻿using NAudio.Wave;
+﻿using Frostbyte.Entities.Packets;
+using Frostbyte.Extensions;
+using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using System.Threading.Tasks;
 
@@ -18,14 +20,24 @@ namespace Frostbyte.Audio
         private readonly BufferedWaveProvider bufferedWave;
         private readonly MixingSampleProvider mixer;
 
-        public async Task PlayAsync()
-        {
+        public bool IsReady { get; set; }
+        public bool IsPaused { get; private set; }
+        public bool IsPlaying { get; private set; }
 
+
+        public async Task PlayAsync(PlayPacket play)
+        {
+            if (!Singletons.Cache.TryGetFromCache(play.Hash, out var track))
+            {
+
+            }
+
+            var decode = play.Hash.DecodeHash();
         }
 
-        public async Task PauseAsync()
+        public async Task PauseAsync(PausePacket pause)
         {
-
+            IsPaused = pause.IsPaused;
         }
 
         public async Task StopAsync()
