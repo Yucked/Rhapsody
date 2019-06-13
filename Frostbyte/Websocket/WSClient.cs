@@ -7,27 +7,23 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
-using Frostbyte.Extensions;
 
 namespace Frostbyte.Websocket
 {
     public sealed class WsClient : IAsyncDisposable
     {
-        private readonly int _shards;
-        private readonly WebSocket _socket;
         private readonly ulong _userId;
         private readonly IPEndPoint _endPoint;
 
-        public event Func<IPEndPoint, ulong, Task> OnClosed;
-        public ConcurrentDictionary<ulong, GuildHandler> Guilds { get; private set; }
+        public readonly WebSocket _socket;
+        public event Func<IPEndPoint, Task> OnClosed;
+        public ConcurrentDictionary<ulong, DiscordHandler> Handlers { get; private set; }
 
-        public WsClient(WebSocketContext socketContext, ulong userId, int shards, IPEndPoint endPoint)
+        public WsClient(WebSocketContext socketContext, IPEndPoint endPoint)
         {
             _socket = socketContext.WebSocket;
-            _userId = userId;
-            _shards = shards;
             _endPoint = endPoint;
-            Guilds = new ConcurrentDictionary<ulong, GuildHandler>();
+            Handlers = new ConcurrentDictionary<ulong, DiscordHandler>();
         }
 
         public async Task ReceiveAsync(CancellationTokenSource cancellationToken)
@@ -41,51 +37,76 @@ namespace Frostbyte.Websocket
                     switch (result.MessageType)
                     {
                         case WebSocketMessageType.Close:
-                            OnClosed?.Invoke(_endPoint, _userId);
+                            OnClosed?.Invoke(_endPoint);
                             break;
 
                         case WebSocketMessageType.Text:
                             var packet = JsonSerializer.Parse<PlayerPacket>(memory.Span);
-                            var guild = Guilds[packet.GuildId] ??= new GuildHandler(packet.GuildId, _userId, _shards);
-                            guild.OnClosed += OnGuildClosed;
-                            await guild.HandlePacketAsync(packet).ConfigureAwait(false);
+                            await ProcessPacketAsync(packet).ConfigureAwait(false);
                             break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogHandler<GuildHandler>.Log.Error(ex?.InnerException ?? ex);
-                OnClosed?.Invoke(_endPoint, _userId);                
+                LogHandler<WsClient>.Log.Error(ex?.InnerException ?? ex);
+                OnClosed?.Invoke(_endPoint);
             }
             finally
             {
                 await DisposeAsync().ConfigureAwait(false);
-                OnClosed?.Invoke(_endPoint, _userId);
+                OnClosed?.Invoke(_endPoint);
             }
         }
 
-        private bool OnGuildClosed(ulong guildId)
+        private async Task ProcessPacketAsync(PlayerPacket packet)
         {
-            Guilds.TryRemove(guildId, out var guild);
-            guild.DisposeAsync().ConfigureAwait(false);
-            return true;
+            switch (packet)
+            {
+                case PlayPacket play:
+                    break;
+
+                case PausePacket pause:
+                    break;
+
+                case StopPacket stop:
+                    break;
+
+                case DestroyPacket destroy:
+                    break;
+
+                case SeekPacket seek:
+                    break;
+
+                case EqualizerPacket equalizer:
+                    break;
+
+                case VoiceUpdatePacket voiceUpdate:
+                    if (string.IsNullOrWhiteSpace(voiceUpdate.EndPoint))
+                        return;
+                    await GetHandler(voiceUpdate.GuildId).HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
+                    break;
+            }
         }
 
-        public async Task SendAsync(object @object)
+        private DiscordHandler GetHandler(ulong guildId)
         {
-            await _socket.SendAsync(@object).ConfigureAwait(false);
+            if (Handlers.TryGetValue(guildId, out var handler))
+                return handler;
+
+            handler = new DiscordHandler();
+            return handler;
         }
 
         public async ValueTask DisposeAsync()
         {
-            foreach (var (key, value) in Guilds)
+            foreach (var (key, value) in Handlers)
             {
                 await value.DisposeAsync().ConfigureAwait(false);
-                Guilds.TryRemove(key, out _);
+                Handlers.TryRemove(key, out _);
             }
-            Guilds.Clear();
-            Guilds = null;
+            Handlers.Clear();
+            Handlers = null;
             await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
             _socket.Dispose();
         }
