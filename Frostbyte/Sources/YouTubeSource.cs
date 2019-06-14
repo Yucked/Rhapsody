@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
+using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
@@ -59,7 +60,7 @@ namespace Frostbyte.Sources
                     break;
             }
 
-            var get = await Singletons.Http
+            var get = await Singleton.Of<HttpHandler>()
                 .GetBytesAsync(url).ConfigureAwait(false);
 
             if (get.IsEmpty)

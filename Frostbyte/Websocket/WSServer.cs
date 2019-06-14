@@ -15,27 +15,24 @@ namespace Frostbyte.Websocket
 {
     public sealed class WsServer : IAsyncDisposable
     {
+        private readonly Configuration _config;
+        private readonly SourceHandler _sources;
         private readonly ConcurrentDictionary<IPEndPoint, WsClient> _clients;
         private readonly HttpListener _listener;
         private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
-        private readonly SourceHandler _sourceHandler;
-        private readonly IServiceProvider _provider;
 
-        private Configuration _config;
         private CancellationTokenSource _receiveCancellation;
         private Task _statsSenderTask;
 
-        public WsServer(SourceHandler sourceHandler, Configuration configuration, IServiceProvider provider)
+        public WsServer()
         {
             _listener = new HttpListener();
             _clients = new ConcurrentDictionary<IPEndPoint, WsClient>();
             _wsCancellation = new CancellationTokenSource();
             _statsCancellation = new CancellationTokenSource();
             _mainCancellation = CancellationTokenSource.CreateLinkedTokenSource(_wsCancellation.Token, _statsCancellation.Token);
-            _sourceHandler = sourceHandler;
-            _provider = provider;
-            _config = configuration;
-            Singletons.SetConfig(configuration);
+            _config = Singleton.Of<Configuration>();
+            _sources = Singleton.Of<SourceHandler>();
         }
 
         public async ValueTask DisposeAsync()
@@ -96,7 +93,7 @@ namespace Frostbyte.Websocket
                             }
                             else
                             {
-                                response = await _sourceHandler.HandleRequestAsync(prov, query, _provider).ConfigureAwait(false);
+                                response = await _sources.HandleRequestAsync(prov, query).ConfigureAwait(false);
                                 await context.SendResponseAsync(response).ConfigureAwait(false);
                             }
                         }

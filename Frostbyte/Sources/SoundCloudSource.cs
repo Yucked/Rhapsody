@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
+using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
@@ -58,7 +59,7 @@ namespace Frostbyte.Sources
                     break;
             }
 
-            var get = await Singletons.Http.GetBytesAsync(url).ConfigureAwait(false);
+            var get = await Singleton.Of<HttpHandler>().GetBytesAsync(url).ConfigureAwait(false);
             if (get.IsEmpty)
             {
                 result.LoadType = LoadType.LoadFailed;
@@ -90,7 +91,7 @@ namespace Frostbyte.Sources
 
         public async ValueTask<Stream> GetStreamAsync(string query)
         {
-            var get = await Singletons.Http
+            var get = await Singleton.Of<HttpHandler>()
                 .WithUrl(BASE_URL)
                 .WithPath("tracks")
                 .WithPath(query)
@@ -104,7 +105,7 @@ namespace Frostbyte.Sources
             }
 
             var read = JsonSerializer.Parse<SoundCloudDirectUrl>(get.Span);
-            var stream = await Singletons.Http
+            var stream = await Singleton.Of<HttpHandler>()
                 .WithUrl(read.Url)
                 .GetStreamAsync().ConfigureAwait(false);
             return stream;

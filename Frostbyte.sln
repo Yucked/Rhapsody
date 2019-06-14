@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frostbyte.Tests", "Frostbyte.Tests\Frostbyte.Tests.csproj", "{A26105CB-BE0F-482D-9B9C-0776892F4C11}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frostbyte.Client", "Frostbyte.Client\Frostbyte.Client.csproj", "{864AFDD8-8990-4AAF-A93E-B0342A154D70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,10 +26,10 @@ Global
 		{7238491E-87A2-4D59-82A1-8BA407E602DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7238491E-87A2-4D59-82A1-8BA407E602DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7238491E-87A2-4D59-82A1-8BA407E602DD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A26105CB-BE0F-482D-9B9C-0776892F4C11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{864AFDD8-8990-4AAF-A93E-B0342A154D70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{864AFDD8-8990-4AAF-A93E-B0342A154D70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{864AFDD8-8990-4AAF-A93E-B0342A154D70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{864AFDD8-8990-4AAF-A93E-B0342A154D70}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

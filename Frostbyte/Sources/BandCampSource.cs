@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
+using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
@@ -57,13 +58,15 @@ namespace Frostbyte.Sources
             if (track is null)
                 return default;
 
-            var stream = await Singletons.Http.GetStreamAsync(track.File.Mp3Url).ConfigureAwait(false);
+            var stream = await Singleton.Of<HttpHandler>()
+                .GetStreamAsync(track.File.Mp3Url).ConfigureAwait(false);
             return stream;
         }
 
         private async ValueTask<string> ScrapeJSONAsync(string url)
         {
-            var rawHtml = await Singletons.Http.GetStringAsync(url).ConfigureAwait(false);
+            var rawHtml = await Singleton.Of<HttpHandler>()
+                .GetStringAsync(url).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(rawHtml))
                 return string.Empty;
 

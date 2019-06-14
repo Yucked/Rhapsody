@@ -1,9 +1,11 @@
 ﻿using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Packets;
+using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Frostbyte.Audio
@@ -28,13 +30,14 @@ namespace Frostbyte.Audio
 
         public PlaybackEngine()
         {
-            outputDevice.Init(bufferedWave);
             outputDevice.PlaybackStopped += OnPlaybackStopped;
         }
 
         public async Task PlayAsync(PlayPacket play)
         {
-            if (!Singletons.Cache.TryGetFromCache(play.Hash, out var track))
+            var source = Singleton.Of<SourceHandler>();
+
+            if (!Singleton.Of<CacheHandler>().TryGetFromCache(play.Hash, out var track))
             {
                 if (play.StartTime > track.Duration)
                 {
@@ -42,9 +45,17 @@ namespace Frostbyte.Audio
                     return;
                 }
             }
+            else
+            {
+                var decode = play.Hash.DecodeHash();
+                var request = await source.HandleRequestAsync(decode.Provider, decode.Url ?? decode.Title).ConfigureAwait(false);
 
-            var decode = play.Hash.DecodeHash();
-            // GET TRACK FROM SOURCE HANDLER AND PLAY IT
+                track = (request.AdditionObject as SearchResult).Tracks.FirstOrDefault();
+            }
+
+
+            //source.GetStreamAsync()
+            IsPlaying = true;
             outputDevice.Play();
         }
 
