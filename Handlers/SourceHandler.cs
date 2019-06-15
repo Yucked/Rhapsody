@@ -54,7 +54,7 @@ namespace Frostbyte.Handlers
             return response;
         }
 
-        public Task<Stream> GetStreamAsync(string provider, AudioTrack track)
+        public ValueTask<Stream> GetStreamAsync(string provider, AudioTrack track)
         {
             var sourceInfo = provider.GetSourceInfo();
             var source = Singleton.Of<ISourceProvider>(sourceInfo.SourceType);

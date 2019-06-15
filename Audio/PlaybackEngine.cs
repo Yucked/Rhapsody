@@ -36,6 +36,7 @@ namespace Frostbyte.Audio
         public async Task PlayAsync(PlayPacket play)
         {
             var source = Singleton.Of<SourceHandler>();
+            string provider;
 
             if (!Singleton.Of<CacheHandler>().TryGetFromCache(play.Hash, out var track))
             {
@@ -44,17 +45,21 @@ namespace Frostbyte.Audio
                     LogHandler<PlaybackEngine>.Log.RawLog(LogLevel.Error, $"{play.GuildId} specified out of range start time.", default);
                     return;
                 }
+
+                provider = track.Hash.DecodeHash().Provider;
             }
             else
             {
                 var decode = play.Hash.DecodeHash();
-                var request = await source.HandleRequestAsync(decode.Provider, decode.Url ?? decode.Title).ConfigureAwait(false);
+                provider = decode.Provider;
+                var request = await source.HandleRequestAsync(provider, decode.Url ?? decode.Title).ConfigureAwait(false);
 
                 track = (request.AdditionObject as SearchResult).Tracks.FirstOrDefault();
             }
 
 
-            //source.GetStreamAsync()
+            var stream = await source.GetStreamAsync(provider, track).ConfigureAwait(false);
+            
             IsPlaying = true;
             outputDevice.Play();
         }
