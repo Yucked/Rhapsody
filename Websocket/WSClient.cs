@@ -19,12 +19,14 @@ namespace Frostbyte.Websocket
         public readonly WebSocket _socket;
         public event Func<IPEndPoint, Task> OnClosed;
         public ConcurrentDictionary<ulong, DiscordHandler> Handlers { get; private set; }
+        public ConcurrentDictionary<ulong, PlaybackEngine> Engines { get; private set; }
 
         public WsClient(WebSocketContext socketContext, IPEndPoint endPoint)
         {
             _socket = socketContext.WebSocket;
             _endPoint = endPoint;
             Handlers = new ConcurrentDictionary<ulong, DiscordHandler>();
+            Engines = new ConcurrentDictionary<ulong, PlaybackEngine>();
         }
 
         public async Task ReceiveAsync(CancellationTokenSource cancellationToken)
@@ -66,25 +68,33 @@ namespace Frostbyte.Websocket
             if (isNew && !(packet is VoiceUpdatePacket))
                 return;
 
+            Engines.TryGetValue(packet.GuildId, out var engine);
+
             switch (packet)
             {
                 case PlayPacket play:
-                    await handler.PlaybackEngine.PlayAsync(play).ConfigureAwait(false);
+                    await engine.PlayAsync(play).ConfigureAwait(false);
                     break;
 
                 case PausePacket pause:
+                    await engine.PauseAsync(pause).ConfigureAwait(false);
                     break;
 
                 case StopPacket stop:
+                    await engine.StopAsync(stop).ConfigureAwait(false);
                     break;
 
                 case DestroyPacket destroy:
+                    await handler.DisposeAsync().ConfigureAwait(false);
+                    await engine.DisposeAsync().ConfigureAwait(false);
                     break;
 
                 case SeekPacket seek:
+                    await engine.SeekAsync(seek).ConfigureAwait(false);
                     break;
 
                 case EqualizerPacket equalizer:
+                    await engine.EqualizeAsync().ConfigureAwait(false);
                     break;
 
                 case VoiceUpdatePacket voiceUpdate:
@@ -92,6 +102,7 @@ namespace Frostbyte.Websocket
                         return;
 
                     await handler.HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
+                    Engines.TryAdd(packet.GuildId, new PlaybackEngine(true, _socket));
                     break;
             }
         }

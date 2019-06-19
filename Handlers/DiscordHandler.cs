@@ -1,5 +1,4 @@
-﻿using Frostbyte.Audio;
-using Frostbyte.Entities.Discord;
+﻿using Frostbyte.Entities.Discord;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
 using System;
@@ -19,8 +18,6 @@ namespace Frostbyte.Handlers
         private Task _receiveTask, _heartBeatTask;
         private UdpClient _udp;
         private VoiceReadyPayload _vrp;
-
-        public PlaybackEngine PlaybackEngine { get; private set; }
 
         public async Task HandleVoiceUpdateAsync(VoiceUpdatePacket voiceUpdate)
         {
@@ -116,8 +113,6 @@ namespace Frostbyte.Handlers
                     {
                         LogHandler<DiscordHandler>.Log.Error(ex?.InnerException ?? ex);
                     }
-
-                    PlaybackEngine.IsReady = true;
                     break;
 
                 case 8:

@@ -161,8 +161,8 @@ namespace Frostbyte.Websocket
                 var stat = new StatisticPacket
                 {
                     ConnectedClients = _clients.Count,
-                    ConnectedPlayers = _clients.Values.Sum(x => x.Handlers.Count),
-                    PlayingPlayers = _clients.Values.Sum(x => x.Handlers.Values.Count(g => g.PlaybackEngine.IsPlaying is true)),
+                    ConnectedPlayers = _clients.Values.Sum(x => x.Engines.Values.Count(x => x.IsReady is true)),
+                    PlayingPlayers = _clients.Values.Sum(x => x.Engines.Values.Count(e => e.IsPlaying is true)),
                     Uptime = (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds.TryCast<int>()
                 }.Populate(process);
 
