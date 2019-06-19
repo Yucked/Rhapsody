@@ -1,36 +1,36 @@
-﻿using Frostbyte.Entities.Enums;
+﻿using Frostbyte.Entities;
+using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
+using System;
 using System.Linq;
+using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Frostbyte.Audio
 {
-    public sealed class PlaybackEngine
+    public sealed class PlaybackEngine : IAsyncDisposable
     {
-        /***
-         * https://github.com/naudio/NAudio/blob/master/Docs/WaveProviders.md
-         * https://github.com/naudio/NAudio/blob/master/Docs/RawSourceWaveStream.md
-         * https://markheath.net/post/fire-and-forget-audio-playback-with
-         * https://github.com/naudio/NAudio/blob/master/Docs/SmbPitchShiftingSampleProvider.md
-         * https://github.com/naudio/NAudio/blob/master/Docs/FadeInOutSampleProvider.md
-         * ***/
+        private readonly WaveOutEvent waveOut;
+        private readonly WebSocket _socket;
+        private StreamMediaFoundationReader streamMedia;
+        private Task TrackUpdateTask;
+        private CancellationTokenSource TrackSource;
 
-        private readonly IWavePlayer outputDevice;
-        private readonly BufferedWaveProvider bufferedWave;
-        private readonly MixingSampleProvider mixer;
-
-        public bool IsReady { get; set; }
+        public bool IsReady { get; private set; }
         public bool IsPaused { get; private set; }
         public bool IsPlaying { get; private set; }
 
-        public PlaybackEngine()
+        public PlaybackEngine(bool isReady, WebSocket socket)
         {
-            outputDevice.PlaybackStopped += OnPlaybackStopped;
+            IsReady = isReady;
+            _socket = socket;
+            waveOut = new WaveOutEvent();
+            waveOut.PlaybackStopped += OnPlaybackStopped;
         }
 
         public async Task PlayAsync(PlayPacket play)
@@ -38,7 +38,7 @@ namespace Frostbyte.Audio
             var source = Singleton.Of<SourceHandler>();
             string provider;
 
-            if (!Singleton.Of<CacheHandler>().TryGetFromCache(play.Hash, out var track))
+            if (Singleton.Of<CacheHandler>().TryGetFromCache(play.Hash, out var track))
             {
                 if (play.StartTime > track.Duration)
                 {
@@ -59,48 +59,107 @@ namespace Frostbyte.Audio
 
 
             var stream = await source.GetStreamAsync(provider, track).ConfigureAwait(false);
-            
+            streamMedia = new StreamMediaFoundationReader(stream);
+            streamMedia.Skip(play.StartTime);
+
+            waveOut.Init(streamMedia);
+            waveOut.Play();
+
             IsPlaying = true;
-            outputDevice.Play();
+            TrackSource = new CancellationTokenSource((int)(TimeSpan.FromSeconds(5).TotalMilliseconds + play.EndTime is 0 ? track.Duration : play.EndTime));
+            TrackUpdateTask = Task.Run(() => SendTrackUpdateAsync(track.Hash), TrackSource.Token);
         }
 
-        private void OnPlaybackStopped(object sender, StoppedEventArgs e)
+        private async void OnPlaybackStopped(object sender, StoppedEventArgs e)
         {
+            var response = new ResponseEntity();
+
+            if (e.Exception != null)
+            {
+                response.IsSuccess = false;
+                response.Reason = e.Exception?.InnerException.Message ?? e.Exception.Message;
+                response.Operation = OperationType.TrackErrored;
+            }
+            else
+            {
+                response.IsSuccess = true;
+                response.Reason = "Finished playback.";
+                response.Operation = OperationType.TrackFinished;
+            }
+
             IsPlaying = false;
+            TrackSource.Cancel(false);
+            TrackSource.Dispose();
+            TrackUpdateTask = null;
+
+            await _socket.SendAsync(response).ConfigureAwait(false);
         }
 
         public Task PauseAsync(PausePacket pause)
         {
-            outputDevice.Pause();
-            IsPaused = pause.IsPaused;
+            if (pause.IsPaused)
+            {
+                IsPaused = true;
+                waveOut.Pause();
+            }
+            else
+            {
+                IsPaused = false;
+                waveOut.Play();
+            }
             return Task.CompletedTask;
         }
 
         public Task StopAsync(StopPacket stop)
         {
-            outputDevice.Stop();
             IsPlaying = false;
+            waveOut.Stop();
             return Task.CompletedTask;
         }
 
         public Task VolumeAsync(VolumePacket volume)
         {
-            //outputDevice.Volume = volume;
+            waveOut.Volume = volume.Volume;
             return Task.CompletedTask;
         }
 
-        public async Task DestroyAsync()
+        public Task SeekAsync(SeekPacket seek)
         {
-
-        }
-
-        public async Task SeekAsync()
-        {
+            streamMedia.Skip((int)seek.Position);
+            return Task.CompletedTask;
         }
 
         public async Task EqualizeAsync()
         {
 
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            IsPlaying = false;
+            IsReady = false;
+            return default;
+        }
+
+        private async Task SendTrackUpdateAsync(string hash)
+        {
+            var response = new ResponseEntity
+            {
+                Operation = OperationType.TrackUpdate,
+                IsSuccess = true
+            };
+
+            while (waveOut.PlaybackState is PlaybackState.Playing && !TrackSource.IsCancellationRequested)
+            {
+                var update = new
+                {
+                    streamMedia.Position,
+                    Hash = hash
+                };
+                response.AdditionObject = update;
+                await _socket.SendAsync(response).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            }
         }
     }
 }
