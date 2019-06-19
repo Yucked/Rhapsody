@@ -1,37 +1,21 @@
-using System.Runtime.Serialization;
-
 namespace Frostbyte.Entities.Enums
 {
     public enum OperationType
     {
-        [EnumMember(Value = "VoiceUpdate")]
-        VoiceUpdate = 11,
+        Destroy = 0,
+        Play = 1,
+        Pause = 2,
+        Stop = 3,
+        Skip = 4,
+        Seek = 5,
+        Volume = 6,
+        Equalizer = 7,
+        VoiceUpdate = 8,
 
-        [EnumMember(Value = "Play")]
-        Play        = 1,
-
-        [EnumMember(Value = "Pause")]
-        Pause       = 2,
-
-        [EnumMember(Value = "Stop")]
-        Stop        = 3,
-
-        [EnumMember(Value = "Skip")]
-        Skip        = 4,
-
-        [EnumMember(Value = "Seek")]
-        Seek        = 5,
-
-        [EnumMember(Value = "Volume")]
-        Volume      = 6,
-
-        [EnumMember(Value = "Destroy")]
-        Destroy     = 0,
-
-        [EnumMember(Value = "Equalizer")]
-        Equalizer   = 7,
-
-        [EnumMember(Value = "Stats")]
-        Statistics  = 12
+        REST = 11,
+        Statistics = 12,
+        TrackUpdate = 13,
+        TrackErrored = 14,
+        TrackFinished = 15
     }
 }

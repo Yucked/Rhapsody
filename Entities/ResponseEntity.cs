@@ -1,12 +1,15 @@
-﻿using System.Text.Json.Serialization;
+﻿using Frostbyte.Entities.Enums;
+using System.Text.Json.Serialization;
 
 namespace Frostbyte.Entities
 {
     public sealed class ResponseEntity
     {
         public bool IsSuccess { get; set; }
-    
+
         public string Reason { get; set; }
+
+        public OperationType Operation { get; set; }
 
         [JsonPropertyName("obj")]
         public object AdditionObject { get; set; }
