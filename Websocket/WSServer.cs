@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
 using System.Text.Json;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Websocket
 {
@@ -80,7 +81,6 @@ namespace Frostbyte.Websocket
                         if (context.Request.Headers.Get("Password") != _config.Password)
                         {
                             response.Reason = "Password header doesn't match value specified in configuration";
-                            await context.SendResponseAsync(response).ConfigureAwait(false);
                         }
                         else
                         {
@@ -89,15 +89,16 @@ namespace Frostbyte.Websocket
                             if (query is null || prov is null)
                             {
                                 response.Reason = "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
-                                await context.SendResponseAsync(response).ConfigureAwait(false);
                             }
                             else
                             {
+                                response.IsSuccess = true;
                                 response = await _sources.HandleRequestAsync(prov, query).ConfigureAwait(false);
-                                await context.SendResponseAsync(response).ConfigureAwait(false);
                             }
                         }
 
+                        response.Operation = OperationType.REST;
+                        await context.SendResponseAsync(response).ConfigureAwait(false);
                         LogHandler<WsServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Reason}.");
                         break;
 
