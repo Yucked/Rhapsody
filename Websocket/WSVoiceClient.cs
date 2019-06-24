@@ -1,6 +1,8 @@
 ﻿using Frostbyte.Entities.Discord;
+using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
+using Frostbyte.Handlers;
 using System;
 using System.Net.Sockets;
 using System.Net.WebSockets;
@@ -8,14 +10,14 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Frostbyte.Handlers
+namespace Frostbyte.Websocket
 {
-    public sealed class DiscordHandler : IAsyncDisposable
+    public sealed class WSVoiceClient : IAsyncDisposable
     {
         private ClientWebSocket _socket;
         private CancellationTokenSource _receiveCancel, _heartBeatCancel;
         private SessionDescriptionPayload _sdp;
-        private Task _receiveTask, _heartBeatTask;
+        private Task _receiveTask, _heartBeatTask, _keepAliveTask;
         private UdpClient _udp;
         private VoiceReadyPayload _vrp;
 
@@ -36,7 +38,7 @@ namespace Frostbyte.Handlers
             }
             catch (Exception ex)
             {
-                LogHandler<DiscordHandler>.Log.Error(ex?.InnerException ?? ex);
+                LogHandler<WSVoiceClient>.Log.Error(ex?.InnerException ?? ex);
             }
         }
 
@@ -44,7 +46,7 @@ namespace Frostbyte.Handlers
         {
             if (task.IsCanceled || task.IsFaulted || task.Exception != null)
             {
-                LogHandler<DiscordHandler>.Log.Error(task.Exception);
+                LogHandler<WSVoiceClient>.Log.Error(task.Exception);
             }
             else
             {
@@ -79,7 +81,7 @@ namespace Frostbyte.Handlers
             }
             catch (Exception ex)
             {
-                LogHandler<DiscordHandler>.Log.Error(ex?.InnerException ?? ex);
+                LogHandler<WSVoiceClient>.Log.Error(ex?.InnerException ?? ex);
             }
             finally
             {
@@ -90,32 +92,34 @@ namespace Frostbyte.Handlers
 
         private async Task ProcessPayloadAsync(BaseDiscordPayload payload)
         {
-            switch (payload.OpCode)
+            switch (payload.OP)
             {
-                case 2:
+                case VoiceOPType.Ready: //Create UDP connection and initialize heartbeat task.
+                    LogHandler<WSVoiceClient>.Log.Debug("Received voice ready payload.");
+
                     _vrp = payload.Data.TryCast<VoiceReadyPayload>();
-                    var basePayload = new BaseDiscordPayload(1, new SelectPayload(_vrp.IPAddress, _vrp.Port));
-                    await _socket.SendAsync(basePayload);
+                    _udp = new UdpClient(_vrp.IPAddress, _vrp.Port);
+                    await _udp.SendDiscoveryAsync(_vrp.SSRC).ConfigureAwait(false);
+                    LogHandler<WSVoiceClient>.Log.Debug($"Sent UDP discovery with {_vrp.SSRC} ssrc.");
+
+                    _heartBeatTask = HandleHeartbeatAsync(_vrp.HeartbeatInterval);
+                    LogHandler<WSVoiceClient>.Log.Debug($"Started heartbeat task with {_vrp.HeartbeatInterval} interval.");
                     break;
 
-                case 4:
+                case VoiceOPType.SessionDescription:
+                    LogHandler<WSVoiceClient>.Log.Debug("Received voice ready payload.");
                     _sdp = payload.Data.TryCast<SessionDescriptionPayload>();
                     if (_sdp.Mode != "xsalsa20_poly1305")
                         return;
 
-                    try
+                    await _socket.SendAsync(new BaseDiscordPayload(VoiceOPType.Speaking, new
                     {
-                        _udp = new UdpClient();
-                        _udp.Connect(_vrp.IPAddress, _vrp.Port);
-                        await _udp.ProcessVoiceReadyAsync(_vrp).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogHandler<DiscordHandler>.Log.Error(ex?.InnerException ?? ex);
-                    }
+                        delay = 0,
+                        speaking = false
+                    })).ConfigureAwait(false);
                     break;
 
-                case 8:
+                case VoiceOPType.Hello:
                     var helloPayload = payload.Data.TryCast<HelloPayload>();
                     if (_heartBeatTask != null)
                     {
@@ -125,11 +129,14 @@ namespace Frostbyte.Handlers
                     }
 
                     _heartBeatCancel ??= new CancellationTokenSource();
-                    _heartBeatTask = Task.Run(() => HandleHeartbeatAsync(helloPayload.HeartBeatInterval), _heartBeatCancel.Token);
+                    _heartBeatTask = HandleHeartbeatAsync(helloPayload.HeartBeatInterval);
+                    break;
+
+                case VoiceOPType.Speaking:
                     break;
 
                 default:
-                    LogHandler<DiscordHandler>.Log.Debug($"Received {payload.OpCode} op code.");
+                    LogHandler<WSVoiceClient>.Log.Debug($"Received {payload.OP} op code.");
                     break;
             }
         }
@@ -139,17 +146,26 @@ namespace Frostbyte.Handlers
             while (!_heartBeatCancel.IsCancellationRequested)
             {
                 await Task.Delay(interval).ConfigureAwait(false);
-                var payload = new BaseDiscordPayload(3, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                var payload = new BaseDiscordPayload(VoiceOPType.Heartbeat, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 await _socket.SendAsync(payload).ConfigureAwait(false);
             }
         }
 
+        private async Task SendKeepAliveAsync()
+        {
+
+        }
+
         public async ValueTask DisposeAsync()
         {
+            _udp.Close();
             _heartBeatCancel.Cancel(false);
             _receiveCancel.Cancel(true);
             _heartBeatTask?.Dispose();
             _receiveTask?.Dispose();
+            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Close requested.", CancellationToken.None)
+                .ConfigureAwait(false);
+            _socket.Dispose();
         }
     }
 }
