@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Frostbyte.Websocket;
+using System;
 
 namespace Frostbyte.Handlers
 {
@@ -21,16 +22,16 @@ namespace Frostbyte.Handlers
         {
             Singleton.Add<HttpHandler>();
             Singleton.Add<CacheHandler>();
-
+            var config = BuildConfiguration();
+            Singleton.Add<Configuration>(config);
 
             await PrintRepositoryInformationAsync().ConfigureAwait(false);
             Console.WriteLine(new string('-', 100), Color.Gray);
             PrintSystemInformation();
             Console.WriteLine(new string('-', 100), Color.Gray);
 
-            Singleton.Add<Configuration>(BuildConfiguration());
             Singleton.Of<SourceHandler>().Initialize();
-            await Singleton.Of<WsServer>().InitializeAsync().ConfigureAwait(false);
+            await Singleton.Of<WSServer>().InitializeAsync().ConfigureAwait(false);
 
             await Task.Delay(-1);
         }
@@ -76,7 +77,6 @@ namespace Frostbyte.Handlers
             {
                 var read = File.ReadAllBytes("./Config.json");
                 config = JsonSerializer.Parse<Configuration>(read);
-                LogHandler<MainHandler>.Log.Information("Loaded configuration.");
             }
             else
             {
@@ -86,6 +86,8 @@ namespace Frostbyte.Handlers
                     Port = 6666,
                     LogLevel = LogLevel.None,
                     Password = "frostbyte",
+                    MaxConnectionRetries = 10,
+                    ReconnectInterval = 5000,
                     Sources = new AudioSources
                     {
                         EnableLocal = true,
@@ -97,7 +99,6 @@ namespace Frostbyte.Handlers
 
                 var data = JsonSerializer.ToUtf8Bytes(config, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllBytes("./Config.json", data);
-                LogHandler<MainHandler>.Log.Information("Built new configuration.");
             }
 
             return config;

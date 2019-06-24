@@ -59,5 +59,13 @@ namespace Frostbyte
 
             _instances.TryAdd(typeof(T), obj);
         }
+
+        public static void Update<T>(object obj)
+        {
+            if (!_instances.TryGetValue(typeof(T), out var value))
+                return;
+
+            value = obj;
+        }
     }
 }
