@@ -1,3 +1,4 @@
+using Frostbyte.Entities.Enums;
 using System.Text.Json.Serialization;
 
 namespace Frostbyte.Entities.Discord
@@ -5,14 +6,14 @@ namespace Frostbyte.Entities.Discord
     public struct BaseDiscordPayload
     {
         [JsonPropertyName("op")]
-        public int OpCode { get; }
+        public VoiceOPType OP { get; }
 
         [JsonPropertyName("d")]
         public object Data { get; }
 
-        public BaseDiscordPayload(int opCode, object data)
+        public BaseDiscordPayload(VoiceOPType op, object data)
         {
-            OpCode = opCode;
+            OP = op;
             Data = data;
         }
     }
