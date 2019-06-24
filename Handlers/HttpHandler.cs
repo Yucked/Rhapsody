@@ -55,13 +55,26 @@ namespace Frostbyte.Handlers
             return this;
         }
 
+        public async ValueTask<bool> PingAsync()
+        {
+            try
+            {
+                using var get = await _client.GetAsync("https://google.com").ConfigureAwait(false);
+                return get.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public async ValueTask<ReadOnlyMemory<byte>> GetBytesAsync(string url = default)
         {
             url = url ?? Url;
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            var get = await _client.GetAsync(url).ConfigureAwait(false);
+            using var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, $"{url} returned {get.ReasonPhrase}.", default);
@@ -81,7 +94,7 @@ namespace Frostbyte.Handlers
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            var get = await _client.GetAsync(url).ConfigureAwait(false);
+            using var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, $"{url} returned {get.ReasonPhrase}.", default);
@@ -101,7 +114,7 @@ namespace Frostbyte.Handlers
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            var get = await _client.GetAsync(url).ConfigureAwait(false);
+            using var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, $"{url} returned {get.ReasonPhrase}.", default);
