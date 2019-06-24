@@ -60,10 +60,10 @@ namespace Frostbyte.Sources
                     break;
             }
 
-            var get = await Singleton.Of<HttpHandler>()
+            var bytes = await Singleton.Of<HttpHandler>()
                 .GetBytesAsync(url).ConfigureAwait(false);
 
-            if (get.IsEmpty)
+            if (bytes.IsEmpty)
             {
                 search.LoadType = LoadType.LoadFailed;
                 return search;
@@ -72,18 +72,18 @@ namespace Frostbyte.Sources
             switch (search.LoadType)
             {
                 case LoadType.PlaylistLoaded:
-                    var playlist = JsonSerializer.Parse<YouTubePlaylist>(get.Span);
+                    var playlist = JsonSerializer.Parse<YouTubePlaylist>(bytes.Span);
                     search.Playlist = playlist.BuildPlaylist(playlistId, url);
                     search.Tracks = playlist.Videos.Select(x => x.ToTrack);
                     break;
 
                 case LoadType.SearchResult:
-                    var ytSearch = JsonSerializer.Parse<YouTubeSearch>(get.Span);
+                    var ytSearch = JsonSerializer.Parse<YouTubeSearch>(bytes.Span);
                     search.Tracks = ytSearch.Video.Select(x => x.ToTrack);
                     break;
 
                 case LoadType.TrackLoaded:
-                    ytSearch = JsonSerializer.Parse<YouTubeSearch>(get.Span);
+                    ytSearch = JsonSerializer.Parse<YouTubeSearch>(bytes.Span);
                     search.Tracks = new[] { ytSearch.Video.FirstOrDefault(x => x.Id == videoId).ToTrack };
                     break;
             }

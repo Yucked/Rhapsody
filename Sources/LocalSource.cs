@@ -7,10 +7,8 @@ using Frostbyte.Entities.Results;
 
 namespace Frostbyte.Sources
 {
-
     public sealed class LocalSource : ISourceProvider
     {
-
         public ValueTask<SearchResult> SearchAsync(string query)
         {
             var response = new SearchResult();
@@ -24,7 +22,6 @@ namespace Frostbyte.Sources
                 }
 
                 response.Tracks = files.Select(x => BuildTrack(x));
-
                 response.LoadType = LoadType.SearchResult;
             }
             else
@@ -37,9 +34,15 @@ namespace Frostbyte.Sources
             return new ValueTask<SearchResult>(response);
         }
 
-        public ValueTask<Stream> GetStreamAsync(string id)
+        public async ValueTask<Stream> GetStreamAsync(string query)
         {
-            throw new System.NotImplementedException();
+            if (Directory.Exists(query))
+                return default;
+
+            using var stream = new FileStream(query, FileMode.Open);
+            var memStream = new MemoryStream((int)stream.Length);
+            await stream.CopyToAsync(memStream).ConfigureAwait(false);
+            return memStream;
         }
 
         private AudioTrack BuildTrack(string filePath)

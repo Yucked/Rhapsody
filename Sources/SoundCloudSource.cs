@@ -59,8 +59,8 @@ namespace Frostbyte.Sources
                     break;
             }
 
-            var get = await Singleton.Of<HttpHandler>().GetBytesAsync(url).ConfigureAwait(false);
-            if (get.IsEmpty)
+            var bytes = await Singleton.Of<HttpHandler>().GetBytesAsync(url).ConfigureAwait(false);
+            if (bytes.IsEmpty)
             {
                 result.LoadType = LoadType.LoadFailed;
                 return result;
@@ -69,19 +69,19 @@ namespace Frostbyte.Sources
             switch (result.LoadType)
             {
                 case LoadType.TrackLoaded:
-                    var scTrack = JsonSerializer.Parse<SoundCloudTrack>(get.Span);
+                    var scTrack = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
                     var tracks = new[] { scTrack.ToTrack };
                     result.Tracks = tracks;
                     break;
 
                 case LoadType.PlaylistLoaded:
-                    var scPly = JsonSerializer.Parse<SoundCloudPlaylist>(get.Span);
+                    var scPly = JsonSerializer.Parse<SoundCloudPlaylist>(bytes.Span);
                     result.Playlist = scPly.ToPlaylist;
                     result.Tracks = scPly.Tracks.Select(x => x.ToTrack);
                     break;
 
                 case LoadType.SearchResult:
-                    var scTracks = JsonSerializer.Parse<IEnumerable<SoundCloudTrack>>(get.Span);
+                    var scTracks = JsonSerializer.Parse<IEnumerable<SoundCloudTrack>>(bytes.Span);
                     result.Tracks = scTracks.Select(x => x.ToTrack);
                     break;
             }
@@ -91,7 +91,7 @@ namespace Frostbyte.Sources
 
         public async ValueTask<Stream> GetStreamAsync(string query)
         {
-            var get = await Singleton.Of<HttpHandler>()
+            var bytes = await Singleton.Of<HttpHandler>()
                 .WithUrl(BASE_URL)
                 .WithPath("tracks")
                 .WithPath(query)
@@ -99,12 +99,12 @@ namespace Frostbyte.Sources
                 .WithParameter("client_id", CLIENT_ID)
                 .GetBytesAsync().ConfigureAwait(false);
 
-            if (get.IsEmpty)
+            if (bytes.IsEmpty)
             {
                 return default;
             }
 
-            var read = JsonSerializer.Parse<SoundCloudDirectUrl>(get.Span);
+            var read = JsonSerializer.Parse<SoundCloudDirectUrl>(bytes.Span);
             var stream = await Singleton.Of<HttpHandler>()
                 .WithUrl(read.Url)
                 .GetStreamAsync().ConfigureAwait(false);
