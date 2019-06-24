@@ -19,13 +19,14 @@ namespace Frostbyte.Audio
         private readonly WebSocket _socket;
         private StreamMediaFoundationReader streamMedia;
         private Task TrackUpdateTask;
-        private CancellationTokenSource TrackSource;
+        private CancellationTokenSource TrackCancel;
 
         public bool IsReady { get; private set; }
         public bool IsPaused { get; private set; }
         public bool IsPlaying { get; private set; }
+        public bool ToggleCrossfade { get; }
 
-        public PlaybackEngine(bool isReady, WebSocket socket)
+        public PlaybackEngine(WebSocket socket, bool isReady, bool toggleCrossfade)
         {
             IsReady = isReady;
             _socket = socket;
@@ -59,15 +60,76 @@ namespace Frostbyte.Audio
 
 
             var stream = await source.GetStreamAsync(provider, track).ConfigureAwait(false);
+
+            if (stream?.Length is 0)
+            {
+                LogHandler<PlaybackEngine>.Log.RawLog(LogLevel.Error, $"{nameof(source)} returned a default stream.", default);
+                return;
+            }
+
             streamMedia = new StreamMediaFoundationReader(stream);
-            streamMedia.Skip(play.StartTime);
+            if (play.StartTime.HasValue)
+                streamMedia.Skip(play.StartTime.Value);
 
             waveOut.Init(streamMedia);
             waveOut.Play();
-
             IsPlaying = true;
-            TrackSource = new CancellationTokenSource((int)(TimeSpan.FromSeconds(5).TotalMilliseconds + play.EndTime is 0 ? track.Duration : play.EndTime));
-            TrackUpdateTask = Task.Run(() => SendTrackUpdateAsync(track.Hash), TrackSource.Token);
+            TrackCancel = new CancellationTokenSource((int)(TimeSpan.FromSeconds(5).TotalMilliseconds +
+                (play.EndTime.HasValue ? play.EndTime.Value : track.Duration)));
+            TrackUpdateTask = Task.Run(() => SendTrackUpdateAsync(track.Hash), TrackCancel.Token);
+        }
+
+        public void Pause(PausePacket pause)
+        {
+            if (pause.IsPaused)
+            {
+                IsPaused = true;
+                waveOut.Pause();
+            }
+            else
+            {
+                IsPaused = false;
+                waveOut.Play();
+            }
+        }
+
+        public void Stop(StopPacket stop)
+        {
+            if (IsPlaying)
+                return;
+
+            IsPlaying = false;
+            waveOut.Stop();
+            TrackCancel.Cancel(false);
+        }
+
+        public void Volume(VolumePacket volume)
+        {
+            if (volume.Value < 0 || volume.Value > 150)
+                return;
+
+            waveOut.Volume = volume.Value;
+        }
+
+        public void Seek(SeekPacket seek)
+        {
+            if (seek.Position > streamMedia.Length ||
+                seek.Position < streamMedia.Length)
+                return;
+
+            streamMedia.Skip((int)seek.Position);
+        }
+
+        public async Task EqualizeAsync()
+        {
+
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            IsPlaying = false;
+            IsReady = false;
+            return default;
         }
 
         private async void OnPlaybackStopped(object sender, StoppedEventArgs e)
@@ -88,57 +150,11 @@ namespace Frostbyte.Audio
             }
 
             IsPlaying = false;
-            TrackSource.Cancel(false);
-            TrackSource.Dispose();
+            TrackCancel.Cancel(false);
+            TrackCancel.Dispose();
             TrackUpdateTask = null;
 
             await _socket.SendAsync(response).ConfigureAwait(false);
-        }
-
-        public Task PauseAsync(PausePacket pause)
-        {
-            if (pause.IsPaused)
-            {
-                IsPaused = true;
-                waveOut.Pause();
-            }
-            else
-            {
-                IsPaused = false;
-                waveOut.Play();
-            }
-            return Task.CompletedTask;
-        }
-
-        public Task StopAsync(StopPacket stop)
-        {
-            IsPlaying = false;
-            waveOut.Stop();
-            return Task.CompletedTask;
-        }
-
-        public Task VolumeAsync(VolumePacket volume)
-        {
-            waveOut.Volume = volume.Volume;
-            return Task.CompletedTask;
-        }
-
-        public Task SeekAsync(SeekPacket seek)
-        {
-            streamMedia.Skip((int)seek.Position);
-            return Task.CompletedTask;
-        }
-
-        public async Task EqualizeAsync()
-        {
-
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            IsPlaying = false;
-            IsReady = false;
-            return default;
         }
 
         private async Task SendTrackUpdateAsync(string hash)
@@ -149,7 +165,7 @@ namespace Frostbyte.Audio
                 IsSuccess = true
             };
 
-            while (waveOut.PlaybackState is PlaybackState.Playing && !TrackSource.IsCancellationRequested)
+            while (waveOut.PlaybackState is PlaybackState.Playing && !TrackCancel.IsCancellationRequested)
             {
                 var update = new
                 {
