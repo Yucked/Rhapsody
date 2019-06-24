@@ -8,24 +8,26 @@ using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Audio;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Websocket
 {
-    public sealed class WsClient : IAsyncDisposable
+    public sealed class WSClient : IAsyncDisposable
     {
         private readonly ulong _userId;
         private readonly IPEndPoint _endPoint;
+        private BasePacket firstPacket;
 
         public readonly WebSocket _socket;
         public event Func<IPEndPoint, Task> OnClosed;
-        public ConcurrentDictionary<ulong, DiscordHandler> Handlers { get; private set; }
+        public ConcurrentDictionary<ulong, WSVoiceClient> VoiceClients { get; private set; }
         public ConcurrentDictionary<ulong, PlaybackEngine> Engines { get; private set; }
 
-        public WsClient(WebSocketContext socketContext, IPEndPoint endPoint)
+        public WSClient(WebSocketContext socketContext, IPEndPoint endPoint)
         {
             _socket = socketContext.WebSocket;
             _endPoint = endPoint;
-            Handlers = new ConcurrentDictionary<ulong, DiscordHandler>();
+            VoiceClients = new ConcurrentDictionary<ulong, WSVoiceClient>();
             Engines = new ConcurrentDictionary<ulong, PlaybackEngine>();
         }
 
@@ -52,7 +54,7 @@ namespace Frostbyte.Websocket
             }
             catch (Exception ex)
             {
-                LogHandler<WsClient>.Log.Error(ex?.InnerException ?? ex);
+                LogHandler<WSClient>.Log.Error(ex?.InnerException ?? ex);
                 OnClosed?.Invoke(_endPoint);
             }
             finally
@@ -64,33 +66,45 @@ namespace Frostbyte.Websocket
 
         private async Task ProcessPacketAsync(PlayerPacket packet)
         {
-            var handler = GetHandler(packet.GuildId, out var isNew);
-            if (isNew && !(packet is VoiceUpdatePacket))
+            if (firstPacket is null && !(packet is ReadyPacket))
+            {
+                LogHandler<WSClient>.Log.RawLog(LogLevel.Critical,
+                    $"{packet.GuildId} guild didn't send a ready packet. PlaybackEngine endpoints won't function.",
+                    default);
                 return;
+            }
+
 
             Engines.TryGetValue(packet.GuildId, out var engine);
 
             switch (packet)
             {
+                case ReadyPacket ready:
+                    if (!Engines.ContainsKey(packet.GuildId))
+                        Engines.TryAdd(packet.GuildId, new PlaybackEngine(_socket, true, ready.ToggleCrossfade));
+
+                    if (!VoiceClients.ContainsKey(packet.GuildId))
+                        VoiceClients.TryAdd(packet.GuildId, new WSVoiceClient());
+                    break;
+
                 case PlayPacket play:
                     await engine.PlayAsync(play).ConfigureAwait(false);
                     break;
 
                 case PausePacket pause:
-                    await engine.PauseAsync(pause).ConfigureAwait(false);
+                    engine.Pause(pause);
                     break;
 
                 case StopPacket stop:
-                    await engine.StopAsync(stop).ConfigureAwait(false);
+                    engine.Stop(stop);
                     break;
 
                 case DestroyPacket destroy:
-                    await handler.DisposeAsync().ConfigureAwait(false);
                     await engine.DisposeAsync().ConfigureAwait(false);
                     break;
 
                 case SeekPacket seek:
-                    await engine.SeekAsync(seek).ConfigureAwait(false);
+                    engine.Seek(seek);
                     break;
 
                 case EqualizerPacket equalizer:
@@ -101,34 +115,30 @@ namespace Frostbyte.Websocket
                     if (string.IsNullOrWhiteSpace(voiceUpdate.EndPoint))
                         return;
 
-                    await handler.HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
-                    Engines.TryAdd(packet.GuildId, new PlaybackEngine(true, _socket));
+                    await VoiceClients[packet.GuildId].HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
                     break;
             }
         }
 
-        private DiscordHandler GetHandler(ulong guildId, out bool isNew)
-        {
-            if (Handlers.TryGetValue(guildId, out var handler))
-            {
-                isNew = false;
-                return handler;
-            }
-
-            handler = new DiscordHandler();
-            isNew = true;
-            return handler;
-        }
-
         public async ValueTask DisposeAsync()
         {
-            foreach (var (key, value) in Handlers)
+            foreach (var (key, value) in VoiceClients)
             {
                 await value.DisposeAsync().ConfigureAwait(false);
-                Handlers.TryRemove(key, out _);
+                VoiceClients.TryRemove(key, out _);
             }
-            Handlers.Clear();
-            Handlers = null;
+
+            foreach (var (key, value) in Engines)
+            {
+                value.Stop(default);
+                await value.DisposeAsync().ConfigureAwait(false);
+            }
+
+            VoiceClients.Clear();
+            VoiceClients = null;
+            Engines.Clear();
+            Engines = null;
+
             await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
             _socket.Dispose();
         }
