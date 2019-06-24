@@ -5,8 +5,7 @@ namespace Frostbyte.Entities.Packets
 {
     public sealed class VolumePacket : PlayerPacket
     {
-        [JsonPropertyName("vol")]
-        public int Volume { get; set; }
+        public int Value { get; set; }
 
         public VolumePacket(ulong guildId) : base(guildId, OperationType.Volume)
         {
