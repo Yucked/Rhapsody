@@ -21,15 +21,13 @@ namespace Frostbyte.Audio
         private Task TrackUpdateTask;
         private CancellationTokenSource TrackCancel;
 
-        public bool IsReady { get; private set; }
+        public bool IsReady { get; set; }
         public bool IsPaused { get; private set; }
         public bool IsPlaying { get; private set; }
-        public bool ToggleCrossfade { get; }
+        public bool ToggleCrossfade { get; set; }
 
-        public PlaybackEngine(WebSocket socket, bool isReady, bool toggleCrossfade)
+        public PlaybackEngine(WebSocket socket)
         {
-            IsReady = isReady;
-            _socket = socket;
             waveOut = new WaveOutEvent();
             waveOut.PlaybackStopped += OnPlaybackStopped;
         }

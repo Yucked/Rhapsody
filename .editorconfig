@@ -23,8 +23,8 @@ csharp_new_line_before_catch = true
 csharp_new_line_before_else = true
 #require finally statements to be on a new line after the closing brace
 csharp_new_line_before_finally = true
-#require braces to be on a new line for control_blocks, types, object_collection_array_initializers, anonymous_types, and methods (also known as "Allman" style)
-csharp_new_line_before_open_brace = control_blocks, types, object_collection_array_initializers, anonymous_types, methods
+#require braces to be on a new line for control_blocks, methods, object_collection_array_initializers, types, and anonymous_types (also known as "Allman" style)
+csharp_new_line_before_open_brace = control_blocks, methods, object_collection_array_initializers, types, anonymous_types
 
 #Formatting - organize using options
 
