@@ -7,7 +7,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
-using Frostbyte.Audio;
 using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Websocket
@@ -15,7 +14,7 @@ namespace Frostbyte.Websocket
     public sealed class WSClient : IAsyncDisposable
     {
         private readonly IPEndPoint _endPoint;
-        private BasePacket firstPacket;
+        private ReadyPacket readyPacket;
 
         public readonly WebSocket _socket;
         public event Func<IPEndPoint, Task> OnClosed;
@@ -63,25 +62,23 @@ namespace Frostbyte.Websocket
 
         private async Task ProcessPacketAsync(PlayerPacket packet)
         {
-            if (firstPacket is null && !(packet is ReadyPacket))
+            if (readyPacket is null && !(packet is ReadyPacket))
             {
                 LogHandler<WSClient>.Log.RawLog(LogLevel.Critical,
-                    $"{packet.GuildId} guild didn't send a ready packet. PlaybackEngine endpoints won't function.",
-                    default);
-                return;
-            }
-
-            if (VoiceClients.TryGetValue(packet.GuildId, out var voiceClient) &&
-                packet is ReadyPacket)
-            {
-                LogHandler<WSClient>.Log.Warning($"{packet.GuildId} is already exists.");
+                    $"{packet.GuildId} guild didn't send a ReadyPayload. All functions are disabled.", default);
                 return;
             }
             else
             {
-                voiceClient = new WSVoiceClient(packet.GuildId, _socket);
-                VoiceClients.TryAdd(packet.GuildId, voiceClient);
+                readyPacket = packet as ReadyPacket;
+                var vClient = new WSVoiceClient(packet.GuildId, _socket);
+                vClient.Engine.ToggleCrossfade = readyPacket.ToggleCrossfade;
+                VoiceClients.TryAdd(packet.GuildId, vClient);
+
+                LogHandler<WSClient>.Log.Debug($"{packet.GuildId} client and engine has been initialized.");
             }
+
+            var voiceClient = VoiceClients[packet.GuildId];
 
             switch (packet)
             {
