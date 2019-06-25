@@ -5,7 +5,9 @@ using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 using System;
+using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
@@ -17,6 +19,8 @@ namespace Frostbyte.Audio
     {
         private readonly WaveOutEvent waveOut;
         private readonly WebSocket _socket;
+        private readonly WaveFormat _waveFormat;
+
         private StreamMediaFoundationReader streamMedia;
         private Task TrackUpdateTask;
         private CancellationTokenSource TrackCancel;
@@ -65,16 +69,16 @@ namespace Frostbyte.Audio
                 return;
             }
 
-            streamMedia = new StreamMediaFoundationReader(stream);
             if (play.StartTime.HasValue)
                 streamMedia.Skip(play.StartTime.Value);
 
             waveOut.Init(streamMedia);
             waveOut.Play();
             IsPlaying = true;
+
             TrackCancel = new CancellationTokenSource((int)(TimeSpan.FromSeconds(5).TotalMilliseconds +
                 (play.EndTime.HasValue ? play.EndTime.Value : track.Duration)));
-            TrackUpdateTask = Task.Run(() => SendTrackUpdateAsync(track.Hash), TrackCancel.Token);
+            TrackUpdateTask = SendTrackUpdateAsync(track.Hash);
         }
 
         public void Pause(PausePacket pause)
