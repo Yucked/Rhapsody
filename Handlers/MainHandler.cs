@@ -18,32 +18,86 @@ namespace Frostbyte.Handlers
 {
     public sealed class MainHandler
     {
+        private readonly Configuration _config;
+        private readonly WSServer _wSServer;
+        private readonly HttpHandler _httpHandler;
+
+        public MainHandler()
+        {
+            _config = BuildConfiguration();
+            Singleton.Add<Configuration>(_config);
+            Singleton.Add<CacheHandler>();
+            Singleton.Add<SourceHandler>();
+
+            _httpHandler = Singleton.Of<HttpHandler>();
+            _wSServer = Singleton.Of<WSServer>();
+        }
+
         public async Task InitializeAsync()
         {
-            Singleton.Add<HttpHandler>();
-            Singleton.Add<CacheHandler>();
-            var config = BuildConfiguration();
-            Singleton.Add<Configuration>(config);
+            PrintHeader();
+            await VerifyConnectionAsync().ConfigureAwait(false);
 
+            PrintHeader();
             await PrintRepositoryInformationAsync().ConfigureAwait(false);
             Console.WriteLine(new string('-', 100), Color.Gray);
             PrintSystemInformation();
             Console.WriteLine(new string('-', 100), Color.Gray);
 
             Singleton.Of<SourceHandler>().Initialize();
-            await Singleton.Of<WSServer>().InitializeAsync().ConfigureAwait(false);
+            await _wSServer.InitializeAsync().ConfigureAwait(false);
 
             await Task.Delay(-1);
+        }
+
+        private async Task VerifyConnectionAsync()
+        {
+            var isReady = false;
+            int tries = 0, waitTime = 0;
+
+            LogHandler<MainHandler>.Log.Information("Verifying internet connectivity before proceeding.");
+
+            while (!isReady && tries < _config.MaxConnectionRetries)
+            {
+                var ping = await _httpHandler.PingAsync().ConfigureAwait(false);
+                if (ping)
+                {
+                    isReady = ping;
+                    LogHandler<MainHandler>.Log.Information("Internet connection verified successfully! Continuing ...");
+                    Console.Clear();
+                }
+                else
+                {
+                    tries++;
+                    waitTime += _config.ReconnectInterval;
+                    LogHandler<MainHandler>.Log.Warning($"Attempt #{tries}, next attempt in {TimeSpan.FromMilliseconds(waitTime).Seconds}s.");
+                    await Task.Delay(waitTime).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private void PrintHeader()
+        {
+            const string header = @"
+
+        ▄████  █▄▄▄▄ ████▄    ▄▄▄▄▄      ▄▄▄▄▀ ███ ▀▄    ▄   ▄▄▄▄▀ ▄███▄   
+        █▀   ▀ █  ▄▀ █   █   █     ▀▄ ▀▀▀ █    █  █  █  █ ▀▀▀ █    █▀   ▀  
+        █▀▀    █▀▀▌  █   █ ▄  ▀▀▀▀▄       █    █ ▀ ▄  ▀█      █    ██▄▄    
+        █      █  █  ▀████  ▀▄▄▄▄▀       █     █  ▄▀  █      █     █▄   ▄▀ 
+         █       █                      ▀      ███  ▄▀      ▀      ▀███▀   
+          ▀     ▀                                                          ";
+
+            Console.WriteLine(header, Color.FromArgb(36, 231, 96));
         }
 
         private async Task PrintRepositoryInformationAsync()
         {
             var result = new GitHubResult();
-            var getBytes = await Singleton.Of<HttpHandler>()
+            var getBytes = await _httpHandler
                 .GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte").ConfigureAwait(false);
             result.Repo = JsonSerializer.Parse<GitHubRepo>(getBytes.Span);
 
-            getBytes = await Singleton.Of<HttpHandler>()
+            getBytes = await _httpHandler
                 .WithUrl("https://api.github.com/repos/Yucked/Frostbyte/commits")
                 .GetBytesAsync().ConfigureAwait(false);
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(getBytes.Span).FirstOrDefault();

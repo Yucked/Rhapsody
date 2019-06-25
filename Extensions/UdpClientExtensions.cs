@@ -36,11 +36,6 @@ namespace Frostbyte.Extensions
             return SendAsync(client, packet);
         }
 
-        public static Task WriteAsync(this UdpClient client, byte[] buffer, int offset, int count)
-        {
-            return client.SendAsync(buffer, count);
-        }
-
         public static Task SendAsync(this UdpClient client, byte[] data)
         {
             return client.SendAsync(data, data.Length);

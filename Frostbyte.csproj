@@ -6,6 +6,7 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
   </PropertyGroup>
 
