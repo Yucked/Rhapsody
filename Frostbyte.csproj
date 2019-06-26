@@ -4,10 +4,9 @@
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
   </PropertyGroup>
 
   <ItemGroup>
