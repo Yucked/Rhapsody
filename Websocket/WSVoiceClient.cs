@@ -1,10 +1,13 @@
 ﻿using Frostbyte.Audio;
+using Frostbyte.Audio.Codecs;
 using Frostbyte.Entities.Discord;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using System;
+using System.Buffers;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text.Json;
@@ -16,7 +19,9 @@ namespace Frostbyte.Websocket
     public sealed class WSVoiceClient : IAsyncDisposable
     {
         private readonly ulong _guildId;
-        private readonly WebSocket _clientSocket;
+        private readonly RTPCodec _rtpCodec;
+        private readonly OpusCodec _opusCodec;
+        private readonly SodiumCodec _sodiumCodec;
         private readonly CancellationTokenSource _mainCancel, _receiveCancel, _heartBeatCancel;
 
         private ClientWebSocket _socket;
@@ -25,31 +30,35 @@ namespace Frostbyte.Websocket
         private UdpClient _udp;
         private VoiceReadyPayload _vrp;
 
-        public PlaybackEngine Engine { get; }
+        private ushort sequence;
+        private uint timeStamp;
+
+        public AudioEngine Engine { get; }
 
         public WSVoiceClient(ulong guildId, WebSocket clientSocket)
         {
             _guildId = guildId;
-            _clientSocket = clientSocket;
             _socket = new ClientWebSocket();
+            _rtpCodec = new RTPCodec();
+            _opusCodec = new OpusCodec();
+            _sodiumCodec = new SodiumCodec();
             _receiveCancel = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();
             _mainCancel = CancellationTokenSource.CreateLinkedTokenSource(_receiveCancel.Token, _heartBeatCancel.Token);
 
-            Engine = new PlaybackEngine(clientSocket);
+            Engine = new AudioEngine(clientSocket);
         }
 
         public async Task HandleVoiceUpdateAsync(VoiceUpdatePacket voiceUpdate)
         {
-            if (_socket != null && _socket.State != WebSocketState.None && _socket.State != WebSocketState.Closed)
-            {
-                await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Restarting.", CancellationToken.None)
-                             .ConfigureAwait(false);
-            }
-
             try
             {
-                await _socket.ConnectAsync(new Uri($"wss://{voiceUpdate.EndPoint}/?v=3"), CancellationToken.None)
+                var url = $"wss://{voiceUpdate.EndPoint}"
+                    .WithParameter("encoding", "json")
+                    .WithParameter("v", "4")
+                    .ToUrl();
+
+                await _socket.ConnectAsync(url, _mainCancel.Token)
                              .ContinueWith(x => VerifyConnectionAsync(voiceUpdate, x))
                              .ConfigureAwait(false);
             }
@@ -61,48 +70,24 @@ namespace Frostbyte.Websocket
 
         private async Task VerifyConnectionAsync(VoiceUpdatePacket packet, Task task)
         {
-            if (task.IsCanceled || task.IsFaulted || task.Exception != null)
+            if (task.VerifyTask())
             {
                 LogHandler<WSVoiceClient>.Log.Error(task.Exception);
             }
             else
             {
-                _receiveTask = Task.Run(ReceiveTaskAsync, _receiveCancel.Token);
-                var payload = new BaseDiscordPayload(VoiceOPType.Identify, new IdentifyPayload(packet.GuildId, packet.UserId, packet.SessionId, packet.Token));
-                await _socket.SendAsync(payload).ConfigureAwait(false);
-            }
-        }
+                _receiveTask = _socket.ReceiveAsync<WSVoiceClient, BaseDiscordPayload>(_receiveCancel, ProcessPayloadAsync)
+                    .ContinueWith(_ => DisposeAsync());
 
-        private async Task ReceiveTaskAsync()
-        {
-            try
-            {
-                while (!_receiveCancel.IsCancellationRequested && _socket.State == WebSocketState.Open)
-                {
-                    var memory = new Memory<byte>();
-                    var result = await _socket.ReceiveAsync(memory, CancellationToken.None).ConfigureAwait(false);
-                    switch (result.MessageType)
+                var payload = new BaseDiscordPayload(VoiceOPType.Identify,
+                    new IdentifyPayload
                     {
-                        case WebSocketMessageType.Close:
-                            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None)
-                                         .ConfigureAwait(false);
-                            break;
-
-                        case WebSocketMessageType.Text:
-                            var parse = JsonSerializer.Parse<BaseDiscordPayload>(memory.Span);
-                            await ProcessPayloadAsync(parse).ConfigureAwait(false);
-                            break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHandler<WSVoiceClient>.Log.Error(ex?.InnerException ?? ex);
-            }
-            finally
-            {
-                _socket?.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None).ConfigureAwait(false);
-                _socket?.Dispose();
+                        ServerId = $"{packet.GuildId}",
+                        SessionId = packet.SessionId,
+                        UserId = $"{packet.UserId}",
+                        Token = packet.Token
+                    });
+                await _socket.SendAsync(payload).ConfigureAwait(false);
             }
         }
 
@@ -160,6 +145,22 @@ namespace Frostbyte.Websocket
                     LogHandler<WSVoiceClient>.Log.Debug($"Received {payload.OP} op code.");
                     break;
             }
+        }
+
+        public void BuildAudioPacketAsync(ReadOnlySpan<byte> pcm, ref ReadOnlyMemory<byte> target)
+        {
+            var size = _rtpCodec.CalculatePacketSize(120 * (OpusCodec.SampleRate / 1000) * OpusCodec.ChannelCount * 2);
+            var rented = ArrayPool<byte>.Shared.Rent(size);
+            var packet = rented.AsSpan();
+            _rtpCodec.EncodeHeader(sequence, timeStamp, (uint)_vrp.SSRC, packet);
+
+            var opus = packet.Slice(RTPCodec.HeaderSize, pcm.Length);
+            _opusCodec.Encode(pcm, ref opus);
+            sequence++;
+            timeStamp += (uint)(pcm.Length / (OpusCodec.SampleRate / 1000) / OpusCodec.ChannelCount / 2) * (OpusCodec.SampleRate / 1000);
+
+            Span<byte> nonce = stackalloc byte[SodiumCodec.NonceSize];
+            _sodiumCodec.GenerateNonce(packet.Slice(0, RTPCodec.HeaderSize), nonce);
         }
 
         private async Task HandleHeartbeatAsync(int interval)

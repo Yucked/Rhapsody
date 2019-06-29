@@ -10,11 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="0.13.0-alpha-748" />
     <PackageReference Include="Colorful.Console" Version="1.2.9" />
-    <PackageReference Include="NAudio" Version="1.9.0" />
+    <PackageReference Include="CSCore" Version="1.2.1.2" />
     <PackageReference Include="System.Text.Json" Version="4.6.0-preview7.19305.9" />
-    <PackageReference Include="taglib" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
