@@ -15,15 +15,14 @@ using System.Net.NetworkInformation;
 
 namespace Frostbyte.Websocket
 {
-    public sealed class WSServer : IAsyncDisposable
+    public sealed class WSServer
     {
         private readonly Configuration _config;
         private readonly SourceHandler _sources;
         private readonly ConcurrentDictionary<IPEndPoint, WSClient> _clients;
         private readonly HttpListener _listener;
-        private readonly CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
 
-        private CancellationTokenSource _receiveCancellation;
+        private CancellationTokenSource _mainCancellation, _wsCancellation, _statsCancellation;
         private Task _statsSenderTask;
 
         public WSServer()
@@ -35,19 +34,6 @@ namespace Frostbyte.Websocket
             _mainCancellation = CancellationTokenSource.CreateLinkedTokenSource(_wsCancellation.Token, _statsCancellation.Token);
             _config = Singleton.Of<Configuration>();
             _sources = Singleton.Of<SourceHandler>();
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            foreach (var client in _clients)
-            {
-                await client.Value.DisposeAsync();
-            }
-
-            _mainCancellation.Cancel(false);
-            _listener.Close();
-            _clients.Clear();
-            _statsSenderTask.Dispose();
         }
 
         public async Task InitializeAsync()
@@ -74,6 +60,8 @@ namespace Frostbyte.Websocket
             LogHandler<WSServer>.Log.Information($"Server started on {_config.Url}.");
 
             _statsSenderTask = Task.Run(CollectStatsAsync, _statsCancellation.Token);
+            _ = CleanupAsync();
+
             while (!_wsCancellation.IsCancellationRequested)
             {
                 var context = await _listener.GetContextAsync().ConfigureAwait(false);
@@ -128,10 +116,14 @@ namespace Frostbyte.Websocket
                         LogHandler<WSServer>.Log.Debug($"Incoming websocket request coming from {remoteEndPoint}.");
 
                         var wsContext = await context.AcceptWebSocketAsync(default).ConfigureAwait(false);
-                        var wsClient = new WSClient(wsContext, remoteEndPoint);
-                        wsClient.OnClosed += OnClosed;
+                        var wsClient = new WSClient(wsContext);
                         _clients.TryAdd(remoteEndPoint, wsClient);
-                        _ = wsClient.ReceiveAsync(_receiveCancellation);
+
+                        if (_clients.Count > 0 && _statsSenderTask == null)
+                        {
+                            _statsCancellation = new CancellationTokenSource();
+                            _statsSenderTask = CollectStatsAsync();
+                        }
 
                         LogHandler<WSServer>.Log.Information($"Websocket connection opened from {remoteEndPoint}.");
                         break;
@@ -156,12 +148,6 @@ namespace Frostbyte.Websocket
             }
         }
 
-        private Task OnClosed(IPEndPoint endPoint)
-        {
-            _clients.TryRemove(endPoint, out _);
-            return Task.CompletedTask;
-        }
-
         private async Task CollectStatsAsync()
         {
             while (!_statsCancellation.IsCancellationRequested)
@@ -174,19 +160,49 @@ namespace Frostbyte.Websocket
 
                 var process = Process.GetCurrentProcess();
 
-                var stat = new StatisticPacket
+                var stats = new StatisticPacket
                 {
                     ConnectedClients = _clients.Count,
                     ConnectedPlayers = _clients.Values.Sum(x => x.VoiceClients.Values.Count(x => x.Engine.IsReady)),
                     PlayingPlayers = _clients.Values.Sum(x => x.VoiceClients.Values.Count(x => x.Engine.IsPlaying)),
-                    Uptime = (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds.TryCast<int>()
+                    Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
-                var rawString = JsonSerializer.ToString(stat);
+                var rawString = JsonSerializer.ToString(stats);
                 LogHandler<StatisticPacket>.Log.Debug(rawString);
-                var sendTasks = _clients.Select(x => x.Value._socket.SendAsync(stat).AsTask());
-                await Task.WhenAll(sendTasks);
-                await Task.Delay(TimeSpan.FromSeconds(30));
+
+                var sendTasks = _clients.Where(x => !x.Value.IsDisposed)
+                    .Select(x => x.Value.SendStatsAsync(stats));
+
+                await Task.WhenAll(sendTasks)
+                    .ContinueWith(async _ => await Task.Delay(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        private async Task CleanupAsync()
+        {
+            while (!_mainCancellation.IsCancellationRequested)
+            {
+                if (_clients.Count < 0)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30))
+                        .ConfigureAwait(false);
+                }
+
+                foreach (var client in _clients)
+                {
+                    if (client.Value.IsDisposed)
+                        _clients.TryRemove(client.Key, out _);
+                }
+
+                if (_clients.Count < 0)
+                {
+                    _statsCancellation?.Cancel(false);
+                    _statsCancellation?.Dispose();
+                    _statsSenderTask?.Dispose();
+                }
+
+                await Task.Delay(5000).ConfigureAwait(false);
             }
         }
     }
