@@ -47,6 +47,7 @@ namespace Frostbyte.Sources
 
         private AudioTrack BuildTrack(string filePath)
         {
+            /*
             using var file = TagLib.File.Create(filePath);
             var track = new AudioTrack
             {
@@ -60,6 +61,8 @@ namespace Frostbyte.Sources
             };
 
             return track;
+            */
+            return default;
         }
     }
 }
