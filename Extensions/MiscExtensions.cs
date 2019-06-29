@@ -1,5 +1,6 @@
 using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
+using Frostbyte.Handlers;
 using System;
 using System.Collections.Specialized;
 using System.Net;
@@ -65,6 +66,47 @@ namespace Frostbyte.Extensions
             var str = $"{provider}:{track.Id}:{track.Title}:{track.Url}";
             var bytes = Encoding.UTF8.GetBytes(str);
             return Convert.ToBase64String(bytes, Base64FormattingOptions.None);
+        }
+
+        public static bool VerifyTask(this Task task)
+        {
+            return task.IsCanceled || task.IsFaulted || task.Exception != null;
+        }
+
+        public static async Task ReceiveAsync<TClass, TJson>(this WebSocket socket, CancellationTokenSource tokenSource, Func<TJson, Task> func)
+        {
+            try
+            {
+                while (!tokenSource.IsCancellationRequested && socket.State == WebSocketState.Open)
+                {
+                    var memory = new Memory<byte>();
+                    var result = await socket.ReceiveAsync(memory, tokenSource.Token)
+                        .ConfigureAwait(false);
+
+                    switch (result.MessageType)
+                    {
+                        case WebSocketMessageType.Close:
+                            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None)
+                                         .ConfigureAwait(false);
+                            break;
+
+                        case WebSocketMessageType.Text:
+                            var parse = JsonSerializer.Parse<TJson>(memory.Span);
+                            await func.Invoke(parse)
+                                .ConfigureAwait(false);
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHandler<TClass>.Log.Error(ex?.InnerException ?? ex);
+            }
+            finally
+            {
+                socket?.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
         }
     }
 }

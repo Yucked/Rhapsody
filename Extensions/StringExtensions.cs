@@ -18,6 +18,11 @@ namespace Frostbyte.Extensions
                 str += $"?{key}={value}";
         }
 
+        public static Uri ToUrl(this string str)
+        {
+            return new Uri(str);
+        }
+
         public static (string Name, Type SourceType) GetSourceInfo(this string prefix)
         {
             prefix = prefix.Replace("search", "");
