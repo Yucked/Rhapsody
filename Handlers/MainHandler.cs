@@ -142,6 +142,7 @@ namespace Frostbyte.Handlers
                     Password = "frostbyte",
                     MaxConnectionRetries = 10,
                     ReconnectInterval = 5000,
+                    VoiceSettings = VoiceSettings.Music,
                     Sources = new AudioSources
                     {
                         EnableLocal = true,

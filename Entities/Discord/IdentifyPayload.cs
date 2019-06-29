@@ -5,23 +5,15 @@ namespace Frostbyte.Entities.Discord
     public struct IdentifyPayload
     {
         [JsonPropertyName("server_id")]
-        public string ServerId { get; }
+        public string ServerId { get; set; }
 
         [JsonPropertyName("user_id")]
-        public string UserId { get; }
+        public string UserId { get; set; }
 
         [JsonPropertyName("session_id")]
-        public string SessionId { get; }
+        public string SessionId { get; set; }
 
         [JsonPropertyName("token")]
-        public string Token { get; }
-
-        public IdentifyPayload(ulong serverId, ulong userId, string sessionId, string token)
-        {
-            ServerId = $"{serverId}";
-            UserId = $"{userId}";
-            SessionId = sessionId;
-            Token = token;
-        }
+        public string Token { get; set; }
     }
 }

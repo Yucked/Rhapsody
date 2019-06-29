@@ -15,6 +15,8 @@ namespace Frostbyte.Entities
         public int ReconnectInterval { get; set; }
         public int MaxConnectionRetries { get; set; }
 
+        public VoiceSettings VoiceSettings { get; set; }
+
         [JsonIgnore]
         internal string Url => $"http://{Host}:{Port}/";
     }
@@ -34,4 +36,11 @@ public sealed class AudioSources
     public bool EnableTwitch { get; set; }
     public bool EnableVimeo { get; set; }
     public bool EnableYouTube { get; set; }
+}
+
+public enum VoiceSettings
+{
+    Voice = 2048,
+    Music = 2049,
+    LowLatency = 2051
 }
