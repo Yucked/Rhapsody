@@ -1,28 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <LangVersion>8.0</LangVersion>
-    <ApplicationIcon>Icon.ico</ApplicationIcon>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <LangVersion>8.0</LangVersion>
+        <ApplicationIcon>Icon.ico</ApplicationIcon>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishReadyToRun>true</PublishReadyToRun>
+        <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.9" />
-    <PackageReference Include="CSCore" Version="1.2.1.2" />
-    <PackageReference Include="System.Text.Json" Version="4.6.0-preview7.19305.9" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Remove="Binaries\x64\libopus.dll" />
+        <None Remove="Binaries\x64\libsodium.dll" />
+        <None Remove="Binaries\x86\libopus.dll" />
+        <None Remove="Binaries\x86\libsodium.dll" />
+        <None Remove="Icon.ico" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <None Update="Icon.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="libopus-0.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <CustomToolNamespace>Opus</CustomToolNamespace>
-    </None>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Colorful.Console" Version="1.2.9" />
+        <PackageReference Include="CSCore" Version="1.2.1.2" />
+        <PackageReference Include="System.Text.Json" Version="4.6.0-preview7.19305.9" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Resource Include="Binaries\x64\libopus.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CustomToolNamespace>Opus</CustomToolNamespace>
+        </Resource>
+        <Resource Include="Binaries\x64\libsodium.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CustomToolNamespace>Sodium</CustomToolNamespace>
+        </Resource>
+        <Resource Include="Binaries\x86\libopus.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CustomToolNamespace>Opus</CustomToolNamespace>
+        </Resource>
+        <Resource Include="Binaries\x86\libsodium.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CustomToolNamespace>Sodium</CustomToolNamespace>
+        </Resource>
+        <Resource Include="Icon.ico">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Resource>
+    </ItemGroup>
 
 </Project>
