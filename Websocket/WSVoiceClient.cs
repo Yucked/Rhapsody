@@ -10,7 +10,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,17 +20,18 @@ namespace Frostbyte.Websocket
         private readonly ulong _guildId;
         private readonly RTPCodec _rtpCodec;
         private readonly OpusCodec _opusCodec;
-        private readonly SodiumCodec _sodiumCodec;
         private readonly CancellationTokenSource _mainCancel, _receiveCancel, _heartBeatCancel;
-
-        private ClientWebSocket _socket;
-        private SessionDescriptionPayload _sdp;
-        private Task _receiveTask, _heartBeatTask, _keepAliveTask;
-        private UdpClient _udp;
-        private VoiceReadyPayload _vrp;
 
         private ushort sequence;
         private uint timeStamp;
+        private string hostName;
+
+        private SodiumCodec _sodiumCodec;
+        private ClientWebSocket _socket;
+        private SessionDescriptionPayload _sdp;
+        private Task _receiveTask, _heartBeatTask;
+        private UdpClient _udp;
+        private VoiceReadyPayload _vrp;
 
         public AudioEngine Engine { get; }
 
@@ -41,16 +41,21 @@ namespace Frostbyte.Websocket
             _socket = new ClientWebSocket();
             _rtpCodec = new RTPCodec();
             _opusCodec = new OpusCodec();
-            _sodiumCodec = new SodiumCodec();
             _receiveCancel = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();
             _mainCancel = CancellationTokenSource.CreateLinkedTokenSource(_receiveCancel.Token, _heartBeatCancel.Token);
 
-            Engine = new AudioEngine(clientSocket);
+            Engine = new AudioEngine(this, clientSocket);
         }
 
         public async Task HandleVoiceUpdateAsync(VoiceUpdatePacket voiceUpdate)
         {
+            if (_socket != null && _socket.State == WebSocketState.Open && hostName != voiceUpdate.EndPoint)
+            {
+                await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Changing voice server.", CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+
             try
             {
                 var url = $"wss://{voiceUpdate.EndPoint}"
@@ -62,9 +67,9 @@ namespace Frostbyte.Websocket
                              .ContinueWith(x => VerifyConnectionAsync(voiceUpdate, x))
                              .ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch
             {
-                LogHandler<WSVoiceClient>.Log.Error(ex?.InnerException ?? ex);
+                // Ignore
             }
         }
 
@@ -72,7 +77,7 @@ namespace Frostbyte.Websocket
         {
             if (task.VerifyTask())
             {
-                LogHandler<WSVoiceClient>.Log.Error(task.Exception);
+                LogHandler<WSVoiceClient>.Log.Error(exception: task.Exception);
             }
             else
             {
@@ -91,13 +96,50 @@ namespace Frostbyte.Websocket
             }
         }
 
+        private void BuildPacket(ReadOnlySpan<byte> pcm, ref Memory<byte> target)
+        {
+            var rented = ArrayPool<byte>.Shared.Rent(AudioHelper.GetRTPPacketSize((AudioHelper.MaxFrameSize * AudioHelper.Channels * 2)));
+            var packet = rented.AsSpan();
+            _rtpCodec.EncodeHeader(sequence, timeStamp, (uint)_vrp.SSRC, packet);
+
+            var opus = packet.Slice(RTPCodec.HeaderSize, pcm.Length);
+            _opusCodec.Encode(pcm, ref opus);
+
+            sequence++;
+            timeStamp += (uint)AudioHelper.GetFrameSize(AudioHelper.GetSampleDuration(pcm.Length));
+
+            Span<byte> nonce = stackalloc byte[SodiumCodec.NonceSize];
+            _sodiumCodec.GenerateNonce(packet.Slice(0, RTPCodec.HeaderSize), nonce);
+
+            Span<byte> encrypted = stackalloc byte[opus.Length + SodiumCodec.MacSize];
+            _sodiumCodec.Encrypt(opus, encrypted, nonce);
+            encrypted.CopyTo(packet.Slice(RTPCodec.HeaderSize));
+            packet = packet.Slice(0, AudioHelper.GetRTPPacketSize(encrypted.Length));
+
+            target = target.Slice(0, packet.Length);
+            packet.CopyTo(target.Span);
+            ArrayPool<byte>.Shared.Return(rented);
+        }
+
+        private async Task SendSpeakingAsync(bool isSpeaking)
+        {
+            var payload = new BaseDiscordPayload(VoiceOPType.Speaking, new
+            {
+                Speaking = isSpeaking,
+                Delay = 0
+            });
+
+            await _socket.SendAsync(payload)
+                .ConfigureAwait(false);
+        }
+
         private async Task ProcessPayloadAsync(BaseDiscordPayload payload)
         {
+            LogHandler<WSVoiceClient>.Log.Debug($"Received {Enum.GetName(typeof(VoiceOPType), payload.OP)} payload.");
+
             switch (payload.OP)
             {
-                case VoiceOPType.Ready: //Create UDP connection and initialize heartbeat task.
-                    LogHandler<WSVoiceClient>.Log.Debug("Received voice ready payload.");
-
+                case VoiceOPType.Ready:
                     _vrp = payload.Data.TryCast<VoiceReadyPayload>();
                     _udp = new UdpClient(_vrp.IPAddress, _vrp.Port);
                     await _udp.SendDiscoveryAsync(_vrp.SSRC).ConfigureAwait(false);
@@ -106,24 +148,31 @@ namespace Frostbyte.Websocket
                     _heartBeatTask = HandleHeartbeatAsync(_vrp.HeartbeatInterval);
                     LogHandler<WSVoiceClient>.Log.Debug($"Started heartbeat task with {_vrp.HeartbeatInterval} interval.");
 
-                    Engine.IsReady = true;
-                    LogHandler<WSVoiceClient>.Log.Debug($"Guild {_guildId} voice connection is ready.");
+                    var selectProtocol = new BaseDiscordPayload(VoiceOPType.SelectProtocol, new SelectPayload(_vrp.IPAddress, _vrp.Port));
+                    await _socket.SendAsync(selectProtocol)
+                        .ConfigureAwait(false);
+                    LogHandler<WSVoiceClient>.Log.Debug($"Sent select protocol with {_vrp.IPAddress}:{_vrp.Port}.");
+
+                    _ = VoiceSenderTask();
                     break;
 
                 case VoiceOPType.SessionDescription:
-                    LogHandler<WSVoiceClient>.Log.Debug("Received voice ready payload.");
                     var sdp = payload.Data.TryCast<SessionDescriptionPayload>();
                     if (sdp.Mode != "xsalsa20_poly1305")
                         return;
 
                     _sdp = sdp;
+                    _sodiumCodec = new SodiumCodec(_sdp.SecretKey);
+
+
                     await _socket.SendAsync(new BaseDiscordPayload(VoiceOPType.Speaking, new
                     {
                         delay = 0,
                         speaking = false
                     })).ConfigureAwait(false);
 
-                    _keepAliveTask = SendKeepAliveAsync();
+
+                    _ = SendKeepAliveAsync().ConfigureAwait(false);
                     break;
 
                 case VoiceOPType.Hello:
@@ -137,30 +186,7 @@ namespace Frostbyte.Websocket
 
                     _heartBeatTask = HandleHeartbeatAsync(helloPayload.HeartBeatInterval);
                     break;
-
-                case VoiceOPType.Speaking:
-                    break;
-
-                default:
-                    LogHandler<WSVoiceClient>.Log.Debug($"Received {payload.OP} op code.");
-                    break;
             }
-        }
-
-        public void BuildAudioPacketAsync(ReadOnlySpan<byte> pcm, ref ReadOnlyMemory<byte> target)
-        {
-            var size = _rtpCodec.CalculatePacketSize(120 * (OpusCodec.SampleRate / 1000) * OpusCodec.ChannelCount * 2);
-            var rented = ArrayPool<byte>.Shared.Rent(size);
-            var packet = rented.AsSpan();
-            _rtpCodec.EncodeHeader(sequence, timeStamp, (uint)_vrp.SSRC, packet);
-
-            var opus = packet.Slice(RTPCodec.HeaderSize, pcm.Length);
-            _opusCodec.Encode(pcm, ref opus);
-            sequence++;
-            timeStamp += (uint)(pcm.Length / (OpusCodec.SampleRate / 1000) / OpusCodec.ChannelCount / 2) * (OpusCodec.SampleRate / 1000);
-
-            Span<byte> nonce = stackalloc byte[SodiumCodec.NonceSize];
-            _sodiumCodec.GenerateNonce(packet.Slice(0, RTPCodec.HeaderSize), nonce);
         }
 
         private async Task HandleHeartbeatAsync(int interval)
@@ -180,6 +206,63 @@ namespace Frostbyte.Websocket
             {
                 await _udp.SendKeepAliveAsync(ref keepAlive).ConfigureAwait(false);
                 await Task.Delay(4500, _mainCancel.Token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task VoiceSenderTask()
+        {
+            var synchronizerTicks = (double)Stopwatch.GetTimestamp();
+            var synchronizerResolution = (Stopwatch.Frequency * 0.005);
+            var tickResolution = 10_000_000.0 / Stopwatch.Frequency;
+
+            while (!_mainCancel.IsCancellationRequested)
+            {
+                var hasPacket = Engine.Packets.TryDequeue(out var packet);
+                byte[] packetArray = null;
+
+                if (hasPacket)
+                {
+                    if (!Engine.IsPlaying)
+                        Engine.PlaybackCompleted = new TaskCompletionSource<bool>();
+
+                    packetArray = packet.Bytes.ToArray();
+                }
+
+                var durationModifier = hasPacket ? packet.MillisecondDuration / 5 : 4;
+                var cts = Math.Max(Stopwatch.GetTimestamp() - synchronizerTicks, 0);
+                if (cts < synchronizerResolution * durationModifier)
+                    await Task.Delay(TimeSpan.FromTicks((long)(((synchronizerResolution * durationModifier) - cts) * tickResolution))).ConfigureAwait(false);
+
+                synchronizerTicks += synchronizerResolution * durationModifier;
+
+                if (!hasPacket)
+                    continue;
+
+                await SendSpeakingAsync(true).ConfigureAwait(false);
+                await _udp.SendAsync(packetArray).ConfigureAwait(false);
+
+                if (!packet.IsSilence && Engine.Packets.Count == 0)
+                {
+                    var nullpcm = new byte[AudioHelper.GetSampleSize(20)];
+                    for (var i = 0; i < 3; i++)
+                    {
+                        var nullpacket = new byte[nullpcm.Length];
+                        var nullpacketmem = nullpacket.AsMemory();
+
+                        BuildPacket(nullpcm, ref nullpacketmem);
+                        Engine.Packets.Enqueue(new AudioPacket
+                        {
+                            Bytes = nullpacketmem,
+                            IsSilence = true,
+                            MillisecondDuration = 20
+                        });
+                    }
+                }
+                else if (Engine.Packets.Count == 0)
+                {
+                    await SendSpeakingAsync(false).ConfigureAwait(false);
+                    Engine.PlaybackCompleted?.SetResult(true);
+                }
             }
         }
 
