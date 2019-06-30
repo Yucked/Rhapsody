@@ -1,8 +1,8 @@
-using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
 using Frostbyte.Handlers;
 using System;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -73,6 +73,11 @@ namespace Frostbyte.Extensions
             return task.IsCanceled || task.IsFaulted || task.Exception != null;
         }
 
+        public static bool Ensure<T>(T mainValue, params T[] values) where T : struct
+        {
+            return values.Any(x => x.Equals(mainValue));
+        }
+
         public static async Task ReceiveAsync<TClass, TJson>(this WebSocket socket, CancellationTokenSource tokenSource, Func<TJson, Task> func)
         {
             try
@@ -100,7 +105,7 @@ namespace Frostbyte.Extensions
             }
             catch (Exception ex)
             {
-                LogHandler<TClass>.Log.Error(ex?.InnerException ?? ex);
+                LogHandler<TClass>.Log.Error(exception: ex?.InnerException ?? ex);
             }
             finally
             {

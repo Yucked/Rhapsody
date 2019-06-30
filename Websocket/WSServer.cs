@@ -140,7 +140,7 @@ namespace Frostbyte.Websocket
                 response.IsSuccess = false;
                 response.Reason = $"Frostbyte threw an inner exception: {ex?.InnerException?.Message ?? ex?.Message}";
                 await context.SendResponseAsync(response).ConfigureAwait(false);
-                LogHandler<WSServer>.Log.Error(ex);
+                LogHandler<WSServer>.Log.Error(exception: ex);
             }
             finally
             {

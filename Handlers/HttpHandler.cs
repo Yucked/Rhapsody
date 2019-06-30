@@ -1,5 +1,4 @@
-﻿using Frostbyte.Entities.Enums;
-using Frostbyte.Extensions;
+﻿using Frostbyte.Extensions;
 using System;
 using System.IO;
 using System.Net;
@@ -77,7 +76,7 @@ namespace Frostbyte.Handlers
             using var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
-                LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, $"{url} returned {get.ReasonPhrase}.", default);
+                LogHandler<HttpHandler>.Log.Error($"{url} returned {get.ReasonPhrase}.");
                 return default;
             }
 
@@ -97,7 +96,7 @@ namespace Frostbyte.Handlers
             using var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
-                LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, $"{url} returned {get.ReasonPhrase}.", default);
+                LogHandler<HttpHandler>.Log.Error($"{url} returned {get.ReasonPhrase}.");
                 return default;
             }
 
@@ -117,7 +116,7 @@ namespace Frostbyte.Handlers
             using var get = await _client.GetAsync(url).ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
-                LogHandler<HttpHandler>.Log.RawLog(LogLevel.Error, $"{url} returned {get.ReasonPhrase}.", default);
+                LogHandler<HttpHandler>.Log.Error($"{url} returned {get.ReasonPhrase}.");
                 return default;
             }
 

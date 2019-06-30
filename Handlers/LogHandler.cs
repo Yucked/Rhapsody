@@ -36,18 +36,21 @@ namespace Frostbyte.Handlers
             RawLog(LogLevel.Warning, message, exception);
         }
 
-        public void Error(Exception exception)
+        public void Error(string message = default, Exception exception = default)
         {
-            RawLog(LogLevel.Error, string.Empty, exception);
+            RawLog(LogLevel.Error, message, exception);
         }
 
-        public void RawLog(LogLevel logLevel, string message, Exception exception)
+        private void RawLog(LogLevel logLevel, string message, Exception exception)
         {
             lock (_logLock)
             {
                 var date = $"[{DateTimeOffset.Now:MMM d - hh:mm:ss tt}]";
                 var log = $" [{GetLogLevel(logLevel)}] ";
                 var msg = exception?.ToString() ?? message;
+
+                if (string.IsNullOrWhiteSpace(msg))
+                    return;
 
                 Append(date, Color.Gray);
                 Append(log, GetColor(logLevel));

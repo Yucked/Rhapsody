@@ -1,7 +1,5 @@
 ﻿using Frostbyte.Handlers;
-using System;
 using System.Collections.Concurrent;
-using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +16,6 @@ namespace Frostbyte.Websocket
         private readonly WebSocket _socket;
 
         public bool IsDisposed { get; private set; }
-        public event Func<IPEndPoint, Task> OnClosed;
         public ConcurrentDictionary<ulong, WSVoiceClient> VoiceClients { get; private set; }
 
         public WSClient(WebSocketContext socketContext)
@@ -40,15 +37,13 @@ namespace Frostbyte.Websocket
         {
             if (readyPacket is null && !(packet is ReadyPacket))
             {
-                LogHandler<WSClient>.Log.RawLog(LogLevel.Critical,
-                    $"{packet.GuildId} guild didn't send a ReadyPayload.", default);
+                LogHandler<WSClient>.Log.Error($"{packet.GuildId} guild didn't send a ReadyPayload.");
                 return;
             }
             else
             {
                 readyPacket = packet as ReadyPacket;
                 var vClient = new WSVoiceClient(packet.GuildId, _socket);
-                vClient.Engine.ToggleCrossfade = readyPacket.ToggleCrossfade;
                 VoiceClients.TryAdd(packet.GuildId, vClient);
 
                 LogHandler<WSClient>.Log.Debug($"{packet.GuildId} client and engine has been initialized.");

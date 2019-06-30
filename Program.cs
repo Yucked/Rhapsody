@@ -14,7 +14,7 @@ namespace Frostbyte
             Console.WindowWidth = 140;
 
             AppDomain.CurrentDomain.UnhandledException += (s, e)
-                 => LogHandler<Program>.Log.Error(e.ExceptionObject as Exception);
+                 => LogHandler<Program>.Log.Error(exception: e.ExceptionObject as Exception);
 
             return new MainHandler().InitializeAsync();
         }
