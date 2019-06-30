@@ -44,10 +44,6 @@ namespace Frostbyte.Audio
 
         public async Task PlayAsync(PlayPacket playPacket)
         {
-
-            await _voiceClient.SendSpeakingAsync(true)
-                .ConfigureAwait(false);
-
             var stream = default(Stream);
             await stream.CopyToAsync(AudioStream)
                 .ConfigureAwait(false);
