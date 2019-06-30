@@ -1,5 +1,6 @@
 ﻿using Frostbyte.Audio.Codecs.Enums;
 using Frostbyte.Entities;
+using Frostbyte.Handlers;
 using System;
 using System.Runtime.InteropServices;
 
@@ -7,8 +8,6 @@ namespace Frostbyte.Audio.Codecs
 {
     public sealed class OpusCodec
     {
-        public const int SampleRate = 48000;
-        public const int ChannelCount = 2;
         private readonly VoiceSettings _settings;
 
         public OpusCodec()
@@ -25,7 +24,7 @@ namespace Frostbyte.Audio.Codecs
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encoder_create")]
         private static extern IntPtr OpusCreateEncoder(int sampleRate, int channels, int application, out OpusError error);
 
-        public static unsafe void OpusEncode(IntPtr encoder, ReadOnlySpan<byte> pcm, int frameSize, ref Span<byte> opus)
+        private static unsafe void OpusEncode(IntPtr encoder, ReadOnlySpan<byte> pcm, int frameSize, ref Span<byte> opus)
         {
             var len = 0;
 
@@ -36,7 +35,8 @@ namespace Frostbyte.Audio.Codecs
             if (len < 0)
             {
                 var error = (OpusError)len;
-                throw new Exception($"Could not encode PCM data to Opus: {error} ({(int)error}).");
+                LogHandler<OpusCodec>.Log.Error($"Could not encode PCM data to Opus -> {error}");
+                return;
             }
 
             opus = opus.Slice(0, len);
@@ -44,20 +44,29 @@ namespace Frostbyte.Audio.Codecs
 
         public void Encode(ReadOnlySpan<byte> pcm, ref Span<byte> target)
         {
-            var encoder = OpusCreateEncoder(SampleRate, ChannelCount, (int)_settings, out var error);
+            var encoder = OpusCreateEncoder(AudioHelper.SampleRate, AudioHelper.Channels, (int)_settings, out var error);
 
             if (error != OpusError.Ok)
-                throw new Exception($"Could not instantiate Opus encoder: {error} ({(int)error}).");
+            {
+                LogHandler<OpusCodec>.Log.Error($"Failed to initialize opus encoder -> {error}");
+                return;
+            }
 
             if (pcm.Length != target.Length)
-                throw new ArgumentException("PCM and Opus buffer lengths need to be equal.", nameof(target));
+            {
+                LogHandler<OpusCodec>.Log.Error("PCM and Opus lengths aren't the same.");
+                return;
+            }
 
-            var duration = pcm.Length / (SampleRate / 1000) / ChannelCount / 2;
-            var frameSize = duration * (SampleRate / 1000);
-            var sampleSize = duration * ChannelCount * 2;
+            var duration = AudioHelper.GetSampleDuration(pcm.Length);
+            var frameSize = AudioHelper.GetFrameSize(duration);
+            var sampleSize = AudioHelper.GetSampleSize(duration);
 
             if (pcm.Length != sampleSize)
-                throw new ArgumentException("Invalid PCM sample size.", nameof(target));
+            {
+                LogHandler<OpusCodec>.Log.Error("PCM sample isn't valid.");
+                return;
+            }
 
             OpusEncode(encoder, pcm, frameSize, ref target);
         }

@@ -24,7 +24,7 @@ namespace Frostbyte.Sources
             {
                 var trackUrl when _trackUrlRegex.IsMatch(query) => trackUrl,
                 var albumUrl when _albumUrlRegex.IsMatch(query) => albumUrl,
-                var _ when !Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute) => $"https://bandcamp.com/search?q={WebUtility.UrlEncode(query)}"
+                _ => $"https://bandcamp.com/search?q={WebUtility.UrlEncode(query)}"
             };
 
             var json = await ScrapeJSONAsync(query).ConfigureAwait(false);
