@@ -9,6 +9,9 @@
   </p> 
 </p>
 
+### 🕹️ `Implementation`
+As of right now there is only a single implementation provided by [Victoria](https://github.com/Yucked/Victoria/tree/v5/Victoria.Frostbyte). This implementation only supports Discord.NET. To write your own implementation either follow Victoria's design or read the [Implementation.md](https://github.com/Yucked/Frostbyte/blob/master/IMPLEMENTATION.md).
+
 ### ⚗ `Building`
 You will need to obtain the latest SDK and Runtime for .NET Core in order to run Frostbyte. ***Please keep in mind Frostbyte is still under development.***
 
@@ -17,13 +20,11 @@ SDK: https://github.com/dotnet/core-sdk/blob/master/README.md#installers-and-bin
 Runtime: https://github.com/dotnet/core-setup/blob/master/README.md#daily-builds
 
 ###  ✒ `Planned / Underdevelopment Features`
-- [ ] UDP Discord stuff and handling OP codes.
+- [x] UDP Discord stuff and handling OP codes.
 - [ ] Implement the following sources: MixCloud, Audiomack, MusicBed, Twitch, Vimeo, Mixer, HTTP files, Apple Music(?)
-- [ ] Building streams from above sources.
 - [ ] Ratelimiter for REST requests with IP restrictions.
-- [ ] Downloading audio files.
 - [ ] Auto Updater.
-- [ ] Compatible with Lavalink entities and Victoria.
+- [x] Compatible with Lavalink entities and Victoria.
 - [ ] Providing user with several audio options.
 - [x] HttpListener handling Websocket and REST requests.
 - [x] Sources that are done: SoundCloud, YouTube, LocalSource, BandCamp.
@@ -51,11 +52,14 @@ Runtime: https://github.com/dotnet/core-setup/blob/master/README.md#daily-builds
     "EnableTwitch": false,
     "EnableVimeo": false,
     "EnableYouTube": true
-  }
+  },
+  "ReconnectInterval": 5000,
+  "MaxConnectionRetries": 10,
+  "VoiceSettings": 2049
 }
 ```
 
 ### 📷 `Screenshots Because They Matter`
 <p align="center">
-  <img src="https://cdn.discordapp.com/attachments/522441208740446218/584206737482186772/unknown.png"/>
+  <img src="https://cdn.discordapp.com/attachments/526178528161562666/595065908175831055/unknown.png"/>
 </p>
