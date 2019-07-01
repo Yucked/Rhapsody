@@ -49,12 +49,12 @@ This is a sample configuration that Frostbyte generates on startup. Everytime yo
  
  `VoiceSettings` is an `enum` and specifes settings for OPUS:
  ```cs
-public enum VoiceSettings
-{
-    Voice = 2048,
-    Music = 2049,
-    LowLatency = 2051
-}
+    public enum VoiceSettings
+    {
+        Voice       = 2048,
+        Music       = 2049,
+        LowLatency  = 2051
+    }
 ```
 
 ---
@@ -83,20 +83,66 @@ Frostbyte returns the same base response for REST and WebSocket.
 ```cs
     public enum OperationType
     {
-        Destroy = 0,
-        Play = 1,
-        Pause = 2,
-        Stop = 3,
-        Skip = 4,
-        Seek = 5,
-        Volume = 6,
-        Equalizer = 7,
-        VoiceUpdate = 8,
+        Destroy         = 0,
+        Ready           = 1,
+        Play            = 2,
+        Pause           = 3,
+        Stop            = 4,
+        Skip            = 5,
+        Seek            = 6,
+        Volume          = 7,
+        Equalizer       = 8,
+        VoiceUpdate     = 9,
 
-        REST = 11,
-        Statistics = 12,
-        TrackUpdate = 13,
-        TrackErrored = 14,
-        TrackFinished = 15
+        REST            = 11,
+        Statistics      = 12,
+        TrackUpdate     = 13,
+        TrackErrored    = 14,
+        TrackFinished   = 15
+    }
+```
+
+#### `REST Response`
+Searching for tracks will result in a response similar to this:
+```json
+{
+    "LoadType": 2,
+    "Playlist": {
+      "Id": "RDQMfGoQ5l4eXrw",
+      "Name": "Mix - Tf2",
+      "Url": "https://www.youtube.com/list_ajax?style=json&action_get_list=1&list=RDQMfGoQ5l4eXrw",
+      "Duration": 7321000,
+      "ArtworkUrl": null
+    },
+    "Tracks": [
+      {
+        "Hash": null,
+        "Id": "Ep1PTvHlMwg",
+        "Url": "https://www.youtube.com/watch?v=Ep1PTvHlMwg",
+        "Title": "SOMBRA VS SPY RAP BATTLE by JT Music (Overwatch vs TF2)",
+        "Duration": 290000,
+        "Position": 0,
+        "CanStream": false,
+        "ArtworkUrl": "https://img.youtube.com/vi/Ep1PTvHlMwg/maxresdefault.jpg",
+        "Author": {
+          "Name": "JT Music",
+          "Url": null,
+          "AvatarUrl": null
+        }
+      }
+    ]
+  }
+```
+
+`LoadType` is an `enum`. It matches Lavalink's style. Since the result above loaded a playlist, `PlaylistLoaded` was returned for `LoadType`. For the sake of space, I've removed rest of the search results but it should return about all the videos in a YouTube playlist.
+
+```cs
+    public enum LoadType
+    {
+        TrackLoaded     = 1,    
+        PlaylistLoaded  = 2,
+        SearchResult    = 3,
+        NoMatches       = 4,
+        LoadFailed      = 5
     }
 ```
