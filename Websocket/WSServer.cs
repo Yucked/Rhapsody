@@ -12,6 +12,7 @@ using Frostbyte.Extensions;
 using System.Text.Json;
 using Frostbyte.Entities.Enums;
 using System.Net.NetworkInformation;
+using Frostbyte.Entities.Responses;
 
 namespace Frostbyte.Websocket
 {
@@ -73,7 +74,7 @@ namespace Frostbyte.Websocket
         {
             var localPath = context.Request.Url.LocalPath;
             var remoteEndPoint = context.Request.RemoteEndPoint;
-            var response = new ResponseEntity(false, string.Empty);
+            var response = new BaseResponse();
 
             try
             {
@@ -83,7 +84,7 @@ namespace Frostbyte.Websocket
                         LogHandler<WSServer>.Log.Debug($"Incoming http request from {remoteEndPoint}.");
                         if (context.Request.Headers.Get("Password") != _config.Password)
                         {
-                            response.Reason = "Password header doesn't match value specified in configuration";
+                            response.Error = "Password header doesn't match value specified in configuration";
                         }
                         else
                         {
@@ -91,24 +92,31 @@ namespace Frostbyte.Websocket
 
                             if (query is null || prov is null)
                             {
-                                response.Reason = "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
+                                response.Error = "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
                             }
                             else
                             {
-                                response.IsSuccess = true;
-                                response = await _sources.HandleRequestAsync(prov, query).ConfigureAwait(false);
+                                var request = await _sources.HandleRequestAsync(prov, query).ConfigureAwait(false);
+                                if (request.IsEnabled)
+                                {
+                                    response.Error = $"Requested {prov} isn't enabled in configuration.";
+                                }
+                                else
+                                {
+                                    response.Data = request.Response;
+                                }
                             }
                         }
 
-                        response.Operation = OperationType.REST;
+                        response.OP = OperationType.REST;
                         await context.SendResponseAsync(response).ConfigureAwait(false);
-                        LogHandler<WSServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Reason}.");
+                        LogHandler<WSServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Error}.");
                         break;
 
                     case "/":
                         if (!context.Request.IsWebSocketRequest)
                         {
-                            response.Reason = "Only websocket connections are allowed at this endpoint. For rest use /tracks endpoint.";
+                            response.Error = "Only websocket connections are allowed at this endpoint. For rest use /tracks endpoint.";
                             await context.SendResponseAsync(response).ConfigureAwait(false);
                             return;
                         }
@@ -130,15 +138,14 @@ namespace Frostbyte.Websocket
 
                     default:
                         LogHandler<WSServer>.Log.Warning($"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
-                        response.Reason = "You are trying to access an unknown endpoint.";
+                        response.Error = "You are trying to access an unknown endpoint.";
                         await context.SendResponseAsync(response).ConfigureAwait(false);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                response.IsSuccess = false;
-                response.Reason = $"Frostbyte threw an inner exception: {ex?.InnerException?.Message ?? ex?.Message}";
+                response.Error = $"Frostbyte threw an inner exception: {ex?.InnerException?.Message ?? ex?.Message}";
                 await context.SendResponseAsync(response).ConfigureAwait(false);
                 LogHandler<WSServer>.Log.Error(exception: ex);
             }

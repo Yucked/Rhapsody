@@ -4,8 +4,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Audio;
-using Frostbyte.Entities.Enums;
-using Frostbyte.Entities.Results;
+using Frostbyte.Entities.Responses;
 using Frostbyte.Extensions;
 using Frostbyte.Sources;
 
@@ -19,7 +18,7 @@ namespace Frostbyte.Handlers
         {
             var matches = Assembly.GetExecutingAssembly()
                 .GetTypes()
-                .Where(x => typeof(ISourceProvider).IsAssignableFrom(x) && !x.IsInterface)
+                .Where(x => typeof(BaseSourceProvider).IsAssignableFrom(x) && !x.IsAbstract)
                 .ToArray();
 
             LogHandler<SourceHandler>.Log.Debug($"Discovered {matches.Length} SourceProviders.");
@@ -29,35 +28,19 @@ namespace Frostbyte.Handlers
             _sources = Singleton.Of<Configuration>().Sources;
         }
 
-        public async Task<ResponseEntity> HandleRequestAsync(string prefix, string query)
+        public async Task<(bool IsEnabled, SearchResponse Response)> HandleRequestAsync(string prefix, string query)
         {
             var sourceInfo = prefix.GetSourceInfo();
-            var source = Singleton.Of<ISourceProvider>(sourceInfo.SourceType);
-
+            var source = Singleton.Of<BaseSourceProvider>(sourceInfo.SourceType);
             var isEnabled = _sources.IsSourceEnabled($"Enable{sourceInfo.Name}");
-            var response = new ResponseEntity(isEnabled, !isEnabled ? $"{sourceInfo.Name} source is disable in configuration" : "Success");
-
-            if (!isEnabled)
-                return response;
-
-            response.AdditionObject = await source.SearchAsync(query).ConfigureAwait(false);
-            var searchResult = response.AdditionObject.TryCast<SearchResult>();
-
-            response.IsSuccess = searchResult.LoadType == LoadType.LoadFailed || searchResult.LoadType == LoadType.NoMatches;
-            response.Reason =
-                searchResult.LoadType == LoadType.LoadFailed ?
-                 $"{sourceInfo.Name} was unable to load anything for {query}" :
-                searchResult.LoadType == LoadType.NoMatches ?
-                $"{sourceInfo.Name} failed to find any matches for {query}"
-                : "Success";
-
-            return response;
+            var result = await source.SearchAsync(query).ConfigureAwait(false);
+            return (isEnabled, result);
         }
 
         public ValueTask<Stream> GetStreamAsync(string provider, AudioTrack track)
         {
             var sourceInfo = provider.GetSourceInfo();
-            var source = Singleton.Of<ISourceProvider>(sourceInfo.SourceType);
+            var source = Singleton.Of<BaseSourceProvider>(sourceInfo.SourceType);
 
             return source.GetStreamAsync(track);
         }

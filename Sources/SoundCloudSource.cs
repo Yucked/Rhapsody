@@ -6,12 +6,13 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
+using Frostbyte.Entities.Responses;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    public sealed class SoundCloudSource : ISourceProvider
+    public sealed class SoundCloudSource : BaseSourceProvider
     {
         private const string
             BASE_URL = "https://api.soundcloud.com",
@@ -21,9 +22,9 @@ namespace Frostbyte.Sources
             PATTERN_TRACK = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)$",
             PATTERN_PLAYLIST = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/(sets+)\/?([a-zA-Z0-9-_]+)$";
 
-        public async ValueTask<SearchResult> SearchAsync(string query)
+        public override async ValueTask<SearchResponse> SearchAsync(string query)
         {
-            var result = new SearchResult();
+            var result = new SearchResponse();
             var url = string.Empty;
 
             switch (query)
@@ -89,7 +90,7 @@ namespace Frostbyte.Sources
             return result;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string query)
+        public override async ValueTask<Stream> GetStreamAsync(string query)
         {
             var bytes = await Singleton.Of<HttpHandler>()
                 .WithUrl(BASE_URL)

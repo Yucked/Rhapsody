@@ -3,22 +3,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Entities.Results;
+using Frostbyte.Entities.Responses;
 
 namespace Frostbyte.Sources
 {
-    public sealed class LocalSource : ISourceProvider
+    public sealed class LocalSource : BaseSourceProvider
     {
-        public ValueTask<SearchResult> SearchAsync(string query)
+        public override ValueTask<SearchResponse> SearchAsync(string query)
         {
-            var response = new SearchResult();
+            var response = new SearchResponse();
 
             if (Directory.Exists(query))
             {
                 var files = Directory.EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories).ToArray();
                 if (files.Length < 1)
                 {
-                    return new ValueTask<SearchResult>(response);
+                    return new ValueTask<SearchResponse>(response);
                 }
 
                 response.Tracks = files.Select(x => BuildTrack(x));
@@ -31,10 +31,10 @@ namespace Frostbyte.Sources
                 response.LoadType = LoadType.TrackLoaded;
             }
 
-            return new ValueTask<SearchResult>(response);
+            return new ValueTask<SearchResponse>(response);
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string query)
+        public override async ValueTask<Stream> GetStreamAsync(string query)
         {
             if (Directory.Exists(query))
                 return default;

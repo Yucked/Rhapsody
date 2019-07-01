@@ -26,8 +26,10 @@ namespace Frostbyte.Handlers
         {
             _config = BuildConfiguration();
             Singleton.Add<Configuration>(_config);
+            Singleton.Add<HttpHandler>();
             Singleton.Add<CacheHandler>();
             Singleton.Add<SourceHandler>();
+            Singleton.Add<WSServer>();
 
             _httpHandler = Singleton.Of<HttpHandler>();
             _wSServer = Singleton.Of<WSServer>();

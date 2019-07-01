@@ -98,7 +98,10 @@ namespace Frostbyte.Audio
                 provider = decode.Provider;
                 var request = await _sources.HandleRequestAsync(provider, decode.Url ?? decode.Title).ConfigureAwait(false);
 
-                track = (request.AdditionObject as SearchResult).Tracks.FirstOrDefault();
+                if (!request.IsEnabled)
+                    return;
+
+                track = request.Response.Tracks.FirstOrDefault();
             }
 
             var stream = await _sources.GetStreamAsync(provider, track).ConfigureAwait(false);

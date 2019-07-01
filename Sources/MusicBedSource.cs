@@ -1,20 +1,19 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
-using Frostbyte.Entities.Results;
+using Frostbyte.Entities.Responses;
 
 namespace Frostbyte.Sources
 {
-    public sealed class MusicBedSource : ISourceProvider
+    public sealed class MusicBedSource : BaseSourceProvider
     {
-        public ValueTask<SearchResult> SearchAsync(string query)
+        public override ValueTask<SearchResponse> SearchAsync(string query)
         {
-            throw new NotImplementedException();
+            return default;
         }
 
-        public ValueTask<Stream> GetStreamAsync(string id)
+        public override ValueTask<Stream> GetStreamAsync(string id)
         {
-            throw new NotImplementedException();
+            return default;
         }
     }
 }

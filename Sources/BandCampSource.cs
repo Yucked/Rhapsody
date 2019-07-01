@@ -1,25 +1,25 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.Responses;
 using Frostbyte.Entities.Results;
 using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    public sealed class BandCampSource : ISourceProvider
+    public sealed class BandCampSource : BaseSourceProvider
     {
         private readonly Regex
             _trackUrlRegex = new Regex("^https?://(?:[^.]+\\.|)bandcamp\\.com/track/([a-zA-Z0-9-_]+)/?(?:\\?.*|)$", RegexOptions.Compiled | RegexOptions.IgnoreCase),
             _albumUrlRegex = new Regex("^https?://(?:[^.]+\\.|)bandcamp\\.com/album/([a-zA-Z0-9-_]+)/?(?:\\?.*|)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        public async ValueTask<SearchResult> SearchAsync(string query)
+        public override async ValueTask<SearchResponse> SearchAsync(string query)
         {
-            var result = new SearchResult();
+            var result = new SearchResponse();
             query = query switch
             {
                 var trackUrl when _trackUrlRegex.IsMatch(query) => trackUrl,
@@ -46,7 +46,7 @@ namespace Frostbyte.Sources
             return result;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string query)
+        public override async ValueTask<Stream> GetStreamAsync(string query)
         {
             if (!_trackUrlRegex.IsMatch(query))
                 return default;

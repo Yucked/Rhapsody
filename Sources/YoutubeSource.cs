@@ -7,21 +7,22 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
+using Frostbyte.Entities.Responses;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 
 namespace Frostbyte.Sources
 {
-    public sealed class YouTubeSource : ISourceProvider
+    public sealed class YouTubeSource : BaseSourceProvider
     {
         private const string BASE_URL = "https://www.youtube.com";
 
         private readonly Regex _idRegex
             = new Regex("(?!videoseries)[a-zA-Z0-9_-]{11,42}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        public async ValueTask<SearchResult> SearchAsync(string query)
+        public override async ValueTask<SearchResponse> SearchAsync(string query)
         {
-            var search = new SearchResult();
+            var search = new SearchResponse();
             var url = string.Empty;
             TryParseId(query, out var videoId, out var playlistId);
 
@@ -91,7 +92,7 @@ namespace Frostbyte.Sources
             return search;
         }
 
-        public ValueTask<Stream> GetStreamAsync(string query)
+        public override ValueTask<Stream> GetStreamAsync(string query)
         {
             if (query.Length != 11)
                 return default;
