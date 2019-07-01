@@ -4,7 +4,6 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
-using Frostbyte.Entities.Enums;
 using Frostbyte.Extensions;
 
 namespace Frostbyte.Websocket
@@ -12,7 +11,7 @@ namespace Frostbyte.Websocket
     public sealed class WSClient
     {
         private ReadyPacket readyPacket;
-        private readonly Task _receiveTask;
+        private readonly CancellationTokenSource _receiveCancel;
         private readonly WebSocket _socket;
 
         public bool IsDisposed { get; private set; }
@@ -22,9 +21,10 @@ namespace Frostbyte.Websocket
         {
             _socket = socketContext.WebSocket;
             VoiceClients = new ConcurrentDictionary<ulong, WSVoiceClient>();
+            _receiveCancel = new CancellationTokenSource();
 
-            _receiveTask = _socket.ReceiveAsync<WSClient, PlayerPacket>(default, ProcessPacketAsync)
-                .ContinueWith(async _ => await DisposeAsync());
+            _socket.ReceiveAsync<WSClient, PlayerPacket>(_receiveCancel, ProcessPacketAsync)
+               .ContinueWith(async _ => await DisposeAsync());
         }
 
         public async Task SendStatsAsync(StatisticPacket stats)
@@ -43,7 +43,7 @@ namespace Frostbyte.Websocket
             else
             {
                 readyPacket = packet as ReadyPacket;
-                var vClient = new WSVoiceClient(packet.GuildId, _socket);
+                var vClient = new WSVoiceClient(_socket);
                 VoiceClients.TryAdd(packet.GuildId, vClient);
 
                 LogHandler<WSClient>.Log.Debug($"{packet.GuildId} client and engine has been initialized.");
@@ -54,7 +54,7 @@ namespace Frostbyte.Websocket
             switch (packet)
             {
                 case PlayPacket play:
-                    //await voiceClient.Engine.PlayAsync(play).ConfigureAwait(false);
+                    await voiceClient.Engine.PlayAsync(play).ConfigureAwait(false);
                     break;
 
                 case PausePacket pause:
@@ -85,6 +85,9 @@ namespace Frostbyte.Websocket
 
         private async ValueTask DisposeAsync()
         {
+            _receiveCancel.Cancel(false);
+            _receiveCancel.Dispose();
+
             foreach (var (key, value) in VoiceClients)
             {
                 await value.DisposeAsync().ConfigureAwait(false);

@@ -5,13 +5,7 @@ namespace Frostbyte.Extensions
 {
     public static class UdpClientExtensions
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="ssrc"></param>
-        /// <returns></returns>
-        public static Task SendDiscoveryAsync(this UdpClient client, int ssrc)
+        public static Task SendDiscoveryAsync(this UdpClient client, uint ssrc)
         {
             var packet = new byte[70];
             packet[0] = (byte)(ssrc >> 24);

@@ -5,7 +5,7 @@ namespace Frostbyte.Entities.Discord
     public struct VoiceReadyPayload
     {
         [JsonPropertyName("ssrc")]
-        public int SSRC { get; set; }
+        public uint SSRC { get; set; }
         
         [JsonPropertyName("ip")]
         public string IPAddress { get; set; }

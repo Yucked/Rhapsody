@@ -91,12 +91,12 @@ namespace Frostbyte.Sources
             return search;
         }
 
-        public async ValueTask<Stream> GetStreamAsync(string query)
+        public ValueTask<Stream> GetStreamAsync(string query)
         {
             if (query.Length != 11)
                 return default;
 
-            throw new System.NotImplementedException();
+            return default;
         }
 
         private bool TryParseId(string url, out string videoId, out string playlistId)

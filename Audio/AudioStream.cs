@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Frostbyte.Handlers;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -31,15 +32,17 @@ namespace Frostbyte.Audio
         public override void SetLength(long value) { }
         #endregion
 
-        public int Volume { get; set; }
-
+        public int Volume { get; private set; }
         public byte[] Buffer { get; }
         public int BufferLength { get; private set; }
         public int BufferDuration { get; }
         public Memory<byte> BufferMemory { get; }
 
+        private readonly AudioEngine _engine;        
+
         public AudioStream(AudioEngine engine, int bufferDuration = 20)
         {
+            _engine = engine;
             BufferDuration = bufferDuration;
             Buffer = new byte[AudioHelper.GetSampleSize(bufferDuration)];
             BufferMemory = Buffer.AsMemory();
@@ -81,9 +84,12 @@ namespace Frostbyte.Audio
                         var packet = new byte[pcmSpan.Length];
                         var packetMemory = packet.AsMemory();
 
-
-                        //this.Connection.PreparePacket(pcmSpan, ref packetMemory);
-                        //this.Connection.EnqueuePacket(new VoicePacket(packetMemory, this.PcmBufferDuration));
+                        _engine.BuildAudioPacket(pcmSpan, ref packetMemory);
+                        _engine.Packets.Enqueue(new AudioPacket
+                        {
+                            Bytes = packetMemory,
+                            MillisecondDuration = BufferDuration
+                        });
                     }
                 }
             }
@@ -104,8 +110,12 @@ namespace Frostbyte.Audio
             var packet = new byte[pcm.Length];
             var packetMemory = packet.AsMemory();
 
-            //this.Connection.PreparePacket(pcm, ref packetMemory);
-            //this.Connection.EnqueuePacket(new VoicePacket(packetMemory, this.PcmBufferDuration));
+            _engine.BuildAudioPacket(pcm, ref packetMemory);
+            _engine.Packets.Enqueue(new AudioPacket
+            {
+                Bytes = packetMemory,
+                MillisecondDuration = BufferDuration
+            });
         }
     }
 }
