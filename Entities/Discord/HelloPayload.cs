@@ -7,6 +7,7 @@ namespace Frostbyte.Entities.Discord
         [JsonPropertyName("heartbeat_interval")]
         private int HbInterval { get; set; }
 
-        public int HeartBeatInterval => (int) (HbInterval * 0.75f);
+        public int HeartBeatInterval
+            => (int) (HbInterval * 0.75f);
     }
 }

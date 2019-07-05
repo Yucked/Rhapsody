@@ -11,7 +11,7 @@ namespace Frostbyte.Sources
             return default;
         }
 
-        public override ValueTask<Stream> GetStreamAsync(string id)
+        protected override ValueTask<Stream> GetStreamAsync(string id)
         {
             return default;
         }

@@ -6,8 +6,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Entities.Results;
 using Frostbyte.Entities.Responses;
+using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 
@@ -23,7 +23,7 @@ namespace Frostbyte.Sources
         public override async ValueTask<SearchResponse> SearchAsync(string query)
         {
             var search = new SearchResponse();
-            var url = string.Empty;
+            string url;
             TryParseId(query, out var videoId, out var playlistId);
 
             switch (Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute))
@@ -85,14 +85,14 @@ namespace Frostbyte.Sources
 
                 case LoadType.TrackLoaded:
                     ytSearch = JsonSerializer.Parse<YouTubeSearch>(bytes.Span);
-                    search.Tracks = new[] { ytSearch.Video.FirstOrDefault(x => x.Id == videoId).ToTrack };
+                    search.Tracks = new[] {ytSearch.Video.FirstOrDefault(x => x.Id == videoId).ToTrack};
                     break;
             }
 
             return search;
         }
 
-        public override ValueTask<Stream> GetStreamAsync(string query)
+        protected override ValueTask<Stream> GetStreamAsync(string query)
         {
             if (query.Length != 11)
                 return default;

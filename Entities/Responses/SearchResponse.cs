@@ -1,6 +1,6 @@
-﻿using Frostbyte.Entities.Audio;
+﻿using System.Collections.Generic;
+using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
-using System.Collections.Generic;
 
 namespace Frostbyte.Entities.Responses
 {

@@ -18,7 +18,8 @@ namespace Frostbyte.Entities
         public VoiceSettings VoiceSettings { get; set; }
 
         [JsonIgnore]
-        internal string Url => $"http://{Host}:{Port}/";
+        internal string Url
+            => $"http://{Host}:{Port}/";
     }
 }
 

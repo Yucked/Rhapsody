@@ -1,19 +1,19 @@
-using Frostbyte.Entities.Enums;
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities.Discord
 {
     public struct BaseDiscordPayload
     {
         [JsonPropertyName("op")]
-        public VoiceOPType OP { get; }
+        public VoiceOpType Op { get; }
 
         [JsonPropertyName("d")]
         public object Data { get; }
 
-        public BaseDiscordPayload(VoiceOPType op, object data)
+        public BaseDiscordPayload(VoiceOpType op, object data)
         {
-            OP = op;
+            Op = op;
             Data = data;
         }
     }

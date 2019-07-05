@@ -1,5 +1,3 @@
-using Frostbyte.Entities.Audio;
-using Frostbyte.Handlers;
 using System;
 using System.Collections.Specialized;
 using System.Linq;
@@ -9,6 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Frostbyte.Entities.Audio;
+using Frostbyte.Handlers;
 
 namespace Frostbyte.Extensions
 {
@@ -23,12 +23,13 @@ namespace Frostbyte.Extensions
         {
             var bytes = JsonSerializer.ToUtf8Bytes(data);
             await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
-            var str = Encoding.UTF8.GetString(bytes);
         }
 
         public static T TryCast<T>(this object @object)
         {
-            return @object is T value ? value : default;
+            return @object is T value
+                ? value
+                : default;
         }
 
         public static (string Provider, string Query) BuildQuery(this NameValueCollection collection)
@@ -43,13 +44,9 @@ namespace Frostbyte.Extensions
                 var keyValue = collection.Get(i);
 
                 if (key == "q")
-                {
                     query += keyValue;
-                }
                 else
-                {
                     query += $"&{key}={keyValue}";
-                }
             }
 
             return (provider, query);
@@ -78,7 +75,8 @@ namespace Frostbyte.Extensions
             return values.Any(x => x.Equals(mainValue));
         }
 
-        public static async Task ReceiveAsync<TClass, TJson>(this WebSocket socket, CancellationTokenSource tokenSource, Func<TJson, Task> func)
+        public static async Task ReceiveAsync<TClass, TJson>(this WebSocket socket, CancellationTokenSource tokenSource,
+            Func<TJson, Task> func)
         {
             try
             {
@@ -91,8 +89,9 @@ namespace Frostbyte.Extensions
                     switch (result.MessageType)
                     {
                         case WebSocketMessageType.Close:
-                            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None)
-                                         .ConfigureAwait(false);
+                            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
+                                    CancellationToken.None)
+                                .ConfigureAwait(false);
                             break;
 
                         case WebSocketMessageType.Text:
@@ -105,13 +104,19 @@ namespace Frostbyte.Extensions
             }
             catch (Exception ex)
             {
-                LogHandler<TClass>.Log.Error(exception: ex?.InnerException ?? ex);
+                LogHandler<TClass>.Log.Error(exception: ex.InnerException ?? ex);
             }
             finally
             {
                 socket?.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None)
                     .ConfigureAwait(false);
             }
+        }
+
+        public static async Task ContinueWith(this Task task, Func<ValueTask> continueTask)
+        {
+            await task;
+            await continueTask.Invoke();
         }
     }
 }

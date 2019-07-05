@@ -1,8 +1,8 @@
-﻿using Frostbyte.Audio.Codecs.Enums;
+﻿using System;
+using System.Runtime.InteropServices;
+using Frostbyte.Audio.Codecs.Enums;
 using Frostbyte.Entities;
 using Frostbyte.Handlers;
-using System;
-using System.Runtime.InteropServices;
 
 namespace Frostbyte.Audio.Codecs
 {
@@ -16,25 +16,27 @@ namespace Frostbyte.Audio.Codecs
         }
 
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encode")]
-        private static unsafe extern int OpusEncode(IntPtr encoder, byte* pcmData, int frameSize, byte* data, int maxDataBytes);
-
-        [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encoder_ctl")]
-        private static extern OpusError OpusEncoderControl(IntPtr encoder, OpusControl request, int value);
+        private static extern unsafe int OpusEncode(IntPtr encoder, byte* pcmData, int frameSize, byte* data,
+            int maxDataBytes);
 
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encoder_create")]
-        private static extern IntPtr OpusCreateEncoder(int sampleRate, int channels, int application, out OpusError error);
+        private static extern IntPtr OpusCreateEncoder(int sampleRate, int channels, int application,
+            out OpusError error);
 
-        private static unsafe void OpusEncode(IntPtr encoder, ReadOnlySpan<byte> pcm, int frameSize, ref Span<byte> opus)
+        private static unsafe void OpusEncode(IntPtr encoder, ReadOnlySpan<byte> pcm, int frameSize,
+            ref Span<byte> opus)
         {
-            var len = 0;
+            int len;
 
             fixed (byte* pcmPtr = &pcm.GetPinnableReference())
             fixed (byte* opusPtr = &opus.GetPinnableReference())
+            {
                 len = OpusEncode(encoder, pcmPtr, frameSize, opusPtr, opus.Length);
+            }
 
             if (len < 0)
             {
-                var error = (OpusError)len;
+                var error = (OpusError) len;
                 LogHandler<OpusCodec>.Log.Error($"Could not encode PCM data to Opus -> {error}");
                 return;
             }
@@ -44,7 +46,8 @@ namespace Frostbyte.Audio.Codecs
 
         public void Encode(ReadOnlySpan<byte> pcm, ref Span<byte> target)
         {
-            var encoder = OpusCreateEncoder(AudioHelper.SampleRate, AudioHelper.Channels, (int)_settings, out var error);
+            var encoder = OpusCreateEncoder(AudioHelper.SAMPLE_RATE, AudioHelper.CHANNELS, (int) _settings,
+                out var error);
 
             if (error != OpusError.Ok)
             {

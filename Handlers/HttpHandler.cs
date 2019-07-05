@@ -1,16 +1,14 @@
-﻿using Frostbyte.Extensions;
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Frostbyte.Extensions;
 
 namespace Frostbyte.Handlers
 {
     public sealed class HttpHandler
     {
-        private string Url { get; set; }
-
         private readonly HttpClient _client;
 
         public HttpHandler()
@@ -24,6 +22,8 @@ namespace Frostbyte.Handlers
             _client.DefaultRequestHeaders.Clear();
             _client.DefaultRequestHeaders.Add("User-Agent", "Frostbyte");
         }
+
+        private string Url { get; set; }
 
         public HttpHandler WithUrl(string url)
         {
@@ -45,10 +45,7 @@ namespace Frostbyte.Handlers
 
         public HttpHandler WithCustomHeader(string key, string value)
         {
-            if (_client.DefaultRequestHeaders.Contains(key))
-            {
-                return this;
-            }
+            if (_client.DefaultRequestHeaders.Contains(key)) return this;
 
             _client.DefaultRequestHeaders.Add(key, value);
             return this;

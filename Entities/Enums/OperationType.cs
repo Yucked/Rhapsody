@@ -12,7 +12,7 @@ namespace Frostbyte.Entities.Enums
         Equalizer = 7,
         VoiceUpdate = 8,
 
-        REST = 11,
+        Rest = 11,
         Statistics = 12,
         TrackUpdate = 13,
         TrackErrored = 14,

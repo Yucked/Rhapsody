@@ -8,25 +8,24 @@ namespace Frostbyte.Sources
     public abstract class BaseSourceProvider
     {
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="query"></param>
         /// <returns></returns>
         public abstract ValueTask<SearchResponse> SearchAsync(string query);
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="query"></param>
         /// <returns></returns>
-        public abstract ValueTask<Stream> GetStreamAsync(string query);
+        protected abstract ValueTask<Stream> GetStreamAsync(string query);
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="track"></param>
         /// <returns></returns>
         public ValueTask<Stream> GetStreamAsync(AudioTrack track)
-            => GetStreamAsync(track.Id);
+        {
+            return GetStreamAsync(track.Id);
+        }
     }
 }

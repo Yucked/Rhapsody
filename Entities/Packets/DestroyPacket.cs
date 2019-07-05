@@ -6,7 +6,6 @@ namespace Frostbyte.Entities.Packets
     {
         public DestroyPacket(ulong guildId) : base(guildId, OperationType.Destroy)
         {
-
         }
     }
 }

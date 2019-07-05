@@ -1,26 +1,26 @@
-﻿using Frostbyte.Entities;
-using Frostbyte.Entities.Enums;
-using Console = Colorful.Console;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Colorful;
-using Frostbyte.Entities.Results;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Colorful;
+using Frostbyte.Entities;
+using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.Results;
 using Frostbyte.Websocket;
-using System;
+using Console = Colorful.Console;
 
 namespace Frostbyte.Handlers
 {
     public sealed class MainHandler
     {
         private readonly Configuration _config;
-        private readonly WSServer _wSServer;
         private readonly HttpHandler _httpHandler;
+        private readonly WsServer _wSServer;
 
         public MainHandler()
         {
@@ -29,10 +29,10 @@ namespace Frostbyte.Handlers
             Singleton.Add<HttpHandler>();
             Singleton.Add<CacheHandler>();
             Singleton.Add<SourceHandler>();
-            Singleton.Add<WSServer>();
+            Singleton.Add<WsServer>();
 
             _httpHandler = Singleton.Of<HttpHandler>();
-            _wSServer = Singleton.Of<WSServer>();
+            _wSServer = Singleton.Of<WsServer>();
         }
 
         public async Task InitializeAsync()
@@ -65,14 +65,16 @@ namespace Frostbyte.Handlers
                 if (ping)
                 {
                     isReady = ping;
-                    LogHandler<MainHandler>.Log.Information("Internet connection verified successfully! Continuing ...");
+                    LogHandler<MainHandler>.Log.Information(
+                        "Internet connection verified successfully! Continuing ...");
                     Console.Clear();
                 }
                 else
                 {
                     tries++;
                     waitTime += _config.ReconnectInterval;
-                    LogHandler<MainHandler>.Log.Warning($"Attempt #{tries}, next attempt in {TimeSpan.FromMilliseconds(waitTime).Seconds}s.");
+                    LogHandler<MainHandler>.Log.Warning(
+                        $"Attempt #{tries}, next attempt in {TimeSpan.FromMilliseconds(waitTime).Seconds}s.");
                     await Task.Delay(waitTime).ConfigureAwait(false);
                 }
             }
@@ -104,11 +106,12 @@ namespace Frostbyte.Handlers
                 .GetBytesAsync().ConfigureAwait(false);
             result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(getBytes.Span).FirstOrDefault();
 
-            Console.WriteLineFormatted($"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.SHA}",
-                                       Color.White,
-                                       new Formatter("Issues", Color.Plum),
-                                       new Formatter("License", Color.Plum),
-                                       new Formatter("SHA", Color.Plum));
+            Console.WriteLineFormatted(
+                $"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.Sha}",
+                Color.White,
+                new Formatter("Issues", Color.Plum),
+                new Formatter("License", Color.Plum),
+                new Formatter("SHA", Color.Plum));
         }
 
         private void PrintSystemInformation()
@@ -117,13 +120,13 @@ namespace Frostbyte.Handlers
             Console.WriteLineFormatted(
                 $"    {{0}}: {RuntimeInformation.FrameworkDescription}    |    {{1}}: {RuntimeInformation.OSDescription}\n" +
                 "    {2}: {3} ID / Using {4} Threads / Started On {5}",
-                                       Color.White,
-                                       new Formatter("FX Info", Color.Crimson),
-                                       new Formatter("OS Info", Color.Crimson),
-                                       new Formatter("Process", Color.Crimson),
-                                       new Formatter(process.Id, Color.GreenYellow),
-                                       new Formatter(process.Threads.Count, Color.GreenYellow),
-                                       new Formatter($"{process.StartTime:MMM d - hh:mm:ss tt}", Color.GreenYellow));
+                Color.White,
+                new Formatter("FX Info", Color.Crimson),
+                new Formatter("OS Info", Color.Crimson),
+                new Formatter("Process", Color.Crimson),
+                new Formatter(process.Id, Color.GreenYellow),
+                new Formatter(process.Threads.Count, Color.GreenYellow),
+                new Formatter($"{process.StartTime:MMM d - hh:mm:ss tt}", Color.GreenYellow));
         }
 
         private Configuration BuildConfiguration()
@@ -154,7 +157,7 @@ namespace Frostbyte.Handlers
                     }
                 };
 
-                var data = JsonSerializer.ToUtf8Bytes(config, new JsonSerializerOptions { WriteIndented = true });
+                var data = JsonSerializer.ToUtf8Bytes(config, new JsonSerializerOptions {WriteIndented = true});
                 File.WriteAllBytes("./Config.json", data);
             }
 

@@ -12,7 +12,7 @@ namespace Frostbyte.Sources
             throw new NotImplementedException();
         }
 
-        public override ValueTask<Stream> GetStreamAsync(string id)
+        protected override ValueTask<Stream> GetStreamAsync(string id)
         {
             throw new NotImplementedException();
         }

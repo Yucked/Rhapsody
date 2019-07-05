@@ -15,18 +15,17 @@ namespace Frostbyte.Sources
 
             if (Directory.Exists(query))
             {
-                var files = Directory.EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories).ToArray();
-                if (files.Length < 1)
-                {
-                    return new ValueTask<SearchResponse>(response);
-                }
+                var files = Directory
+                    .EnumerateFiles(query, @"\.(?:wav|mp3|flac|m4a|ogg|wma|webm)$", SearchOption.AllDirectories)
+                    .ToArray();
+                if (files.Length < 1) return new ValueTask<SearchResponse>(response);
 
                 response.Tracks = files.Select(x => BuildTrack(x));
                 response.LoadType = LoadType.SearchResult;
             }
             else
             {
-                var track = new[] { BuildTrack(query) };
+                var track = new[] {BuildTrack(query)};
                 response.Tracks = track;
                 response.LoadType = LoadType.TrackLoaded;
             }
@@ -34,13 +33,13 @@ namespace Frostbyte.Sources
             return new ValueTask<SearchResponse>(response);
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(string query)
+        protected override async ValueTask<Stream> GetStreamAsync(string query)
         {
             if (Directory.Exists(query))
                 return default;
 
             using var stream = new FileStream(query, FileMode.Open);
-            var memStream = new MemoryStream((int)stream.Length);
+            var memStream = new MemoryStream((int) stream.Length);
             await stream.CopyToAsync(memStream).ConfigureAwait(false);
             return memStream;
         }

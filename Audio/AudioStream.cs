@@ -1,5 +1,4 @@
-﻿using Frostbyte.Handlers;
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -7,38 +6,7 @@ namespace Frostbyte.Audio
 {
     public sealed class AudioStream : Stream
     {
-        #region NOT NEEDED
-        public override bool CanRead
-            => false;
-
-        public override bool CanSeek
-            => false;
-
-        public override bool CanWrite
-            => true;
-
-        public override long Length
-            => default;
-
-        public override long Position {
-            get => default;
-            set => value = default;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count) { return default; }
-
-        public override long Seek(long offset, SeekOrigin origin) { return default; }
-
-        public override void SetLength(long value) { }
-        #endregion
-
-        public int Volume { get; private set; }
-        public byte[] Buffer { get; }
-        public int BufferLength { get; private set; }
-        public int BufferDuration { get; }
-        public Memory<byte> BufferMemory { get; }
-
-        private readonly AudioEngine _engine;        
+        private readonly AudioEngine _engine;
 
         public AudioStream(AudioEngine engine, int bufferDuration = 20)
         {
@@ -48,6 +16,12 @@ namespace Frostbyte.Audio
             BufferMemory = Buffer.AsMemory();
             BufferLength = 0;
         }
+
+        public int Volume { get; private set; }
+        public byte[] Buffer { get; }
+        public int BufferLength { get; private set; }
+        public int BufferDuration { get; }
+        public Memory<byte> BufferMemory { get; }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -69,28 +43,24 @@ namespace Frostbyte.Audio
                     remaining -= len;
                     buffSpan = buffSpan.Slice(len);
 
-                    if (BufferLength == Buffer.Length)
+                    if (BufferLength != Buffer.Length)
+                        continue;
+
+                    var pcm16 = MemoryMarshal.Cast<byte, short>(pcmSpan);
+                    if (Volume != 1)
+                        for (var i = 0; i < pcm16.Length; i++)
+                            pcm16[i] = (short) (pcm16[i] * Volume);
+
+                    BufferLength = 0;
+                    var packet = new byte[pcmSpan.Length];
+                    var packetMemory = packet.AsMemory();
+
+                    _engine.BuildAudioPacket(pcmSpan, ref packetMemory);
+                    _engine.Packets.Enqueue(new AudioPacket
                     {
-                        var pcm16 = MemoryMarshal.Cast<byte, short>(pcmSpan);
-
-
-                        if (Volume != 1)
-                        {
-                            for (var i = 0; i < pcm16.Length; i++)
-                                pcm16[i] = (short)(pcm16[i] * Volume);
-                        }
-
-                        BufferLength = 0;
-                        var packet = new byte[pcmSpan.Length];
-                        var packetMemory = packet.AsMemory();
-
-                        _engine.BuildAudioPacket(pcmSpan, ref packetMemory);
-                        _engine.Packets.Enqueue(new AudioPacket
-                        {
-                            Bytes = packetMemory,
-                            MillisecondDuration = BufferDuration
-                        });
-                    }
+                        Bytes = packetMemory,
+                        MillisecondDuration = BufferDuration
+                    });
                 }
             }
         }
@@ -102,20 +72,57 @@ namespace Frostbyte.Audio
             var pcm16 = MemoryMarshal.Cast<byte, short>(pcm);
 
             if (Volume != 1)
-            {
                 for (var i = 0; i < pcm16.Length; i++)
-                    pcm16[i] = (short)(pcm16[i] * Volume);
-            }
+                    pcm16[i] = (short) (pcm16[i] * Volume);
 
             var packet = new byte[pcm.Length];
             var packetMemory = packet.AsMemory();
 
-            _engine.BuildAudioPacket(pcm, ref packetMemory);
-            _engine.Packets.Enqueue(new AudioPacket
+            lock (_engine)
             {
-                Bytes = packetMemory,
-                MillisecondDuration = BufferDuration
-            });
+                _engine.BuildAudioPacket(pcm, ref packetMemory);
+                _engine.Packets.Enqueue(new AudioPacket
+                {
+                    Bytes = packetMemory,
+                    MillisecondDuration = BufferDuration
+                });
+            }
         }
+
+        #region NOT NEEDED
+
+        public override bool CanRead
+            => false;
+
+        public override bool CanSeek
+            => false;
+
+        public override bool CanWrite
+            => true;
+
+        public override long Length
+            => default;
+
+        public override long Position
+        {
+            get => default;
+            set { }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return default;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            return default;
+        }
+
+        public override void SetLength(long value)
+        {
+        }
+
+        #endregion
     }
 }

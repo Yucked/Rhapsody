@@ -1,31 +1,31 @@
-﻿using Frostbyte.Handlers;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
+using Frostbyte.Handlers;
 
 namespace Frostbyte.Websocket
 {
-    public sealed class WSClient
+    public sealed class WsClient
     {
-        private ReadyPacket readyPacket;
         private readonly CancellationTokenSource _receiveCancel;
         private readonly WebSocket _socket;
+        private ReadyPacket _readyPacket;
 
-        public bool IsDisposed { get; private set; }
-        public ConcurrentDictionary<ulong, WSVoiceClient> VoiceClients { get; private set; }
-
-        public WSClient(WebSocketContext socketContext)
+        public WsClient(WebSocketContext socketContext)
         {
             _socket = socketContext.WebSocket;
-            VoiceClients = new ConcurrentDictionary<ulong, WSVoiceClient>();
+            VoiceClients = new ConcurrentDictionary<ulong, WsVoiceClient>();
             _receiveCancel = new CancellationTokenSource();
 
-            _socket.ReceiveAsync<WSClient, PlayerPacket>(_receiveCancel, ProcessPacketAsync)
-               .ContinueWith(async _ => await DisposeAsync());
+            _socket.ReceiveAsync<WsClient, PlayerPacket>(_receiveCancel, ProcessPacketAsync)
+                .ContinueWith(DisposeAsync).ConfigureAwait(false);
         }
+
+        public bool IsDisposed { get; private set; }
+        public ConcurrentDictionary<ulong, WsVoiceClient> VoiceClients { get; private set; }
 
         public async Task SendStatsAsync(StatisticPacket stats)
         {
@@ -35,19 +35,17 @@ namespace Frostbyte.Websocket
 
         private async Task ProcessPacketAsync(PlayerPacket packet)
         {
-            if (readyPacket is null && !(packet is ReadyPacket))
+            if (_readyPacket is null && !(packet is ReadyPacket))
             {
-                LogHandler<WSClient>.Log.Error($"{packet.GuildId} guild didn't send a ReadyPayload.");
+                LogHandler<WsClient>.Log.Error($"{packet.GuildId} guild didn't send a ReadyPayload.");
                 return;
             }
-            else
-            {
-                readyPacket = packet as ReadyPacket;
-                var vClient = new WSVoiceClient(_socket);
-                VoiceClients.TryAdd(packet.GuildId, vClient);
 
-                LogHandler<WSClient>.Log.Debug($"{packet.GuildId} client and engine has been initialized.");
-            }
+            _readyPacket = packet as ReadyPacket;
+            var vClient = new WsVoiceClient(_socket);
+            VoiceClients.TryAdd(packet.GuildId, vClient);
+
+            LogHandler<WsClient>.Log.Debug($"{packet.GuildId} client and engine has been initialized.");
 
             var voiceClient = VoiceClients[packet.GuildId];
 
@@ -97,7 +95,8 @@ namespace Frostbyte.Websocket
             VoiceClients.Clear();
             VoiceClients = null;
 
-            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None).ConfigureAwait(false);
+            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing client.", CancellationToken.None)
+                .ConfigureAwait(false);
             _socket.Dispose();
 
             IsDisposed = true;

@@ -23,13 +23,15 @@ namespace Frostbyte.Entities.Results
         public IEnumerable<YouTubeVideo> Videos { get; set; }
 
         public AudioPlaylist BuildPlaylist(string id, string url)
-            => new AudioPlaylist
+        {
+            return new AudioPlaylist
             {
                 Id = id,
                 Url = url,
                 Name = Title,
                 Duration = Videos.Sum(x => x.Duration * 1000)
             };
+        }
     }
 
     public sealed class YouTubeSearch

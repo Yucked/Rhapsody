@@ -8,18 +8,20 @@ namespace Frostbyte.Handlers
 {
     public sealed class LogHandler<T>
     {
-        public static LogHandler<T> Log => _lazyLog.Value;
+        private static readonly Lazy<LogHandler<T>> LazyLog
+            = new Lazy<LogHandler<T>>(() => new LogHandler<T>(), true);
 
         private readonly DateTimeOffset _date;
         private readonly object _logLock;
-        private static readonly Lazy<LogHandler<T>> _lazyLog
-            = new Lazy<LogHandler<T>>(() => new LogHandler<T>(), true);
 
         public LogHandler()
         {
             _logLock = new object();
             _date = DateTimeOffset.Now;
         }
+
+        public static LogHandler<T> Log
+            => LazyLog.Value;
 
         public void Information(string message, Exception exception = default)
         {
@@ -73,14 +75,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical => "CRIT",
-                LogLevel.Debug => "DBUG",
-                LogLevel.Error => "EROR",
+                LogLevel.Critical    => "CRIT",
+                LogLevel.Debug       => "DBUG",
+                LogLevel.Error       => "EROR",
                 LogLevel.Information => "INFO",
-                LogLevel.None => "NONE",
-                LogLevel.Trace => "TRCE",
-                LogLevel.Warning => "WARN",
-                _ => "NONE"
+                LogLevel.None        => "NONE",
+                LogLevel.Trace       => "TRCE",
+                LogLevel.Warning     => "WARN",
+                _                    => "NONE"
             };
         }
 
@@ -88,14 +90,14 @@ namespace Frostbyte.Handlers
         {
             return logLevel switch
             {
-                LogLevel.Critical => Color.Red,
-                LogLevel.Debug => Color.SlateBlue,
-                LogLevel.Error => Color.Red,
+                LogLevel.Critical    => Color.Red,
+                LogLevel.Debug       => Color.SlateBlue,
+                LogLevel.Error       => Color.Red,
                 LogLevel.Information => Color.SpringGreen,
-                LogLevel.None => Color.BurlyWood,
-                LogLevel.Trace => Color.SlateBlue,
-                LogLevel.Warning => Color.Yellow,
-                _ => Color.SlateBlue
+                LogLevel.None        => Color.BurlyWood,
+                LogLevel.Trace       => Color.SlateBlue,
+                LogLevel.Warning     => Color.Yellow,
+                _                    => Color.SlateBlue
             };
         }
     }

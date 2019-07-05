@@ -1,7 +1,7 @@
-﻿using Frostbyte.Handlers;
-using Console = Colorful.Console;
+﻿using System;
 using System.Threading.Tasks;
-using System;
+using Frostbyte.Handlers;
+using Console = Colorful.Console;
 
 namespace Frostbyte
 {
@@ -14,7 +14,7 @@ namespace Frostbyte
             Console.WindowWidth = 140;
 
             AppDomain.CurrentDomain.UnhandledException += (s, e)
-                 => LogHandler<Program>.Log.Error(exception: e.ExceptionObject as Exception);
+                => LogHandler<Program>.Log.Error(exception: e.ExceptionObject as Exception);
 
             return new MainHandler().InitializeAsync();
         }

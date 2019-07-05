@@ -1,16 +1,17 @@
-﻿using Frostbyte.Entities.Audio;
-using Frostbyte.Extensions;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.Serialization.Formatters.Binary;
+using Frostbyte.Entities.Audio;
+using Frostbyte.Extensions;
 
 namespace Frostbyte.Handlers
 {
     public sealed class CacheHandler
     {
         private readonly ConcurrentDictionary<string, byte[]> _cache;
+
         public CacheHandler()
         {
             _cache = new ConcurrentDictionary<string, byte[]>();

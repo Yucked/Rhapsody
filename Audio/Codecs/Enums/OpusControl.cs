@@ -1,6 +1,6 @@
 ﻿namespace Frostbyte.Audio.Codecs.Enums
 {
-    public enum OpusControl : int
+    public enum OpusControl
     {
         SetBitrate = 4002,
         SetBandwidth = 4008,

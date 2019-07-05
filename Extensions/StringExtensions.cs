@@ -1,6 +1,6 @@
-﻿using Frostbyte.Sources;
-using System;
+﻿using System;
 using System.Text;
+using Frostbyte.Sources;
 
 namespace Frostbyte.Extensions
 {
@@ -13,9 +13,9 @@ namespace Frostbyte.Extensions
 
         public static string WithParameter(this string str, string key, string value)
         {
-            return str.Contains("?") ?
-                str += $"&{key}={value}" :
-                str += $"?{key}={value}";
+            return str.Contains("?")
+                ? str += $"&{key}={value}"
+                : str += $"?{key}={value}";
         }
 
         public static Uri ToUrl(this string str)
@@ -28,19 +28,19 @@ namespace Frostbyte.Extensions
             prefix = prefix.Replace("search", "");
             return prefix switch
             {
-                "apm"   => ("AppleMusic", typeof(AppleMusicSource)),
-                "am"    => ("Audiomack", typeof(AudiomackSource)),
-                "bc"    => ("BandCamp", typeof(BandCampSource)),
-                "ht"    => ("HTTP", typeof(HttpSource)),
-                "lcl"   => ("Local", typeof(LocalSource)),
-                "mxc"   => ("MixCloud", typeof(MixCloudSource)),
-                "mx"    => ("Mixer", typeof(MixerSource)),
-                "mb"    => ("MusicBed", typeof(MusicBedSource)),
-                "sc"    => ("SoundCloud", typeof(SoundCloudSource)),
-                "tw"    => ("Twitch", typeof(TwitchSource)),
-                "vm"    => ("Vimeo", typeof(VimeoSource)),
-                "yt"    => ("YouTube", typeof(YouTubeSource)),
-                _       => ("Unknown", null)
+                "apm" => ("AppleMusic", typeof(AppleMusicSource)),
+                "am"  => ("Audiomack", typeof(AudiomackSource)),
+                "bc"  => ("BandCamp", typeof(BandCampSource)),
+                "ht"  => ("HTTP", typeof(HttpSource)),
+                "lcl" => ("Local", typeof(LocalSource)),
+                "mxc" => ("MixCloud", typeof(MixCloudSource)),
+                "mx"  => ("Mixer", typeof(MixerSource)),
+                "mb"  => ("MusicBed", typeof(MusicBedSource)),
+                "sc"  => ("SoundCloud", typeof(SoundCloudSource)),
+                "tw"  => ("Twitch", typeof(TwitchSource)),
+                "vm"  => ("Vimeo", typeof(VimeoSource)),
+                "yt"  => ("YouTube", typeof(YouTubeSource)),
+                _     => ("Unknown", null)
             };
         }
 

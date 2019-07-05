@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -14,8 +15,10 @@ namespace Frostbyte.Sources
     public sealed class BandCampSource : BaseSourceProvider
     {
         private readonly Regex
-            _trackUrlRegex = new Regex("^https?://(?:[^.]+\\.|)bandcamp\\.com/track/([a-zA-Z0-9-_]+)/?(?:\\?.*|)$", RegexOptions.Compiled | RegexOptions.IgnoreCase),
-            _albumUrlRegex = new Regex("^https?://(?:[^.]+\\.|)bandcamp\\.com/album/([a-zA-Z0-9-_]+)/?(?:\\?.*|)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            _trackUrlRegex = new Regex("^https?://(?:[^.]+\\.|)bandcamp\\.com/track/([a-zA-Z0-9-_]+)/?(?:\\?.*|)$",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase),
+            _albumUrlRegex = new Regex("^https?://(?:[^.]+\\.|)bandcamp\\.com/album/([a-zA-Z0-9-_]+)/?(?:\\?.*|)$",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public override async ValueTask<SearchResponse> SearchAsync(string query)
         {
@@ -24,10 +27,11 @@ namespace Frostbyte.Sources
             {
                 var trackUrl when _trackUrlRegex.IsMatch(query) => trackUrl,
                 var albumUrl when _albumUrlRegex.IsMatch(query) => albumUrl,
-                _ => $"https://bandcamp.com/search?q={WebUtility.UrlEncode(query)}"
+                _ =>
+                $"https://bandcamp.com/search?q={WebUtility.UrlEncode(query)}"
             };
 
-            var json = await ScrapeJSONAsync(query).ConfigureAwait(false);
+            var json = await ScrapeJsonAsync(query).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(json))
             {
                 result.LoadType = LoadType.LoadFailed;
@@ -46,12 +50,12 @@ namespace Frostbyte.Sources
             return result;
         }
 
-        public override async ValueTask<Stream> GetStreamAsync(string query)
+        protected override async ValueTask<Stream> GetStreamAsync(string query)
         {
             if (!_trackUrlRegex.IsMatch(query))
                 return default;
 
-            var json = await ScrapeJSONAsync(query).ConfigureAwait(false);
+            var json = await ScrapeJsonAsync(query).ConfigureAwait(false);
             var bcResult = JsonSerializer.Parse<BandCampResult>(json);
 
             var track = bcResult.Trackinfo.FirstOrDefault();
@@ -63,7 +67,7 @@ namespace Frostbyte.Sources
             return stream;
         }
 
-        private async ValueTask<string> ScrapeJSONAsync(string url)
+        private async ValueTask<string> ScrapeJsonAsync(string url)
         {
             var rawHtml = await Singleton.Of<HttpHandler>()
                 .GetStringAsync(url).ConfigureAwait(false);
@@ -73,19 +77,20 @@ namespace Frostbyte.Sources
             const string startStr = "var TralbumData = {",
                 endStr = "};";
 
-            if (rawHtml.IndexOf(startStr) == -1)
+            if (rawHtml.IndexOf(startStr, StringComparison.Ordinal) == -1)
                 return string.Empty;
 
-            var tempData = rawHtml.Substring(rawHtml.IndexOf(startStr) + startStr.Length - 1);
-            tempData = tempData.Substring(0, tempData.IndexOf(endStr) + 1);
+            var tempData = rawHtml.Substring(rawHtml.IndexOf(startStr, StringComparison.Ordinal) + startStr.Length - 1);
+            tempData = tempData.Substring(0, tempData.IndexOf(endStr, StringComparison.Ordinal) + 1);
             var jsonReg = new Regex(@"([a-zA-Z0-9_]*:\s)(?!\s)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            var commentReg = new Regex(@"\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var commentReg = new Regex(@"\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
             tempData = commentReg.Replace(tempData, "");
             var matches = jsonReg.Matches(tempData);
             foreach (Match match in matches)
             {
-                var val = string.Format("\"{0}\":", match.Value.Replace(": ", ""));
+                var val = $"\"{match.Value.Replace(": ", "")}\":";
                 var regex = new Regex(Regex.Escape(match.Value), RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 tempData = regex.Replace(tempData, val, 1);
             }

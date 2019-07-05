@@ -1,49 +1,36 @@
-﻿using Frostbyte.Audio.Codecs;
-using Frostbyte.Entities;
-using Frostbyte.Entities.Enums;
+﻿using System;
+using System.Buffers;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Net.WebSockets;
+using System.Threading.Tasks;
+using Frostbyte.Audio.Codecs;
 using Frostbyte.Entities.Packets;
-using Frostbyte.Entities.Results;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using Frostbyte.Websocket;
-using System;
-using System.Buffers;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
-using System.Net.WebSockets;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Frostbyte.Audio
 {
     public sealed class AudioEngine : IAsyncDisposable
     {
-        public bool IsReady { get; }
-        public AudioStream AudioStream { get; }
-        public bool IsPaused { get; private set; }
-        public bool IsPlaying
-            => PlaybackCompleted != null && !PlaybackCompleted.Task.IsCompleted;
-
-        public ConcurrentQueue<AudioPacket> Packets { get; }
-        public TaskCompletionSource<bool> PlaybackCompleted { get; set; }
-
-        private ushort sequence;
-        private uint timeStamp;
+        private readonly CacheHandler _cache;
+        private readonly OpusCodec _opusCodec;
+        private readonly RtpCodec _rtpCodec;
+        private readonly WebSocket _socket;
 
         private readonly SourceHandler _sources;
-        private readonly CacheHandler _cache;
-        private readonly RTPCodec _rtpCodec;
-        private readonly OpusCodec _opusCodec;
-        private readonly WebSocket _socket;
-        private readonly WSVoiceClient _voiceClient;
+        private readonly WsVoiceClient _voiceClient;
 
-        public AudioEngine(WSVoiceClient voiceClient, WebSocket socket)
+        private ushort _sequence;
+        private uint _timeStamp;
+
+        public AudioEngine(WsVoiceClient voiceClient, WebSocket socket)
         {
             _voiceClient = voiceClient;
             _socket = socket;
 
-            _rtpCodec = new RTPCodec();
+            _rtpCodec = new RtpCodec();
             _opusCodec = new OpusCodec();
 
             Packets = new ConcurrentQueue<AudioPacket>();
@@ -53,25 +40,42 @@ namespace Frostbyte.Audio
             _cache = Singleton.Of<CacheHandler>();
         }
 
+        public bool IsReady { get; }
+        public AudioStream AudioStream { get; }
+        public bool IsPaused { get; private set; }
+
+        public bool IsPlaying
+            => PlaybackCompleted != null && !PlaybackCompleted.Task.IsCompleted;
+
+        public ConcurrentQueue<AudioPacket> Packets { get; }
+        public TaskCompletionSource<bool> PlaybackCompleted { get; set; }
+
+        public ValueTask DisposeAsync()
+        {
+            throw new NotImplementedException();
+        }
+
         public void BuildAudioPacket(ReadOnlySpan<byte> pcm, ref Memory<byte> target)
         {
-            var rented = ArrayPool<byte>.Shared.Rent(AudioHelper.GetRTPPacketSize((AudioHelper.MaxFrameSize * AudioHelper.Channels * 2)));
+            var rented =
+                ArrayPool<byte>.Shared.Rent(
+                    AudioHelper.GetRtpPacketSize(AudioHelper.MAX_FRAME_SIZE * AudioHelper.CHANNELS * 2));
             var packet = rented.AsSpan();
-            _rtpCodec.EncodeHeader(sequence, timeStamp, _voiceClient.VRP.SSRC, packet);
+            _rtpCodec.EncodeHeader(_sequence, _timeStamp, _voiceClient.Vrp.Ssrc, packet);
 
-            var opus = packet.Slice(RTPCodec.HeaderSize, pcm.Length);
+            var opus = packet.Slice(RtpCodec.HEADER_SIZE, pcm.Length);
             _opusCodec.Encode(pcm, ref opus);
 
-            sequence++;
-            timeStamp += (uint)AudioHelper.GetFrameSize(AudioHelper.GetSampleDuration(pcm.Length));
+            _sequence++;
+            _timeStamp += (uint) AudioHelper.GetFrameSize(AudioHelper.GetSampleDuration(pcm.Length));
 
             Span<byte> nonce = stackalloc byte[SodiumCodec.NonceSize];
-            _voiceClient.SodiumCodec.GenerateNonce(packet.Slice(0, RTPCodec.HeaderSize), nonce);
+            _voiceClient.SodiumCodec.GenerateNonce(packet.Slice(0, RtpCodec.HEADER_SIZE), nonce);
 
             Span<byte> encrypted = stackalloc byte[opus.Length + SodiumCodec.MacSize];
             _voiceClient.SodiumCodec.Encrypt(opus, encrypted, nonce);
-            encrypted.CopyTo(packet.Slice(RTPCodec.HeaderSize));
-            packet = packet.Slice(0, AudioHelper.GetRTPPacketSize(encrypted.Length));
+            encrypted.CopyTo(packet.Slice(RtpCodec.HEADER_SIZE));
+            packet = packet.Slice(0, AudioHelper.GetRtpPacketSize(encrypted.Length));
 
             target = target.Slice(0, packet.Length);
             packet.CopyTo(target.Span);
@@ -96,7 +100,8 @@ namespace Frostbyte.Audio
             {
                 var decode = playPacket.Hash.DecodeHash();
                 provider = decode.Provider;
-                var request = await _sources.HandleRequestAsync(provider, decode.Url ?? decode.Title).ConfigureAwait(false);
+                var request = await _sources.HandleRequestAsync(provider, decode.Url ?? decode.Title)
+                    .ConfigureAwait(false);
 
                 if (!request.IsEnabled)
                     return;
@@ -110,11 +115,6 @@ namespace Frostbyte.Audio
 
             await AudioStream.FlushAsync()
                 .ConfigureAwait(false);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            throw new NotImplementedException();
         }
     }
 }

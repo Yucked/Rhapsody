@@ -1,9 +1,9 @@
-﻿using Frostbyte.Entities.Audio;
-using Frostbyte.Extensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Audio;
+using Frostbyte.Extensions;
 
 namespace Frostbyte.Entities.Results
 {
@@ -33,16 +33,19 @@ namespace Frostbyte.Entities.Results
 
         public AudioPlaylist ToAudioPlaylist
             => ItemType == "album"
-            ? new AudioPlaylist
-            {
-                Id = $"{Current.Id}",
-                Name = Current.Title,
-                Duration = Tracks.Sum(x => x.Duration),
-                ArtworkUrl = ArtId == 0 ? default : $"https://f4.bcbits.com/img/a{ArtId}_0.jpg"
-            } : default;
+                ? new AudioPlaylist
+                {
+                    Id = $"{Current.Id}",
+                    Name = Current.Title,
+                    Duration = Tracks.Sum(x => x.Duration),
+                    ArtworkUrl = ArtId == 0
+                        ? default
+                        : $"https://f4.bcbits.com/img/a{ArtId}_0.jpg"
+                }
+                : default;
     }
 
-    public partial class BandCampCurrent
+    public class BandCampCurrent
     {
         [JsonPropertyName("title")]
         public string Title { get; set; }
@@ -72,7 +75,8 @@ namespace Frostbyte.Entities.Results
         public double Duration { get; set; }
 
         public AudioTrack ToAudioTrack(string author, string url, long artId)
-            => new AudioTrack
+        {
+            return new AudioTrack
             {
                 Id = $"{TrackId}",
                 Title = Title,
@@ -83,8 +87,11 @@ namespace Frostbyte.Entities.Results
                     Name = author
                 },
                 Url = url,
-                ArtworkUrl = artId == 0 ? default : $"https://f4.bcbits.com/img/a{artId}_0.jpg"
+                ArtworkUrl = artId == 0
+                    ? default
+                    : $"https://f4.bcbits.com/img/a{artId}_0.jpg"
             };
+        }
     }
 
     public struct BandCampFile

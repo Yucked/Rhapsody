@@ -5,6 +5,10 @@ namespace Frostbyte.Entities.Packets
 {
     public sealed class VoiceUpdatePacket : PlayerPacket
     {
+        public VoiceUpdatePacket(ulong guildId) : base(guildId, OperationType.VoiceUpdate)
+        {
+        }
+
         [JsonPropertyName("sess_id")]
         public string SessionId { get; set; }
 
@@ -13,9 +17,5 @@ namespace Frostbyte.Entities.Packets
 
         [JsonPropertyName("ep")]
         public string EndPoint { get; set; }
-
-        public VoiceUpdatePacket(ulong guildId) : base(guildId, OperationType.VoiceUpdate)
-        {
-        }
     }
 }
