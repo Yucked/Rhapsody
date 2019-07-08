@@ -16,6 +16,10 @@ namespace Frostbyte.Websocket
 {
     public sealed class WsVoiceClient : IAsyncDisposable
     {
+        public AudioEngine Engine { get; }
+        public SodiumCodec SodiumCodec { get; private set; }
+        public VoiceReadyPayload Vrp { get; private set; }
+
         private readonly CancellationTokenSource _mainCancel, _receiveCancel, _heartBeatCancel;
         private readonly ClientWebSocket _socket;
 
@@ -33,10 +37,6 @@ namespace Frostbyte.Websocket
 
             Engine = new AudioEngine(this, clientSocket);
         }
-
-        public AudioEngine Engine { get; }
-        public SodiumCodec SodiumCodec { get; private set; }
-        public VoiceReadyPayload Vrp { get; private set; }
 
         public async ValueTask DisposeAsync()
         {
@@ -80,23 +80,24 @@ namespace Frostbyte.Websocket
             if (task.VerifyTask())
             {
                 LogHandler<WsVoiceClient>.Log.Error(exception: task.Exception);
+                return;
             }
-            else
-            {
-                _receiveTask = _socket
-                    .ReceiveAsync<WsVoiceClient, BaseDiscordPayload>(_receiveCancel, ProcessPayloadAsync)
-                    .ContinueWith(DisposeAsync);
 
-                var payload = new BaseDiscordPayload(VoiceOpType.Identify,
-                    new IdentifyPayload
-                    {
-                        ServerId = $"{packet.GuildId}",
-                        SessionId = packet.SessionId,
-                        UserId = $"{packet.UserId}",
-                        Token = packet.Token
-                    });
-                await _socket.SendAsync(payload).ConfigureAwait(false);
-            }
+            _receiveTask = _socket
+                .ReceiveAsync<WsVoiceClient, BaseDiscordPayload>(_receiveCancel, ProcessPayloadAsync)
+                .ContinueWith(DisposeAsync);
+
+            var payload = new BaseDiscordPayload(VoiceOpType.Identify,
+                new IdentifyPayload
+                {
+                    ServerId = $"{packet.GuildId}",
+                    SessionId = packet.SessionId,
+                    UserId = $"{packet.UserId}",
+                    Token = packet.Token
+                });
+
+            await _socket.SendAsync(payload)
+                .ConfigureAwait(false);
         }
 
         private async Task SendSpeakingAsync(bool isSpeaking)
@@ -174,8 +175,10 @@ namespace Frostbyte.Websocket
             while (!_heartBeatCancel.IsCancellationRequested)
             {
                 var payload = new BaseDiscordPayload(VoiceOpType.Heartbeat, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-                await _socket.SendAsync(payload).ConfigureAwait(false);
-                await Task.Delay(interval, _heartBeatCancel.Token).ConfigureAwait(false);
+                await _socket.SendAsync(payload)
+                    .ConfigureAwait(false);
+                await Task.Delay(interval, _heartBeatCancel.Token)
+                    .ConfigureAwait(false);
             }
         }
 
@@ -184,8 +187,10 @@ namespace Frostbyte.Websocket
             var keepAlive = 0;
             while (!_mainCancel.IsCancellationRequested)
             {
-                await _udp.SendKeepAliveAsync(ref keepAlive).ConfigureAwait(false);
-                await Task.Delay(4500, _mainCancel.Token).ConfigureAwait(false);
+                await _udp.SendKeepAliveAsync(ref keepAlive)
+                    .ConfigureAwait(false);
+                await Task.Delay(4500, _mainCancel.Token)
+                    .ConfigureAwait(false);
             }
         }
 

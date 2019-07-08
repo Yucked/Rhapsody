@@ -89,7 +89,8 @@ namespace Frostbyte.Entities.Results
                 Url = url,
                 ArtworkUrl = artId == 0
                     ? default
-                    : $"https://f4.bcbits.com/img/a{artId}_0.jpg"
+                    : $"https://f4.bcbits.com/img/a{artId}_0.jpg",
+                Provider = "BandCamp"
             };
         }
     }

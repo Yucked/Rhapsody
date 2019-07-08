@@ -78,7 +78,8 @@ namespace Frostbyte.Entities.Results
                 Duration = Duration,
                 Author = User.ToAuthor,
                 ArtworkUrl = ArtworkUrl,
-                CanStream = IsStreamable
+                CanStream = IsStreamable,
+                Provider = "SoundCloud"
             };
     }
 

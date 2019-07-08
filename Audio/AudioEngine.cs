@@ -5,6 +5,9 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Frostbyte.Audio.Codecs;
+using Frostbyte.Audio.EventArgs;
+using Frostbyte.Entities.Audio;
+using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Packets;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
@@ -14,16 +17,26 @@ namespace Frostbyte.Audio
 {
     public sealed class AudioEngine : IAsyncDisposable
     {
+        public bool IsReady { get; private set; }
+        private bool IsPaused { get; set; }
+
+        public bool IsPlaying
+            => PlaybackCompleted != null && !PlaybackCompleted.Task.IsCompleted;
+
+        public ConcurrentQueue<AudioPacket> Packets { get; }
+        public TaskCompletionSource<bool> PlaybackCompleted { get; set; }
+
+        private ushort _sequence;
+        private uint _timeStamp;
+        private AudioTrack _currentTrack;
+
+        private readonly AudioStream _stream;
         private readonly CacheHandler _cache;
         private readonly OpusCodec _opusCodec;
         private readonly RtpCodec _rtpCodec;
         private readonly WebSocket _socket;
-
         private readonly SourceHandler _sources;
         private readonly WsVoiceClient _voiceClient;
-
-        private ushort _sequence;
-        private uint _timeStamp;
 
         public AudioEngine(WsVoiceClient voiceClient, WebSocket socket)
         {
@@ -34,25 +47,12 @@ namespace Frostbyte.Audio
             _opusCodec = new OpusCodec();
 
             Packets = new ConcurrentQueue<AudioPacket>();
-            AudioStream = new AudioStream(this);
+            _stream = new AudioStream(this);
 
             _sources = Singleton.Of<SourceHandler>();
             _cache = Singleton.Of<CacheHandler>();
-        }
 
-        public bool IsReady { get; }
-        public AudioStream AudioStream { get; }
-        public bool IsPaused { get; private set; }
-
-        public bool IsPlaying
-            => PlaybackCompleted != null && !PlaybackCompleted.Task.IsCompleted;
-
-        public ConcurrentQueue<AudioPacket> Packets { get; }
-        public TaskCompletionSource<bool> PlaybackCompleted { get; set; }
-
-        public ValueTask DisposeAsync()
-        {
-            throw new NotImplementedException();
+            IsReady = true;
         }
 
         public void BuildAudioPacket(ReadOnlySpan<byte> pcm, ref Memory<byte> target)
@@ -84,37 +84,98 @@ namespace Frostbyte.Audio
 
         public async Task PlayAsync(PlayPacket playPacket)
         {
-            string provider;
-
-            if (_cache.TryGetFromCache(playPacket.Hash, out var track))
+            _cache.TryGetFromCache(playPacket.Id, out var track);
+            if (track is null)
             {
-                if (playPacket.StartTime > track.Duration)
+                var (isEnabled, response) = await _sources
+                    .HandleRequestAsync(track.Provider, track.Url ?? track.Title)
+                    .ConfigureAwait(false);
+
+                if (isEnabled)
                 {
-                    LogHandler<AudioEngine>.Log.Error($"{playPacket.GuildId} specified out of range start time.");
+                    LogHandler<AudioEngine>.Log
+                        .Error($"{track.Provider} is disabled in configuration.");
                     return;
                 }
 
-                provider = track.Hash.DecodeHash().Provider;
+                track = response.Tracks
+                    .FirstOrDefault(x => x.Url == track.Url || x.Title.Contains(track.Title));
             }
-            else
+
+            if (track is null)
             {
-                var decode = playPacket.Hash.DecodeHash();
-                provider = decode.Provider;
-                var request = await _sources.HandleRequestAsync(provider, decode.Url ?? decode.Title)
-                    .ConfigureAwait(false);
-
-                if (!request.IsEnabled)
-                    return;
-
-                track = request.Response.Tracks.FirstOrDefault();
+                LogHandler<AudioEngine>.Log.Error($"Unable to play the requested track: {track.Title}");
+                return;
             }
 
-            var stream = await _sources.GetStreamAsync(provider, track).ConfigureAwait(false);
-            await stream.CopyToAsync(AudioStream)
+            if (playPacket.StartTime > track.Duration || playPacket.StartTime < 0 ||
+                playPacket.EndTime > track.Duration)
+            {
+                LogHandler<AudioEngine>.Log.Error($"Client sent out-of-bounds start or end time.");
+                return;
+            }
+
+            _currentTrack = track;
+            var stream = await _sources.GetStreamAsync(track).ConfigureAwait(false);
+            await stream.CopyToAsync(_stream)
                 .ConfigureAwait(false);
 
-            await AudioStream.FlushAsync()
+            await _stream.FlushAsync()
                 .ConfigureAwait(false);
+
+            await PlaybackCompleted.Task
+                .ConfigureAwait(false);
+
+            await _socket.SendAsync(new OnTrackEndEventArgs
+                {
+                    Track = track,
+                    Reason = TrackEndReason.FINISHED
+                })
+                .ConfigureAwait(false);
+
+            _currentTrack = default;
+        }
+
+        public void Pause(PausePacket pause)
+        {
+            IsPaused = pause.IsPaused;
+        }
+
+        public async Task StopAsync(StopPacket stop)
+        {
+            PlaybackCompleted.SetResult(true);
+            _stream.Close();
+
+            await _socket.SendAsync(new OnTrackEndEventArgs
+                {
+                    Track = _currentTrack,
+                    Reason = TrackEndReason.STOPPED
+                })
+                .ConfigureAwait(false);
+        }
+
+        public void Seek(SeekPacket seek)
+        {
+        }
+
+        public void EqualizeStream(EqualizerPacket equalizer)
+        {
+        }
+
+        public void SetVolume(VolumePacket volumePacket)
+        {
+            if (volumePacket.Value < -1 || volumePacket.Value > 125)
+            {
+                LogHandler<AudioEngine>.Log.Error($"{volumePacket.GuildId} specified out of bounds value for volume.");
+                return;
+            }
+
+            _stream.Volume = volumePacket.Value;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            IsReady = false;
         }
     }
 }

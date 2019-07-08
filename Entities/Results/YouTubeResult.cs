@@ -59,6 +59,7 @@ namespace Frostbyte.Entities.Results
                 },
                 Title = Title,
                 Duration = Duration * 1000,
+                Provider = "YouTube",
                 Url = $"https://www.youtube.com/watch?v={Id}",
                 ArtworkUrl = $"https://img.youtube.com/vi/{Id}/maxresdefault.jpg"
             };

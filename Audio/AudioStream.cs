@@ -17,7 +17,7 @@ namespace Frostbyte.Audio
             BufferLength = 0;
         }
 
-        public int Volume { get; private set; }
+        public int Volume { private get; set; }
         public byte[] Buffer { get; }
         public int BufferLength { get; private set; }
         public int BufferDuration { get; }

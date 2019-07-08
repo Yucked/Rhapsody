@@ -2,5 +2,9 @@
 {
     public enum TrackEndReason
     {
+        FINISHED,
+        ERRORED,
+        SKIPPED,
+        STOPPED
     }
 }

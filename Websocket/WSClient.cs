@@ -10,6 +10,9 @@ namespace Frostbyte.Websocket
 {
     public sealed class WsClient
     {
+        public bool IsDisposed { get; private set; }
+        public ConcurrentDictionary<ulong, WsVoiceClient> VoiceClients { get; private set; }
+
         private readonly CancellationTokenSource _receiveCancel;
         private readonly WebSocket _socket;
         private ReadyPacket _readyPacket;
@@ -21,11 +24,9 @@ namespace Frostbyte.Websocket
             _receiveCancel = new CancellationTokenSource();
 
             _socket.ReceiveAsync<WsClient, PlayerPacket>(_receiveCancel, ProcessPacketAsync)
-                .ContinueWith(DisposeAsync).ConfigureAwait(false);
+                .ContinueWith(DisposeAsync)
+                .ConfigureAwait(false);
         }
-
-        public bool IsDisposed { get; private set; }
-        public ConcurrentDictionary<ulong, WsVoiceClient> VoiceClients { get; private set; }
 
         public async Task SendStatsAsync(StatisticPacket stats)
         {
@@ -52,31 +53,39 @@ namespace Frostbyte.Websocket
             switch (packet)
             {
                 case PlayPacket play:
-                    await voiceClient.Engine.PlayAsync(play).ConfigureAwait(false);
+                    await voiceClient.Engine.PlayAsync(play)
+                        .ConfigureAwait(false);
                     break;
 
                 case PausePacket pause:
-                    //voiceClient.Engine.Pause(pause);
+                    voiceClient.Engine.Pause(pause);
                     break;
 
                 case StopPacket stop:
-                    //voiceClient.Engine.Stop(stop);
+                    await voiceClient.Engine.StopAsync(stop)
+                        .ConfigureAwait(false);
                     break;
 
                 case DestroyPacket destroy:
-                    await voiceClient.Engine.DisposeAsync().ConfigureAwait(false);
+                    await voiceClient.Engine.DisposeAsync()
+                        .ConfigureAwait(false);
                     break;
 
                 case SeekPacket seek:
-                    //voiceClient.Engine.Seek(seek);
+                    voiceClient.Engine.Seek(seek);
                     break;
 
                 case EqualizerPacket equalizer:
-                    //await voiceClient.Engine.EqualizeAsync().ConfigureAwait(false);
+                    voiceClient.Engine.EqualizeStream(equalizer);
+                    break;
+
+                case VolumePacket volume:
+                    voiceClient.Engine.SetVolume(volume);
                     break;
 
                 case VoiceUpdatePacket voiceUpdate:
-                    await VoiceClients[packet.GuildId].HandleVoiceUpdateAsync(voiceUpdate).ConfigureAwait(false);
+                    await VoiceClients[packet.GuildId].HandleVoiceUpdateAsync(voiceUpdate)
+                        .ConfigureAwait(false);
                     break;
             }
         }
@@ -88,7 +97,8 @@ namespace Frostbyte.Websocket
 
             foreach (var (key, value) in VoiceClients)
             {
-                await value.DisposeAsync().ConfigureAwait(false);
+                await value.DisposeAsync()
+                    .ConfigureAwait(false);
                 VoiceClients.TryRemove(key, out _);
             }
 

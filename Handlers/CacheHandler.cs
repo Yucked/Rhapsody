@@ -17,9 +17,9 @@ namespace Frostbyte.Handlers
             _cache = new ConcurrentDictionary<string, byte[]>();
         }
 
-        public void Add(AudioTrack track)
+        private void Add(AudioTrack track)
         {
-            if (_cache.TryGetValue(track.Hash, out _))
+            if (_cache.TryGetValue(track.Id, out _))
                 return;
 
             using var memStream = new MemoryStream();
@@ -27,7 +27,7 @@ namespace Frostbyte.Handlers
             var biFormatter = new BinaryFormatter();
             biFormatter.Serialize(gzip, track);
 
-            _cache.TryAdd(track.Hash, memStream.ToArray());
+            _cache.TryAdd(track.Id, memStream.ToArray());
         }
 
         public void Add(IEnumerable<AudioTrack> tracks)
@@ -36,9 +36,9 @@ namespace Frostbyte.Handlers
                 Add(track);
         }
 
-        public bool TryGetFromCache(string hash, out AudioTrack track)
+        public bool TryGetFromCache(string id, out AudioTrack track)
         {
-            if (!_cache.TryGetValue(hash, out var compressed))
+            if (!_cache.TryGetValue(id, out var compressed))
             {
                 track = default;
                 return false;

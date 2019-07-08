@@ -19,12 +19,12 @@ namespace Frostbyte.Websocket
     public sealed class WsServer
     {
         private readonly ConcurrentDictionary<IPEndPoint, WsClient> _clients;
+        private readonly CancellationTokenSource _mainCancellation;
+        private readonly CancellationTokenSource _wsCancellation;
         private readonly Configuration _config;
         private readonly HttpListener _listener;
-
-        private readonly CancellationTokenSource _mainCancellation;
         private readonly SourceHandler _sources;
-        private readonly CancellationTokenSource _wsCancellation;
+
         private CancellationTokenSource _statsCancellation;
         private Task _statsSenderTask;
 
@@ -46,17 +46,7 @@ namespace Frostbyte.Websocket
             ServicePointManager.SecurityProtocol |=
                 SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
 
-            LogHandler<WsServer>.Log.Information($"Checking port {_config.Port} status.");
-            var globalProps = IPGlobalProperties.GetIPGlobalProperties();
-            var activeListners = globalProps.GetActiveTcpListeners();
-            var random = new Random();
-            foreach (var listner in activeListners)
-                if (listner.Port == _config.Port)
-                {
-                    LogHandler<WsServer>.Log.Warning($"{_config.Port} is already in use. Picking a random port.");
-                    _config.Port = random.Next(IPEndPoint.MinPort, IPEndPoint.MaxPort);
-                    Singleton.Update<Configuration>(_config);
-                }
+            CheckPort();
 
             _listener.Prefixes.Add(_config.Url);
             _listener.Start();
@@ -67,8 +57,11 @@ namespace Frostbyte.Websocket
 
             while (!_wsCancellation.IsCancellationRequested)
             {
-                var context = await _listener.GetContextAsync().ConfigureAwait(false);
-                _ = ProcessRequestAsync(context).ConfigureAwait(false);
+                var context = await _listener.GetContextAsync()
+                    .ConfigureAwait(false);
+
+                _ = ProcessRequestAsync(context)
+                    .ConfigureAwait(false);
             }
         }
 
@@ -87,28 +80,28 @@ namespace Frostbyte.Websocket
                         if (context.Request.Headers.Get("Password") != _config.Password)
                         {
                             response.Error = "Password header doesn't match value specified in configuration";
+                            return;
                         }
-                        else
-                        {
-                            var (prov, query) = context.Request.QueryString.BuildQuery();
 
-                            if (query is null || prov is null)
-                            {
-                                response.Error =
-                                    "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
-                            }
-                            else
-                            {
-                                var request = await _sources.HandleRequestAsync(prov, query).ConfigureAwait(false);
-                                if (request.IsEnabled)
-                                    response.Error = $"Requested {prov} isn't enabled in configuration.";
-                                else
-                                    response.Data = request.Response;
-                            }
+                        var (prov, query) = context.Request.QueryString.BuildQuery();
+                        if (query is null || prov is null)
+                        {
+                            response.Error =
+                                "Please use the `?prov={provider}&q={YOUR_QUERY} argument after /tracks";
+                            return;
                         }
+
+                        var (isEnabled, searchResponse) = await _sources.HandleRequestAsync(prov, query)
+                            .ConfigureAwait(false);
+
+                        if (isEnabled)
+                            response.Error = $"Requested {prov} isn't enabled in configuration.";
+                        else
+                            response.Data = searchResponse;
 
                         response.Op = OperationType.Rest;
-                        await context.SendResponseAsync(response).ConfigureAwait(false);
+                        await context.SendResponseAsync(response)
+                            .ConfigureAwait(false);
                         LogHandler<WsServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Error}.");
                         break;
 
@@ -117,13 +110,15 @@ namespace Frostbyte.Websocket
                         {
                             response.Error =
                                 "Only websocket connections are allowed at this endpoint. For rest use /tracks endpoint.";
-                            await context.SendResponseAsync(response).ConfigureAwait(false);
+                            await context.SendResponseAsync(response)
+                                .ConfigureAwait(false);
                             return;
                         }
 
                         LogHandler<WsServer>.Log.Debug($"Incoming websocket request coming from {remoteEndPoint}.");
 
-                        var wsContext = await context.AcceptWebSocketAsync(default).ConfigureAwait(false);
+                        var wsContext = await context.AcceptWebSocketAsync(default)
+                            .ConfigureAwait(false);
                         var wsClient = new WsClient(wsContext);
                         _clients.TryAdd(remoteEndPoint, wsClient);
 
@@ -140,14 +135,16 @@ namespace Frostbyte.Websocket
                         LogHandler<WsServer>.Log.Warning(
                             $"{remoteEndPoint} requested an unknown path: {context.Request.Url}.");
                         response.Error = "You are trying to access an unknown endpoint.";
-                        await context.SendResponseAsync(response).ConfigureAwait(false);
+                        await context.SendResponseAsync(response)
+                            .ConfigureAwait(false);
                         break;
                 }
             }
             catch (Exception ex)
             {
                 response.Error = $"Frostbyte threw an inner exception: {ex?.InnerException?.Message ?? ex?.Message}";
-                await context.SendResponseAsync(response).ConfigureAwait(false);
+                await context.SendResponseAsync(response)
+                    .ConfigureAwait(false);
                 LogHandler<WsServer>.Log.Error(exception: ex);
             }
             finally
@@ -162,28 +159,36 @@ namespace Frostbyte.Websocket
             {
                 if (_clients.IsEmpty)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+                    await Task.Delay(TimeSpan.FromSeconds(15))
+                        .ConfigureAwait(false);
                     continue;
                 }
 
                 var process = Process.GetCurrentProcess();
-
                 var stats = new StatisticPacket
                 {
                     ConnectedClients = _clients.Count,
-                    ConnectedPlayers = _clients.Values.Sum(x => x.VoiceClients.Values.Count(x => x.Engine.IsReady)),
-                    PlayingPlayers = _clients.Values.Sum(x => x.VoiceClients.Values.Count(x => x.Engine.IsPlaying)),
+                    ConnectedPlayers = _clients.Values
+                        .Sum(x => x.VoiceClients.Values
+                            .Count(v => v.Engine.IsReady)),
+
+                    PlayingPlayers = _clients.Values
+                        .Sum(x => x.VoiceClients.Values
+                            .Count(v => v.Engine.IsPlaying)),
+
                     Uptime = (int) (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
                 var rawString = JsonSerializer.ToString(stats);
                 LogHandler<StatisticPacket>.Log.Debug(rawString);
 
-                var sendTasks = _clients.Where(x => !x.Value.IsDisposed)
+                var sendTasks = _clients
+                    .Where(x => !x.Value.IsDisposed)
                     .Select(x => x.Value.SendStatsAsync(stats));
 
                 await Task.WhenAll(sendTasks)
-                    .ContinueWith(async _ => await Task.Delay(TimeSpan.FromSeconds(30)));
+                    .ContinueWith(async _ => await Task.Delay(TimeSpan.FromSeconds(30)))
+                    .ConfigureAwait(false);
             }
         }
 
@@ -195,9 +200,9 @@ namespace Frostbyte.Websocket
                     await Task.Delay(TimeSpan.FromSeconds(30))
                         .ConfigureAwait(false);
 
-                foreach (var client in _clients)
-                    if (client.Value.IsDisposed)
-                        _clients.TryRemove(client.Key, out _);
+                foreach (var (key, value) in _clients)
+                    if (value.IsDisposed)
+                        _clients.TryRemove(key, out _);
 
                 if (_clients.Count < 0)
                 {
@@ -206,8 +211,27 @@ namespace Frostbyte.Websocket
                     _statsSenderTask?.Dispose();
                 }
 
-                await Task.Delay(5000).ConfigureAwait(false);
+                await Task.Delay(5000)
+                    .ConfigureAwait(false);
             }
+        }
+
+        private void CheckPort()
+        {
+            LogHandler<WsServer>.Log.Information($"Checking port {_config.Port} status.");
+
+            var globalProps = IPGlobalProperties.GetIPGlobalProperties();
+            var activeListners = globalProps.GetActiveTcpListeners();
+            var random = new Random();
+
+            foreach (var listner in activeListners)
+                if (listner.Port == _config.Port)
+                {
+                    LogHandler<WsServer>.Log.Warning($"{_config.Port} is already in use. Picking a random port.");
+                    _config.Port = random.Next(IPEndPoint.MinPort, IPEndPoint.MaxPort);
+                }
+
+            Singleton.Update<Configuration>(_config);
         }
     }
 }
