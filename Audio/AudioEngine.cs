@@ -6,10 +6,10 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Audio.Codecs;
-using Frostbyte.Audio.EventArgs;
 using Frostbyte.Entities.Audio;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Packets;
+using Frostbyte.Entities.Responses;
 using Frostbyte.Extensions;
 using Frostbyte.Handlers;
 using Frostbyte.Websocket;
@@ -126,10 +126,14 @@ namespace Frostbyte.Audio
 
             SpinWait.SpinUntil(() => IsPlaybackCompleted);
 
-            await _socket.SendAsync(new OnTrackEndEventArgs
+            await _socket.SendAsync(new BaseResponse
                 {
-                    Track = track,
-                    Reason = TrackEndReason.FINISHED
+                    Op = OperationType.TrackFinished,
+                    Data = new PlayerResponse
+                    {
+                        GuildId = _voiceClient.GuildId,
+                        Track = _currentTrack
+                    }
                 })
                 .ConfigureAwait(false);
 
@@ -146,10 +150,14 @@ namespace Frostbyte.Audio
             Volatile.Write(ref IsPlaybackCompleted, true);
             _stream.Close();
 
-            await _socket.SendAsync(new OnTrackEndEventArgs
+            await _socket.SendAsync(new BaseResponse
                 {
-                    Track = _currentTrack,
-                    Reason = TrackEndReason.STOPPED
+                    Op = OperationType.TrackFinished,
+                    Data = new PlayerResponse
+                    {
+                        GuildId = _voiceClient.GuildId,
+                        Track = _currentTrack
+                    }
                 })
                 .ConfigureAwait(false);
         }

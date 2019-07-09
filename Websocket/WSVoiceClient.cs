@@ -16,6 +16,7 @@ namespace Frostbyte.Websocket
 {
     public sealed class WsVoiceClient : IAsyncDisposable
     {
+        public ulong GuildId { get;}
         public AudioEngine Engine { get; }
         public SodiumCodec SodiumCodec { get; private set; }
         public VoiceReadyPayload Vrp { get; private set; }
@@ -28,8 +29,9 @@ namespace Frostbyte.Websocket
         private SessionDescriptionPayload _sdp;
         private UdpClient _udp;
 
-        public WsVoiceClient(WebSocket clientSocket)
+        public WsVoiceClient(WebSocket clientSocket, ulong guildId)
         {
+            GuildId = guildId;
             _socket = new ClientWebSocket();
             _receiveCancel = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();

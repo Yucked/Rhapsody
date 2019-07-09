@@ -43,7 +43,7 @@ namespace Frostbyte.Websocket
             }
 
             _readyPacket = packet as ReadyPacket;
-            var vClient = new WsVoiceClient(_socket);
+            var vClient = new WsVoiceClient(_socket, packet.GuildId);
             VoiceClients.TryAdd(packet.GuildId, vClient);
 
             LogHandler<WsClient>.Log.Debug($"{packet.GuildId} client and engine has been initialized.");
