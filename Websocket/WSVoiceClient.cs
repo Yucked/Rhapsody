@@ -207,9 +207,6 @@ namespace Frostbyte.Websocket
 
                 if (hasPacket)
                 {
-                    if (!Engine.IsPlaying)
-                        Engine.PlaybackCompleted = new TaskCompletionSource<bool>();
-
                     packetArray = packet.Bytes.ToArray();
                 }
 
@@ -225,7 +222,7 @@ namespace Frostbyte.Websocket
 
                 synchronizerTicks += synchronizerResolution * durationModifier;
 
-                if (!hasPacket)
+                if (!hasPacket || Volatile.Read(ref Engine.IsPlaybackCompleted))
                     continue;
 
                 await SendSpeakingAsync(true).ConfigureAwait(false);
@@ -251,7 +248,7 @@ namespace Frostbyte.Websocket
                 else if (Engine.Packets.Count == 0)
                 {
                     await SendSpeakingAsync(false).ConfigureAwait(false);
-                    Engine.PlaybackCompleted?.SetResult(true);
+                    Volatile.Write(ref Engine.IsPlaybackCompleted, true);
                 }
             }
         }

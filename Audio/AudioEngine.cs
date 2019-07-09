@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Audio.Codecs;
 using Frostbyte.Audio.EventArgs;
@@ -21,10 +22,10 @@ namespace Frostbyte.Audio
         private bool IsPaused { get; set; }
 
         public bool IsPlaying
-            => PlaybackCompleted != null && !PlaybackCompleted.Task.IsCompleted;
+            => IsPlaybackCompleted;
 
         public ConcurrentQueue<AudioPacket> Packets { get; }
-        public TaskCompletionSource<bool> PlaybackCompleted { get; set; }
+        public bool IsPlaybackCompleted;
 
         private ushort _sequence;
         private uint _timeStamp;
@@ -123,8 +124,7 @@ namespace Frostbyte.Audio
             await _stream.FlushAsync()
                 .ConfigureAwait(false);
 
-            await PlaybackCompleted.Task
-                .ConfigureAwait(false);
+            SpinWait.SpinUntil(() => IsPlaybackCompleted);
 
             await _socket.SendAsync(new OnTrackEndEventArgs
                 {
@@ -143,7 +143,7 @@ namespace Frostbyte.Audio
 
         public async Task StopAsync(StopPacket stop)
         {
-            PlaybackCompleted.SetResult(true);
+            Volatile.Write(ref IsPlaybackCompleted, true);
             _stream.Close();
 
             await _socket.SendAsync(new OnTrackEndEventArgs
