@@ -26,7 +26,7 @@ namespace Frostbyte.Sources
             string url;
             TryParseId(query, out var videoId, out var playlistId);
 
-            switch (Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute))
+            switch (Uri.IsWellFormedUriString(query, UriKind.Absolute))
             {
                 case true:
                     if (query.Contains("list="))
@@ -85,7 +85,9 @@ namespace Frostbyte.Sources
 
                 case LoadType.TrackLoaded:
                     ytSearch = JsonSerializer.Parse<YouTubeSearch>(bytes.Span);
-                    search.Tracks = new[] {ytSearch.Video.FirstOrDefault(x => x.Id == videoId).ToTrack};
+                    var track = ytSearch.Video.Select(x => x.ToTrack)
+                        .FirstOrDefault(x => x.Id == videoId);
+                    search.Tracks = new[] { track };
                     break;
             }
 

@@ -31,7 +31,7 @@ namespace Frostbyte.Sources
 
             switch (query)
             {
-                case var q when Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute):
+                case var q when Uri.IsWellFormedUriString(query, UriKind.Absolute):
                     if (!q.Contains("sets"))
                     {
                         url = BASE_URL
@@ -53,7 +53,7 @@ namespace Frostbyte.Sources
 
                     break;
 
-                case var _ when !Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute):
+                case var _ when !Uri.IsWellFormedUriString(query, UriKind.Absolute):
                     url = BASE_URL
                         .WithPath("tracks")
                         .WithParameter("q", query)
@@ -74,7 +74,7 @@ namespace Frostbyte.Sources
             {
                 case LoadType.TrackLoaded:
                     var scTrack = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
-                    var tracks = new[] {scTrack.ToTrack};
+                    var tracks = new[] { scTrack.ToTrack };
                     result.Tracks = tracks;
                     break;
 

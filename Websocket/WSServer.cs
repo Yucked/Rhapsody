@@ -94,15 +94,15 @@ namespace Frostbyte.Websocket
                         var (isEnabled, searchResponse) = await _sources.HandleRequestAsync(prov, query)
                             .ConfigureAwait(false);
 
-                        if (isEnabled)
-                            response.Error = $"Requested {prov} isn't enabled in configuration.";
+                        if (!isEnabled)
+                            response.Error = $"Requested {prov} isn't enabled in configuration";
                         else
                             response.Data = searchResponse;
 
                         response.Op = OperationType.Rest;
                         await context.SendResponseAsync(response)
                             .ConfigureAwait(false);
-                        LogHandler<WsServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Error}.");
+                        LogHandler<WsServer>.Log.Debug($"Replied to {remoteEndPoint} with {response.Error ?? "success"}.");
                         break;
 
                     case "/":
@@ -176,7 +176,7 @@ namespace Frostbyte.Websocket
                         .Sum(x => x.VoiceClients.Values
                             .Count(v => v.Engine.IsPlaying)),
 
-                    Uptime = (int) (DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
+                    Uptime = (int)(DateTimeOffset.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds
                 }.Populate(process);
 
                 var rawString = JsonSerializer.ToString(stats);

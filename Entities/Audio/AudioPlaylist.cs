@@ -1,5 +1,8 @@
-﻿namespace Frostbyte.Entities.Audio
+﻿using System;
+
+namespace Frostbyte.Entities.Audio
 {
+    [Serializable]
     public sealed class AudioPlaylist
     {
         public string Id { get; set; }
