@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Drawing;
+using System.Threading.Tasks;
+using Colorful;
 using Frostbyte.Factories;
 using Frostbyte.Server;
 
@@ -18,6 +20,14 @@ namespace Frostbyte
         private async Task InitializeAsync()
         {
             Singleton.Add<ConfigFactory>();
+            Singleton.Add<HttpFactory>();
+
+            LogFactory.PrintHeader();
+            await LogFactory.PrintRepositoryInformationAsync()
+                .ConfigureAwait(false);
+            Console.WriteLine(new string('-', 100), Color.Gray);
+            LogFactory.PrintSystemInformation();
+            Console.WriteLine(new string('-', 100), Color.Gray);
 
             var configFactory = Singleton.Of<ConfigFactory>();
             configFactory.BuildConfigAsync();
@@ -25,7 +35,6 @@ namespace Frostbyte
                 .ConfigureAwait(false);
 
             Singleton.Add(config);
-            Singleton.Add<HttpFactory>();
             Singleton.Add<SourceFactory>();
             Singleton.Add<WebsocketServer>();
 

@@ -1,7 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Colorful;
 using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.Results;
 using Console = Colorful.Console;
 
 namespace Frostbyte.Factories
@@ -10,6 +18,57 @@ namespace Frostbyte.Factories
     {
         private static readonly object LogLock
             = new object();
+
+        public static void PrintHeader()
+        {
+            const string header = @"
+                ___________                          __   ___.              __           
+                \_   _____/_______   ____    _______/  |_ \_ |__   ___.__._/  |_   ____  
+                 |    __)  \_  __ \ /  _ \  /  ___/\   __\ | __ \ <   |  |\   __\_/ __ \ 
+                 |     \    |  | \/(  <_> ) \___ \  |  |   | \_\ \ \___  | |  |  \  ___/ 
+                 \___  /    |__|    \____/ /____  > |__|   |___  / / ____| |__|   \___  >
+                     \/                         \/             \/  \/                 \/ ";
+
+            Console.WriteLine(header, Color.FromArgb(36, 231, 96));
+        }
+
+        public static async Task PrintRepositoryInformationAsync()
+        {
+            var httpFactory = Singleton.Of<HttpFactory>();
+            var result = new GitHubResult();
+            var getBytes = await httpFactory
+                .GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte")
+                .ConfigureAwait(false);
+            result.Repo = JsonSerializer.Parse<GitHubRepo>(getBytes.Span);
+
+            getBytes = await httpFactory
+                .WithUrl("https://api.github.com/repos/Yucked/Frostbyte/commits")
+                .GetBytesAsync()
+                .ConfigureAwait(false);
+            result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(getBytes.Span).FirstOrDefault();
+
+            Console.WriteLineFormatted(
+                $"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.Sha}",
+                Color.White,
+                new Formatter("Issues", Color.Plum),
+                new Formatter("License", Color.Plum),
+                new Formatter("SHA", Color.Plum));
+        }
+
+        public static void PrintSystemInformation()
+        {
+            var process = Process.GetCurrentProcess();
+            Console.WriteLineFormatted(
+                $"    {{0}}: {RuntimeInformation.FrameworkDescription}    |    {{1}}: {RuntimeInformation.OSDescription}\n" +
+                "    {2}: {3} ID / Using {4} Threads / Started On {5}",
+                Color.White,
+                new Formatter("FX Info", Color.Crimson),
+                new Formatter("OS Info", Color.Crimson),
+                new Formatter("Process", Color.Crimson),
+                new Formatter(process.Id, Color.GreenYellow),
+                new Formatter(process.Threads.Count, Color.GreenYellow),
+                new Formatter($"{process.StartTime:MMM d - hh:mm:ss tt}", Color.GreenYellow));
+        }
 
         public static void Information<T>(string message)
         {
