@@ -34,7 +34,7 @@ namespace Frostbyte.Factories
             foreach (var match in matches)
             {
                 var source = Activator.CreateInstance(match).As<BaseSource>();
-                _sources.TryAdd(match.Name.Replace("Source", ""), source);
+                _sources.TryAdd(match.Name.Sub(0, match.Name.Length - 6), source);
             }
         }
 

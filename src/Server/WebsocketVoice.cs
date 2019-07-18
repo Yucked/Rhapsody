@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Frostbyte.AudioEngine;
 using Frostbyte.Entities.Discord;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Payloads;
@@ -13,15 +14,17 @@ namespace Frostbyte.Server
 {
     public sealed class WebsocketVoice
     {
+        public AudioPlayer Player { get; }
+
         private readonly CancellationTokenSource _cancellation;
         private readonly ClientWebSocket _socket;
-        private readonly ulong _userId;
         private readonly UdpClient _udp;
+        private readonly ulong _userId;
 
         private ulong _guildId;
-        private VoiceServerPayload _oldState;
         private Task _heartBeat;
         private CancellationTokenSource _heartBeatCancel;
+        private VoiceServerPayload _oldState;
 
         public WebsocketVoice(ulong userId)
         {
@@ -30,6 +33,8 @@ namespace Frostbyte.Server
             _socket = new ClientWebSocket();
             _cancellation = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();
+
+            Player = new AudioPlayer();
         }
 
         public async Task ProcessVoiceServerPaylaodAsync(VoiceServerPayload serverPayload)
@@ -40,7 +45,7 @@ namespace Frostbyte.Server
                         CancellationToken.None)
                     .ConfigureAwait(false);
 
-                LogFactory.Information<WebsocketVoice>($"Changing voice server to {serverPayload.Endpoint}.");
+                LogFactory.Information<WebsocketVoice>($"Changing {_guildId} voice server to {serverPayload.Endpoint}.");
             }
 
             _oldState = serverPayload;
@@ -85,6 +90,7 @@ namespace Frostbyte.Server
 
         private async Task ReceiveAsync()
         {
+            LogFactory.Debug<WebsocketVoice>($"Started receive task for {_guildId}.");
             while (!_cancellation.IsCancellationRequested && _socket.State == WebSocketState.Open)
                 try
                 {
@@ -128,7 +134,9 @@ namespace Frostbyte.Server
                     LogFactory.Debug<WebsocketVoice>($"Sent UDP discovery for {_guildId}.");
 
                     if (_heartBeat == null)
+                    {
                         _heartBeat = HandleHeartbeatAsync(readyPayload.HeartbeatInterval);
+                    }
                     else
                     {
                         _heartBeatCancel.Cancel(false);

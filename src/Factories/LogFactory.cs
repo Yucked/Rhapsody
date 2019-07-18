@@ -21,15 +21,15 @@ namespace Frostbyte.Factories
 
         public static void PrintHeader()
         {
-            const string header = @"
-                ___________                          __   ___.              __           
+            const string header = 
+                @"                ___________                          __   ___.              __           
                 \_   _____/_______   ____    _______/  |_ \_ |__   ___.__._/  |_   ____  
                  |    __)  \_  __ \ /  _ \  /  ___/\   __\ | __ \ <   |  |\   __\_/ __ \ 
                  |     \    |  | \/(  <_> ) \___ \  |  |   | \_\ \ \___  | |  |  \  ___/ 
                  \___  /    |__|    \____/ /____  > |__|   |___  / / ____| |__|   \___  >
                      \/                         \/             \/  \/                 \/ ";
 
-            Console.WriteLine(header, Color.FromArgb(36, 231, 96));
+            Console.WriteLine(header, Color.SpringGreen);
         }
 
         public static async Task PrintRepositoryInformationAsync()

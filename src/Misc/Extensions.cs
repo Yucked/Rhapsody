@@ -63,7 +63,7 @@ namespace Frostbyte.Misc
 
         public static string GetSourceName(this string prefix)
         {
-            prefix.Sub(0, prefix.Length - 5);
+            prefix = prefix.Sub(0, prefix.Length - 6);
             return prefix switch
             {
                 //"apm" => ("AppleMusic", typeof(AppleMusicSource)),

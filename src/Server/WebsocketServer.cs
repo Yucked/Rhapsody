@@ -165,6 +165,7 @@ namespace Frostbyte.Server
                         continue;
 
                     _clients.TryRemove(endPoint, out _);
+                    LogFactory.Debug<WebsocketServer>($"Removed {endPoint} from clients since client is disposed.");
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(15), _cancellation.Token)

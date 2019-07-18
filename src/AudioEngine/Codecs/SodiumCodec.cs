@@ -38,7 +38,9 @@ namespace Frostbyte.AudioEngine.Codecs
             fixed (byte* targetPtr = &target.GetPinnableReference())
             fixed (byte* keyPtr = &key.GetPinnableReference())
             fixed (byte* noncePtr = &nonce.GetPinnableReference())
+            {
                 status = SecretBoxEasy(targetPtr, sourcePtr, (ulong) source.Length, noncePtr, keyPtr);
+            }
 
             return status;
         }

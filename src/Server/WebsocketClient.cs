@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Frostbyte.AudioEngine;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Payloads;
 using Frostbyte.Factories;
@@ -15,13 +14,12 @@ namespace Frostbyte.Server
     {
         public bool IsDisposed { get; private set; }
         private readonly ushort _buffer;
-        private readonly ConcurrentDictionary<ulong, WebsocketVoice> _voices;
-        private readonly ConcurrentDictionary<ulong, AudioPlayer> _players;
         private readonly WebSocketContext _context;
         private readonly WebSocket _socket;
         private readonly CancellationTokenSource _source;
 
         private readonly ulong _userId;
+        private readonly ConcurrentDictionary<ulong, WebsocketVoice> _voices;
 
         public WebsocketClient(WebSocketContext webSocketContext, ulong userId, ushort buffer)
         {
@@ -31,7 +29,6 @@ namespace Frostbyte.Server
             _socket = webSocketContext.WebSocket;
             _source = new CancellationTokenSource();
             _voices = new ConcurrentDictionary<ulong, WebsocketVoice>();
-            _players = new ConcurrentDictionary<ulong, AudioPlayer>();
         }
 
         public ValueTask DisposeAsync()
@@ -92,7 +89,7 @@ namespace Frostbyte.Server
             LogFactory.Debug<WebsocketClient>(bytes.GetString());
 
             var payload = bytes.Deserialize<BasePayload>();
-            var (player, voice) = GetConnection(payload.GuildId);
+            var voice = GetConnection(payload.GuildId);
 
             switch (payload.Op)
             {
@@ -104,24 +101,19 @@ namespace Frostbyte.Server
 
                 case OperationType.Play:
                     var playPayload = bytes.Deserialize<PlayPayload>();
-                    await player.PlayAsync(playPayload)
+                    await voice.Player.PlayAsync(playPayload)
                         .ConfigureAwait(false);
                     break;
             }
         }
 
-        private (AudioPlayer player, WebsocketVoice voice) GetConnection(ulong guildId)
+        private WebsocketVoice GetConnection(ulong guildId)
         {
             if (!_voices.TryGetValue(guildId, out var voice))
                 voice = new WebsocketVoice(_userId);
 
-            if (!_players.TryGetValue(guildId, out var player))
-                player = new AudioPlayer();
-
             _voices.AddOrUpdate(guildId, voice, (id, websocketVoice) => voice);
-            _players.AddOrUpdate(guildId, player, (id, audioPlayer) => player);
-
-            return (player, voice);
+            return voice;
         }
     }
 }

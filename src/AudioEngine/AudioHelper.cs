@@ -16,16 +16,24 @@ namespace Frostbyte.AudioEngine
             = 120 * (SAMPLE_RATE / 1000);
 
         public static int GetSampleSize(int duration)
-            => duration * CHANNELS * (SAMPLE_RATE / 1000) * 2;
+        {
+            return duration * CHANNELS * (SAMPLE_RATE / 1000) * 2;
+        }
 
         public static int GetSampleDuration(int size)
-            => size / (SAMPLE_RATE / 1000) / (CHANNELS / 2);
+        {
+            return size / (SAMPLE_RATE / 1000) / (CHANNELS / 2);
+        }
 
         public static int GetFrameSize(int duration)
-            => duration * (SAMPLE_RATE / 1000);
+        {
+            return duration * (SAMPLE_RATE / 1000);
+        }
 
         public static int GetRtpPacketSize(int value)
-            => RtpCodec.HEADER_SIZE + value;
+        {
+            return RtpCodec.HEADER_SIZE + value;
+        }
 
         public static void ZeroFill(Span<byte> buffer)
         {

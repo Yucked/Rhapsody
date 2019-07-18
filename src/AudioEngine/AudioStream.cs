@@ -16,7 +16,6 @@ namespace Frostbyte.AudioEngine
 
         public async Task WriteAsync()
         {
-            
         }
     }
 }
