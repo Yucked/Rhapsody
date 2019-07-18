@@ -31,12 +31,20 @@ namespace Frostbyte.Server
             _voices = new ConcurrentDictionary<ulong, WebsocketVoice>();
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
+            foreach (var (guildId, voice) in _voices)
+            {
+                await voice.DisposeAsync()
+                    .ConfigureAwait(false);
+
+                LogFactory.Debug<WebsocketClient>($"Disposed voice ws connection for {guildId}.");
+            }
+
+            _voices.Clear();
             IsDisposed = true;
             _source?.Cancel(false);
             _context.WebSocket.Dispose();
-            return default;
         }
 
         public async Task CloseAsync(string reason)

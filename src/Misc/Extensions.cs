@@ -147,5 +147,17 @@ namespace Frostbyte.Misc
             span = span.Slice(start, length);
             return span.ToString();
         }
+
+        public static string GetName<T>(this T value) where T : struct, Enum
+        {
+            return Enum.GetName(typeof(T), value);
+        }
+
+        public static ReadOnlyMemory<byte> ConvertToByte(this int[] array)
+        {
+            var result = new byte[array.Length * sizeof(int)];
+            Buffer.BlockCopy(array, 0, result, 0, result.Length);
+            return result;
+        }
     }
 }

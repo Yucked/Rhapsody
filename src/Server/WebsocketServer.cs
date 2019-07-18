@@ -157,7 +157,8 @@ namespace Frostbyte.Server
 
         private async Task CleanupClientsAsync()
         {
-            while (!_clients.IsEmpty)
+            LogFactory.Debug<WebsocketServer>("Started up websocket client cleanup task.");
+            while (!_cancellation.IsCancellationRequested)
             {
                 foreach (var (endPoint, client) in _clients)
                 {

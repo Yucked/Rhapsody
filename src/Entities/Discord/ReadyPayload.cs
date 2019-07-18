@@ -1,8 +1,18 @@
 using System.Text.Json.Serialization;
+using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities.Discord
 {
-    public struct VoiceReadyPayload
+    public struct ReadyPayload
+    {
+        [JsonPropertyName("op")]
+        public VoiceOpType Op { get; set; }
+
+        [JsonPropertyName("d")]
+        public ReadyData Data { get; set; }
+    }
+
+    public struct ReadyData
     {
         [JsonPropertyName("ssrc")]
         public uint Ssrc { get; set; }

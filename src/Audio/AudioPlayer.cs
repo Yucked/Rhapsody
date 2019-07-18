@@ -7,7 +7,6 @@ namespace Frostbyte.Audio
     {
         public async Task PlayAsync(PlayPayload payload)
         {
-            
         }
     }
 }

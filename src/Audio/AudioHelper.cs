@@ -40,12 +40,15 @@ namespace Frostbyte.Audio
             var zero = 0;
             var i = 0;
 
-            for (; i < buffer.Length / 4; i++) MemoryMarshal.Write(buffer, ref zero);
+            for (; i < buffer.Length / 4; i++)
+                MemoryMarshal.Write(buffer, ref zero);
 
             var remainder = buffer.Length % 4;
-            if (remainder == 0) return;
+            if (remainder == 0)
+                return;
 
-            for (; i < buffer.Length; i++) buffer[i] = 0;
+            for (; i < buffer.Length; i++)
+                buffer[i] = 0;
         }
     }
 }

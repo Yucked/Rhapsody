@@ -13,7 +13,7 @@ using Frostbyte.Misc;
 
 namespace Frostbyte.Server
 {
-    public sealed class WebsocketVoice
+    public sealed class WebsocketVoice : IAsyncDisposable
     {
         public AudioPlayer Player { get; }
 
@@ -38,6 +38,17 @@ namespace Frostbyte.Server
             _voiceInfo = new VoiceInfo();
 
             Player = new AudioPlayer();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            _cancellation.Cancel(false);
+            _heartBeatCancel?.Cancel(false);
+            _heartBeat?.Dispose();
+            _udp.Close();
+            await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnected.", CancellationToken.None)
+                .ConfigureAwait(false);
+            _socket.Dispose();
         }
 
         public async Task ProcessVoiceServerPaylaodAsync(VoiceServerPayload serverPayload)
@@ -80,7 +91,7 @@ namespace Frostbyte.Server
                 await _socket.SendAsync(payload)
                     .ConfigureAwait(false);
 
-                LogFactory.Debug<WebsocketVoice>($"Sent Identify payload to {serverPayload.GuildId}'s voice ws.");
+                LogFactory.Debug<WebsocketVoice>($"Sent Identify payload for guild {serverPayload.GuildId}.");
 
                 _ = ReceiveAsync()
                     .ConfigureAwait(false);
@@ -93,7 +104,7 @@ namespace Frostbyte.Server
                         if (socketException.ErrorCode != 4014 || socketException.ErrorCode != 4015)
                             return;
 
-                        LogFactory.Warning<WebsocketVoice>($"Trying to resume voice connection for {_guildId}.");
+                        LogFactory.Warning<WebsocketVoice>($"Trying to resume voice connection for {_guildId} guild.");
                         var payload = new BaseDiscordPayload(VoiceOpType.Resume, new ResumePayload
                         {
                             ServerId = $"{_guildId}",
@@ -111,11 +122,11 @@ namespace Frostbyte.Server
 
         private async Task ReceiveAsync()
         {
-            LogFactory.Debug<WebsocketVoice>($"Started receive task for {_guildId}.");
+            LogFactory.Debug<WebsocketVoice>($"Now receiving ws data for {_guildId} guild.");
             while (!_cancellation.IsCancellationRequested && _socket.State == WebSocketState.Open)
                 try
                 {
-                    var bytes = new byte[256];
+                    var bytes = new byte[384];
                     var memory = new Memory<byte>(bytes);
                     var result = await _socket.ReceiveAsync(memory, default)
                         .ConfigureAwait(false);
@@ -137,35 +148,39 @@ namespace Frostbyte.Server
                 }
                 catch (Exception ex)
                 {
-                    LogFactory.Error<WebsocketClient>($"{_guildId} voice ws connection closed.", ex);
+                    LogFactory.Error<WebsocketClient>($"Guild {_guildId} voice ws connection closed.", ex);
                 }
         }
 
         private async Task ProcessMessageAsync(ReadOnlyMemory<byte> bytes)
         {
+            var raw = bytes.GetString();
+            if (raw[6] != '6')
+                LogFactory.Debug<WebsocketVoice>(raw);
+
             var payload = bytes.Deserialize<BaseDiscordPayload>();
             switch (payload.Op)
             {
                 case VoiceOpType.Ready:
-                    var readyPayload = bytes.Deserialize<VoiceReadyPayload>();
-                    _udp.Connect(readyPayload.IpAddress, readyPayload.Port);
-                    await _udp.SendDiscoveryAsync(readyPayload.Ssrc)
+                    var readyPayload = bytes.Deserialize<ReadyPayload>();
+                    _udp.Connect(readyPayload.Data.IpAddress, readyPayload.Data.Port);
+                    await _udp.SendDiscoveryAsync(readyPayload.Data.Ssrc)
                         .ConfigureAwait(false);
 
-                    LogFactory.Debug<WebsocketVoice>($"Sent UDP discovery for {_guildId}.");
+                    LogFactory.Debug<WebsocketVoice>($"Sent UDP discovery for guild {_guildId}.");
 
                     var select = new BaseDiscordPayload(VoiceOpType.SelectProtocol,
-                        new SelectPayload(readyPayload.IpAddress, readyPayload.Port));
+                        new SelectPayload(readyPayload.Data.IpAddress, readyPayload.Data.Port));
                     await _socket.SendAsync(select)
                         .ConfigureAwait(false);
 
-                    LogFactory.Debug<WebsocketVoice>($"Sent select protcol for {_guildId}.");
-                    _voiceInfo.Ssrc = readyPayload.Ssrc;
+                    LogFactory.Debug<WebsocketVoice>($"Sent select protocol for guild {_guildId}.");
+                    _voiceInfo.Ssrc = readyPayload.Data.Ssrc;
                     break;
 
                 case VoiceOpType.SessionDescription:
-                    var descriptionPayload = bytes.Deserialize<SessionDescriptionPayload>();
-                    if (descriptionPayload.Mode != "xsalsa20_poly1305")
+                    var sessionPayload = bytes.Deserialize<SessionPayload>();
+                    if (sessionPayload.Data.Mode != "xsalsa20_poly1305")
                         return;
 
                     var speakingPayload = new BaseDiscordPayload(VoiceOpType.Speaking,
@@ -181,11 +196,11 @@ namespace Frostbyte.Server
                     _ = SendKeepAliveAsync()
                         .ConfigureAwait(false);
 
-                    _voiceInfo.Key = descriptionPayload.SecretKey;
+                    _voiceInfo.Key = sessionPayload.Data.Secret.ConvertToByte();
                     break;
 
                 case VoiceOpType.Hello:
-                    var helloPayload = bytes.Deserialize<HelloPayload>();
+                    var helloPayload = payload.Data.As<HelloPayload>();
                     if (_heartBeat != null)
                     {
                         _heartBeatCancel.Cancel(false);
@@ -194,18 +209,18 @@ namespace Frostbyte.Server
                     }
 
                     _heartBeatCancel = new CancellationTokenSource();
-                    _heartBeat = HandleHeartbeatAsync(helloPayload.HeartBeatInterval);
+                    _heartBeat = HandleHeartbeatAsync(helloPayload.Data.Interval);
                     break;
 
                 case VoiceOpType.Resumed:
-                    LogFactory.Information<WebsocketVoice>($"{_guildId}'s voice ws connection has been resumed.");
+                    LogFactory.Information<WebsocketVoice>($"Guild {_guildId} voice ws connection has been resumed.");
                     break;
             }
         }
 
         private async Task HandleHeartbeatAsync(int interval)
         {
-            LogFactory.Debug<WebsocketVoice>($"Started heartbeat task for {_guildId}.");
+            LogFactory.Debug<WebsocketVoice>($"Started heartbeat task for guild {_guildId}.");
             while (!_heartBeatCancel.IsCancellationRequested)
             {
                 var payload = new BaseDiscordPayload(VoiceOpType.Heartbeat, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -218,7 +233,7 @@ namespace Frostbyte.Server
 
         private async Task SendKeepAliveAsync()
         {
-            LogFactory.Debug<WebsocketVoice>($"Started keep alive task for {_guildId}.");
+            LogFactory.Debug<WebsocketVoice>($"Started keep alive task for guild {_guildId}.");
             var keepAlive = 0;
             while (!_cancellation.IsCancellationRequested)
             {
