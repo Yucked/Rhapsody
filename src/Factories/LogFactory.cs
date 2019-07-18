@@ -21,7 +21,7 @@ namespace Frostbyte.Factories
 
         public static void PrintHeader()
         {
-            const string header = 
+            const string header =
                 @"                ___________                          __   ___.              __           
                 \_   _____/_______   ____    _______/  |_ \_ |__   ___.__._/  |_   ____  
                  |    __)  \_  __ \ /  _ \  /  ___/\   __\ | __ \ <   |  |\   __\_/ __ \ 
