@@ -1,7 +1,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Frostbyte.AudioEngine
+namespace Frostbyte.Audio
 {
     public sealed class AudioStream
     {

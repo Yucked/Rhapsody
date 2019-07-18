@@ -1,15 +1,15 @@
 using System;
 using System.Runtime.InteropServices;
-using Frostbyte.AudioEngine.Codecs;
+using Frostbyte.Audio.Codecs;
 
-namespace Frostbyte.AudioEngine
+namespace Frostbyte.Audio
 {
     public struct AudioHelper
     {
         public const int SAMPLE_RATE
             = 48000;
 
-        public const int CHANNELS
+        public const int STEREO_CHANNEL
             = 2;
 
         public const int MAX_FRAME_SIZE
@@ -17,12 +17,12 @@ namespace Frostbyte.AudioEngine
 
         public static int GetSampleSize(int duration)
         {
-            return duration * CHANNELS * (SAMPLE_RATE / 1000) * 2;
+            return duration * STEREO_CHANNEL * (SAMPLE_RATE / 1000) * 2;
         }
 
         public static int GetSampleDuration(int size)
         {
-            return size / (SAMPLE_RATE / 1000) / (CHANNELS / 2);
+            return size / (SAMPLE_RATE / 1000) / (STEREO_CHANNEL / 2);
         }
 
         public static int GetFrameSize(int duration)

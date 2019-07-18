@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Factories;
 
-namespace Frostbyte.AudioEngine.Codecs
+namespace Frostbyte.Audio.Codecs
 {
     public sealed class OpusCodec
     {
@@ -36,7 +36,7 @@ namespace Frostbyte.AudioEngine.Codecs
 
         public static bool TryEncode(ReadOnlySpan<byte> pcm, ref Span<byte> target, OpusVoiceType opusVoiceType)
         {
-            var encoder = OpusCreateEncoder(AudioHelper.SAMPLE_RATE, AudioHelper.CHANNELS, (int) opusVoiceType, out var error);
+            var encoder = OpusCreateEncoder(AudioHelper.SAMPLE_RATE, AudioHelper.STEREO_CHANNEL, (int) opusVoiceType, out var error);
             if (error != OpusErrorType.Ok)
             {
                 LogFactory.Error<OpusCodec>($"Failed to initialize opus encoder -> {error}");

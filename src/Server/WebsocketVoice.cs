@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Frostbyte.AudioEngine;
+using Frostbyte.Audio;
 using Frostbyte.Entities.Discord;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Infos;

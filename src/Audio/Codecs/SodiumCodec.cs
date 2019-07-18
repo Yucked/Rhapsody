@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Frostbyte.Factories;
 
-namespace Frostbyte.AudioEngine.Codecs
+namespace Frostbyte.Audio.Codecs
 {
     public sealed class SodiumCodec
     {

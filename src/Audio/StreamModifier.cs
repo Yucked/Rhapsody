@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace Frostbyte.AudioEngine
+namespace Frostbyte.Audio
 {
     public sealed class StreamModifier
     {
