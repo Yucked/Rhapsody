@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
@@ -14,11 +14,7 @@ namespace Frostbyte.Sources
     {
         private const string
             BASE_URL = "https://api.soundcloud.com",
-            CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087",
-            PATTERN_SCRIPT = "https://[A-Za-z0-9-.]+/assets/app-[a-f0-9-]+\\.js",
-            PATTERN_CLIENT_ID = "/,client_id:\"([a-zA-Z0-9-_]+)\"/",
-            PATTERN_TRACK = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)$",
-            PATTERN_PLAYLIST = @"^(https?:\/\/)?(www.)?(m\.)?(soundcloud\.com|snd\.sc)\/?([a-zA-Z0-9-_]+)\/(sets+)\/?([a-zA-Z0-9-_]+)$";
+            CLIENT_ID = "a3dd183a357fcff9a6943c0d65664087";
 
         public override async ValueTask<SearchResponse> SearchAsync(string query)
         {
@@ -68,12 +64,12 @@ namespace Frostbyte.Sources
             switch (response.LoadType)
             {
                 case LoadType.TrackLoaded:
-                    var scTrack = JsonSerializer.Parse<SoundCloudTrack>(bytes.Span);
+                    var scTrack = JsonSerializer.Deserialize<SoundCloudTrack>(bytes.Span);
                     response.Tracks.Add(scTrack.ToTrackInfo);
                     break;
 
                 case LoadType.PlaylistLoaded:
-                    var scPly = JsonSerializer.Parse<SoundCloudPlaylist>(bytes.Span);
+                    var scPly = JsonSerializer.Deserialize<SoundCloudPlaylist>(bytes.Span);
                     response.Playlist = scPly.ToPlaylistInfo;
                     foreach (var track in scPly.Tracks)
                         response.Tracks.Add(track.ToTrackInfo);
@@ -81,7 +77,7 @@ namespace Frostbyte.Sources
                     break;
 
                 case LoadType.SearchResult:
-                    var scTracks = JsonSerializer.Parse<IEnumerable<SoundCloudTrack>>(bytes.Span);
+                    var scTracks = JsonSerializer.Deserialize<IEnumerable<SoundCloudTrack>>(bytes.Span);
                     foreach (var track in scTracks)
                         response.Tracks.Add(track.ToTrackInfo);
                     break;
@@ -104,7 +100,7 @@ namespace Frostbyte.Sources
             if (bytes.IsEmpty)
                 return default;
 
-            var read = JsonSerializer.Parse<SoundCloudDirectUrl>(bytes.Span);
+            var read = JsonSerializer.Deserialize<SoundCloudDirectUrl>(bytes.Span);
             var stream = await HttpFactory
                 .WithUrl(read.Url)
                 .GetStreamAsync()

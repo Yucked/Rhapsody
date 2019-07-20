@@ -2,7 +2,7 @@ using System;
 using System.Collections.Specialized;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
@@ -14,7 +14,7 @@ namespace Frostbyte.Misc
     {
         public static ReadOnlyMemory<byte> Serialize<T>(this T value)
         {
-            var bytes = JsonSerializer.ToUtf8Bytes(value, new JsonSerializerOptions
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(value, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
@@ -24,7 +24,7 @@ namespace Frostbyte.Misc
 
         public static T Deserialize<T>(this ReadOnlyMemory<byte> memory)
         {
-            var parse = JsonSerializer.Parse<T>(memory.Span, new JsonSerializerOptions
+            var parse = JsonSerializer.Deserialize<T>(memory.Span, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });

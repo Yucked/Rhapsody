@@ -5,11 +5,11 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Colorful;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
+using Frostbyte.Misc;
 using Console = Colorful.Console;
 
 namespace Frostbyte.Factories
@@ -39,14 +39,14 @@ namespace Frostbyte.Factories
             var getBytes = await httpFactory
                 .GetBytesAsync("https://api.github.com/repos/Yucked/Frostbyte")
                 .ConfigureAwait(false);
-            result.Repo = JsonSerializer.Parse<GitHubRepo>(getBytes.Span);
 
+            result.Repo = getBytes.Deserialize<GitHubRepo>();
             getBytes = await httpFactory
                 .WithUrl("https://api.github.com/repos/Yucked/Frostbyte/commits")
                 .GetBytesAsync()
                 .ConfigureAwait(false);
-            result.Commit = JsonSerializer.Parse<IEnumerable<GitHubCommit>>(getBytes.Span).FirstOrDefault();
 
+            result.Commit = getBytes.Deserialize<IEnumerable<GitHubCommit>>().FirstOrDefault();
             Console.WriteLineFormatted(
                 $"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.Sha}",
                 Color.White,

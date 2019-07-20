@@ -12,30 +12,89 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Remove="Binaries\x86\libopus.dll" />
-        <None Remove="Binaries\x86\libsodium.dll" />
-        <None Remove="Binaries\x64\libopus.dll" />
-        <None Remove="Binaries\x64\libsodium.dll" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Colorful.Console" Version="1.2.9" />
         <PackageReference Include="System.Text.Json" Version="4.6.0-preview6.19303.8" />
     </ItemGroup>
 
     <ItemGroup>
-        <Resource Include="Binaries\x86\libopus.dll">
+        <None Update="Binaries\FFmpeg\Unix\x64\libavcodec.so.57">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x64\libavformat.so.57">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x64\libavutil.so.55">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x64\libswresample.so.2">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x86\libavcodec.so.57">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x86\libavformat.so.57">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x86\libavutil.so.55">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Unix\x86\libswresample.so.2">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x64\avcodec-57.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x64\avformat-57.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x64\avutil-55.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x64\swresample-2.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x86\avcodec-57.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x86\avformat-57.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x86\avutil-55.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFmpeg\Win\x86\swresample-2.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFMPEG\x64\ffmpeg.exe">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Resource>
-        <Resource Include="Binaries\x86\libsodium.dll">
+        </None>
+        <None Update="Binaries\FFMPEG\x64\ffplay.exe">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Resource>
-        <Resource Include="Binaries\x64\libopus.dll">
+        </None>
+        <None Update="Binaries\FFMPEG\x64\ffprobe.exe">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Resource>
-        <Resource Include="Binaries\x64\libsodium.dll">
+        </None>
+        <None Update="Binaries\FFMPEG\x32\ffmpeg.exe">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Resource>
+        </None>
+        <None Update="Binaries\FFMPEG\x32\ffplay.exe">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\FFMPEG\x32\ffprobe.exe">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\Opus\x64\libopus.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\Opus\x86\libopus.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\Sodium\x64\libsodium.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Binaries\Sodium\x86\libsodium.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

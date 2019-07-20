@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
@@ -38,7 +38,7 @@ namespace Frostbyte.Sources
                 return response;
             }
 
-            var bcResult = JsonSerializer.Parse<BandCampResult>(json);
+            var bcResult = JsonSerializer.Deserialize<BandCampResult>(json);
             response.LoadType = bcResult.ItemType switch
             {
                 "album" => LoadType.PlaylistLoaded,
@@ -73,7 +73,7 @@ namespace Frostbyte.Sources
                 return default;
 
             var json = await ScrapeJsonAsync(trackId).ConfigureAwait(false);
-            var bcResult = JsonSerializer.Parse<BandCampResult>(json);
+            var bcResult = JsonSerializer.Deserialize<BandCampResult>(json);
 
             var track = bcResult.Trackinfo.FirstOrDefault();
             if (track is null)

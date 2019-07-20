@@ -15,6 +15,12 @@ namespace Frostbyte.Audio
         public const int MAX_FRAME_SIZE
             = 120 * (SAMPLE_RATE / 1000);
 
+        public const int MAX_SILENCE_FRAMES
+            = 10;
+        
+        public static ReadOnlyMemory<byte> SilenceFrames
+            = new byte[] {0xF8, 0xFF, 0xFE};
+
         public static int GetSampleSize(int duration)
         {
             return duration * STEREO_CHANNEL * (SAMPLE_RATE / 1000) * 2;

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
@@ -22,10 +21,10 @@ namespace Frostbyte.Server
         public AudioPlayer Player { get; }
 
         private readonly CancellationTokenSource _cancellation;
-        private readonly ConcurrentQueue<AudioPacket> _packets;
         private readonly ClientWebSocket _socket;
         private readonly UdpClient _udp;
         private readonly ulong _userId;
+        private readonly AudioStream _audioStream;
 
         private ulong _guildId;
         private Task _heartBeat;
@@ -41,7 +40,6 @@ namespace Frostbyte.Server
             _socket = new ClientWebSocket();
             _cancellation = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();
-            _packets = new ConcurrentQueue<AudioPacket>();
             _voiceInfo = new VoiceInfo();
 
             Player = new AudioPlayer();
@@ -187,16 +185,8 @@ namespace Frostbyte.Server
                     if (sessionData.Mode != "xsalsa20_poly1305")
                         return;
 
-                    var speakingPayload = new BaseDiscordPayload<SpeakingData>(
-                        new SpeakingData
-                        {
-                            Delay = 0,
-                            IsSpeaking = false,
-                            SSRC = _voiceInfo.Ssrc
-                        });
-                    await _socket.SendAsync(speakingPayload)
+                    await SetSpeakingAsync(false)
                         .ConfigureAwait(false);
-
                     _ = SendKeepAliveAsync()
                         .ConfigureAwait(false);
 
@@ -279,6 +269,28 @@ namespace Frostbyte.Server
                 }
 
             LogFactory.Error<WebsocketVoice>(exception: exception);
+        }
+
+        private async Task SetSpeakingAsync(bool isSpeaking)
+        {
+            var speakingPayload = new BaseDiscordPayload<SpeakingData>(
+                new SpeakingData
+                {
+                    Delay = 0,
+                    IsSpeaking = isSpeaking,
+                    SSRC = _voiceInfo.Ssrc
+                });
+
+            await _socket.SendAsync(speakingPayload)
+                .ConfigureAwait(false);
+        }
+
+        private async Task SendAudioAsync()
+        {
+            await SetSpeakingAsync(true)
+                .ConfigureAwait(false);
+
+            await Task.Delay(0);
         }
     }
 }
