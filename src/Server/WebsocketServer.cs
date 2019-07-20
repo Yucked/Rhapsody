@@ -162,8 +162,19 @@ namespace Frostbyte.Server
             {
                 foreach (var (endPoint, client) in _clients)
                 {
-                    if (!client.IsDisposed)
+                    if (client.IsConnected)
+                    {
+                        foreach (var (guildId, voice) in client.Voices)
+                        {
+                            if (voice.IsConnected)
+                                continue;
+
+                            client.Voices.TryRemove(guildId, out _);
+                            LogFactory.Debug<WebsocketServer>($"Removed {guildId} voice connection since client is disposed.");
+                        }
+
                         continue;
+                    }
 
                     _clients.TryRemove(endPoint, out _);
                     LogFactory.Debug<WebsocketServer>($"Removed {endPoint} from clients since client is disposed.");

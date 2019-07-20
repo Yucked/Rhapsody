@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Frostbyte.Entities.Discord
 {
-    public struct SpeakingPayload
+    public struct SpeakingData
     {
         [JsonPropertyName("speaking")]
         public bool IsSpeaking { get; set; }

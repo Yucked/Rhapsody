@@ -12,28 +12,32 @@ namespace Frostbyte.Server
 {
     public sealed class WebsocketClient : IAsyncDisposable
     {
-        public bool IsDisposed { get; private set; }
+        public bool IsConnected
+            => Volatile.Read(ref _isConnected);
+
+        public ConcurrentDictionary<ulong, WebsocketVoice> Voices { get; }
         private readonly ushort _buffer;
         private readonly WebSocketContext _context;
         private readonly WebSocket _socket;
         private readonly CancellationTokenSource _source;
 
         private readonly ulong _userId;
-        private readonly ConcurrentDictionary<ulong, WebsocketVoice> _voices;
+        private bool _isConnected;
 
         public WebsocketClient(WebSocketContext webSocketContext, ulong userId, ushort buffer)
         {
+            Volatile.Write(ref _isConnected, true);
             _context = webSocketContext;
             _userId = userId;
             _buffer = buffer;
             _socket = webSocketContext.WebSocket;
             _source = new CancellationTokenSource();
-            _voices = new ConcurrentDictionary<ulong, WebsocketVoice>();
+            Voices = new ConcurrentDictionary<ulong, WebsocketVoice>();
         }
 
         public async ValueTask DisposeAsync()
         {
-            foreach (var (guildId, voice) in _voices)
+            foreach (var (guildId, voice) in Voices)
             {
                 await voice.DisposeAsync()
                     .ConfigureAwait(false);
@@ -41,10 +45,10 @@ namespace Frostbyte.Server
                 LogFactory.Debug<WebsocketClient>($"Disposed voice ws connection for {guildId}.");
             }
 
-            _voices.Clear();
-            IsDisposed = true;
+            Voices.Clear();
             _source?.Cancel(false);
             _context.WebSocket.Dispose();
+            Volatile.Write(ref _isConnected, false);
         }
 
         public async Task CloseAsync(string reason)
@@ -117,10 +121,10 @@ namespace Frostbyte.Server
 
         private WebsocketVoice GetConnection(ulong guildId)
         {
-            if (!_voices.TryGetValue(guildId, out var voice))
+            if (!Voices.TryGetValue(guildId, out var voice))
                 voice = new WebsocketVoice(_userId);
 
-            _voices.AddOrUpdate(guildId, voice, (id, websocketVoice) => voice);
+            Voices.AddOrUpdate(guildId, voice, (id, websocketVoice) => voice);
             return voice;
         }
     }

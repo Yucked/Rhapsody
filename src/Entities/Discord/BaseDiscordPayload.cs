@@ -3,18 +3,27 @@ using Frostbyte.Entities.Enums;
 
 namespace Frostbyte.Entities.Discord
 {
-    public struct BaseDiscordPayload
+    public struct BaseDiscordPayload<T>
     {
         [JsonPropertyName("op")]
         public VoiceOpType Op { get; set; }
 
         [JsonPropertyName("d")]
-        public object Data { get; set; }
+        public T Data { get; set; }
 
-        public BaseDiscordPayload(VoiceOpType op, object data)
+        public BaseDiscordPayload(T data)
         {
-            Op = op;
             Data = data;
+            Op = data switch
+            {
+                IdentifyData _  => VoiceOpType.Identify,
+                ResumeData _    => VoiceOpType.Resume,
+                SpeakingData _  => VoiceOpType.Speaking,
+                SelectPayload _ => VoiceOpType.SelectProtocol,
+                ReadyData _     => VoiceOpType.Ready,
+                HelloData _     => VoiceOpType.Hello,
+                long _          => VoiceOpType.Heartbeat
+            };
         }
     }
 }
