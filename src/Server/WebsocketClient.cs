@@ -112,7 +112,7 @@ namespace Frostbyte.Server
 
                 case OperationType.Play:
                     var playPayload = bytes.Deserialize<PlayPayload>();
-                    await voice.Player.PlayAsync(playPayload)
+                    await voice.Player.PlayAsync(playPayload, voice.AudioStream)
                         .ConfigureAwait(false);
                     break;
             }

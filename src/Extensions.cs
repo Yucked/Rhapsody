@@ -1,7 +1,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
@@ -156,15 +155,14 @@ namespace Frostbyte
 
         public static Task SendKeepAliveAsync(this UdpClient client, ref ulong keepAlive)
         {
-            var timestamp = Stopwatch.GetTimestamp();
             Volatile.Write(ref keepAlive, keepAlive + 1);
             var packet = new byte[8];
             BinaryPrimitives.WriteUInt64LittleEndian(packet, keepAlive);
             return SendAsync(client, packet);
         }
 
-        public static Task SendAsync(this UdpClient client, byte[] data)
-            => client.SendAsync(data, data.Length);
+        public static Task SendAsync(this UdpClient client, ReadOnlyMemory<byte> data)
+            => client.SendAsync(data.ToArray(), data.Length);
 
         public static Task SendSsrcAsync(this UdpClient client, uint ssrc)
         {

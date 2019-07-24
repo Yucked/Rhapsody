@@ -12,7 +12,7 @@ namespace Frostbyte.Audio
 
         public FFmpegPipe()
         {
-            _pipe = new NamedPipeServerStream("ffpipe", PipeDirection.InOut, 1,
+            _pipe = new NamedPipeServerStream("ffpipe", PipeDirection.InOut, 5,
                 PipeTransmissionMode.Byte,
                 PipeOptions.Asynchronous,
                 10000, 10000);
@@ -27,22 +27,20 @@ namespace Frostbyte.Audio
             });
         }
 
-        public async Task<Stream> ConvertAsync(Stream stream)
+        public async Task ConvertAndWriteAsync(Stream input, Stream output)
         {
             if (!_pipe.IsConnected)
                 await _pipe.WaitForConnectionAsync()
                     .ConfigureAwait(false);
 
-            await stream.CopyToAsync(_pipe)
-                .ConfigureAwait(false);
-            await stream.FlushAsync()
+            await input.CopyToAsync(_pipe)
                 .ConfigureAwait(false);
 
-            var outputStream = new MemoryStream();
-            await _pipe.CopyToAsync(outputStream)
+            await input.FlushAsync()
                 .ConfigureAwait(false);
 
-            return outputStream;
+            await _pipe.CopyToAsync(output)
+                .ConfigureAwait(false);
         }
     }
 }

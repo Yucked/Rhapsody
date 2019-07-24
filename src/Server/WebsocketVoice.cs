@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
@@ -17,19 +18,20 @@ namespace Frostbyte.Server
             => Volatile.Read(ref _isConnected);
 
         public AudioPlayer Player { get; }
-        private readonly AudioStream _audioStream;
+        public AudioStream AudioStream { get; }
+        private readonly Task _audioSenderTask;
 
         private readonly CancellationTokenSource _cancellation;
         private readonly ClientWebSocket _socket;
         private readonly UdpClient _udp;
         private readonly ulong _userId;
-
-        private uint _ssrc;
         private ulong _guildId;
-        private Task _heartBeat;
         private CancellationTokenSource _heartBeatCancel;
+        private Task _heartBeatTask;
         private bool _isConnected;
+        private ReadOnlyMemory<byte> _key;
         private VoiceServerPayload _oldState;
+        private uint _ssrc;
 
         public WebsocketVoice(ulong userId)
         {
@@ -38,15 +40,18 @@ namespace Frostbyte.Server
             _socket = new ClientWebSocket();
             _cancellation = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();
-            _audioStream = new AudioStream(20);
+            AudioStream = new AudioStream(20);
             Player = new AudioPlayer();
+
+            _audioSenderTask = SendAudioAsync();
         }
 
         public async ValueTask DisposeAsync()
         {
             _cancellation.Cancel(false);
             _heartBeatCancel?.Cancel(false);
-            _heartBeat?.Dispose();
+            _heartBeatTask?.Dispose();
+            _audioSenderTask?.Dispose();
             _udp.Close();
             await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnected.", CancellationToken.None)
                 .ConfigureAwait(false);
@@ -176,7 +181,7 @@ namespace Frostbyte.Server
 
                     LogFactory.Debug<WebsocketVoice>($"Sent select protocol for guild {_guildId}.");
                     _ssrc = readyData.Ssrc;
-                    _audioStream.SetSsrc(readyData.Ssrc);
+                    AudioStream.SetSsrc(readyData.Ssrc);
                     break;
 
                 case VoiceOpType.SessionDescription:
@@ -186,36 +191,31 @@ namespace Frostbyte.Server
                     if (sessionData.Mode != "xsalsa20_poly1305")
                         return;
 
-                    var nullpcm = new byte[AudioHelper.GetSampleSize(20)];
-                    for (var i = 0; i < 3; i++)
-                    {
-                        var opus = new byte[nullpcm.Length];
-                        var opusMem = opus.AsMemory();
-                        AudioHelper.PrepareAudioPacket(nullpcm, ref opusMem, _ssrc,
-                            sessionData.Secret.ConvertToByte());
-                    }
+                    AudioStream.SetKey(sessionData.Secret);
+                    _key = sessionData.Secret.ConvertToByte();
 
                     await SetSpeakingAsync(false)
                         .ConfigureAwait(false);
+
+                    QueueNullPackets();
+
                     _ = SendKeepAliveAsync()
                         .ConfigureAwait(false);
-
-                    _audioStream.SetKey(sessionData.Secret);
                     break;
 
                 case VoiceOpType.Hello:
                     var helloPayload = bytes.Deserialize<BaseDiscordPayload<HelloData>>();
                     var helloData = helloPayload.Data;
 
-                    if (_heartBeat != null)
+                    if (_heartBeatTask != null)
                     {
                         _heartBeatCancel.Cancel(false);
-                        _heartBeat.Dispose();
-                        _heartBeat = null;
+                        _heartBeatTask.Dispose();
+                        _heartBeatTask = null;
                     }
 
                     _heartBeatCancel = new CancellationTokenSource();
-                    _heartBeat = HandleHeartbeatAsync(helloData.Interval);
+                    _heartBeatTask = HandleHeartbeatAsync(helloData.Interval);
                     break;
 
                 case VoiceOpType.Resumed:
@@ -289,24 +289,60 @@ namespace Frostbyte.Server
                 {
                     Delay = 0,
                     IsSpeaking = isSpeaking,
-                    SSRC = _ssrc
+                    Ssrc = _ssrc
                 });
 
             await _socket.SendAsync(speakingPayload)
                 .ConfigureAwait(false);
         }
 
+        private void QueueNullPackets(bool isSilence = false)
+        {
+            var nullpcm = new byte[AudioHelper.GetSampleSize(20)];
+            for (var i = 0; i < 3; i++)
+            {
+                var opus = new byte[nullpcm.Length];
+                var opusMem = opus.AsMemory();
+                AudioHelper.PrepareAudioPacket(nullpcm, ref opusMem, _ssrc, _key);
+                AudioStream.Packets.Enqueue(new AudioPacket(opusMem, 20, isSilence));
+            }
+        }
+
         private async Task SendAudioAsync()
         {
-            while (_cancellation.IsCancellationRequested)
+            var syncTicks = (double) Stopwatch.GetTimestamp();
+            var syncRes = Stopwatch.Frequency * 0.005;
+            var tickRes = 10_000_000.0 / Stopwatch.Frequency;
+
+            while (!_cancellation.IsCancellationRequested)
             {
-                if (_audioStream != null || !_audioStream.Packets.IsEmpty)
+                var hasPacket = AudioStream.Packets.TryDequeue(out var packet);
+
+                var durationModifier = hasPacket ? packet.MsDuration / 5 : 4;
+                var cts = Math.Max(Stopwatch.GetTimestamp() - syncTicks, 0);
+                if (cts < syncRes * durationModifier)
                 {
-                    await SetSpeakingAsync(true)
+                    var delay = TimeSpan.FromTicks((long) ((syncRes * durationModifier - cts) * tickRes));
+                    await Task.Delay(delay)
                         .ConfigureAwait(false);
                 }
 
-                await Task.Delay(0);
+                syncTicks += syncRes * durationModifier;
+
+                if (!hasPacket)
+                    continue;
+
+                await SetSpeakingAsync(true)
+                    .ConfigureAwait(false);
+
+                await _udp.SendAsync(packet.Bytes)
+                    .ConfigureAwait(false);
+
+                if (!packet.IsSilence && AudioStream.Packets.Count == 0)
+                    QueueNullPackets(true);
+                else if (AudioStream.Packets.Count == 0)
+                    await SetSpeakingAsync(false)
+                        .ConfigureAwait(false);
             }
         }
     }

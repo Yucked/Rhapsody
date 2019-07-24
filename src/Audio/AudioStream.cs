@@ -7,22 +7,36 @@ namespace Frostbyte.Audio
 {
     public sealed class AudioStream : Stream
     {
-        public double Volume
-        {
-            get => _volume;
-            set => _volume = value;
-        }
+        public double Volume { get; set; } = 1.0;
 
         public ConcurrentQueue<AudioPacket> Packets { get; }
 
-        private uint _ssrc;
-        private ReadOnlyMemory<byte> _key;
-        private int _pcmBufferLength;
-        private double _volume = 1.0;
+        /// <inheritdoc />
+        public override bool CanRead
+            => false;
+
+        /// <inheritdoc />
+        public override bool CanSeek
+            => false;
+
+        /// <inheritdoc />
+        public override bool CanWrite
+            => true;
+
+        /// <inheritdoc />
+        public override long Length { get; }
+
+        /// <inheritdoc />
+        public override long Position { get; set; }
+
+        private readonly byte[] _pcmBuffer;
 
         private readonly int _pcmBufferDuration;
-        private readonly byte[] _pcmBuffer;
         private readonly Memory<byte> _pcmMemory;
+        private ReadOnlyMemory<byte> _key;
+        private int _pcmBufferLength;
+
+        private uint _ssrc;
 
         public AudioStream(int bufferDuration)
         {
@@ -41,10 +55,8 @@ namespace Frostbyte.Audio
             var pcm16 = MemoryMarshal.Cast<byte, short>(pcm);
 
             if (Volume != 1)
-            {
                 for (var i = 0; i < pcm16.Length; i++)
                     pcm16[i] = (short) (pcm16[i] * Volume);
-            }
 
             var packet = new byte[pcm.Length];
             var packetMemory = packet.AsMemory();
@@ -91,10 +103,8 @@ namespace Frostbyte.Audio
                     var pcm16 = MemoryMarshal.Cast<byte, short>(pcmSpan);
 
                     if (Volume != 1.0)
-                    {
                         for (var i = 0; i < pcm16.Length; i++)
                             pcm16[i] = (short) (pcm16[i] * Volume);
-                    }
 
                     _pcmBufferLength = 0;
                     var packet = new byte[pcmSpan.Length];
@@ -114,23 +124,5 @@ namespace Frostbyte.Audio
         {
             _key = key.ConvertToByte();
         }
-
-        /// <inheritdoc />
-        public override bool CanRead
-            => false;
-
-        /// <inheritdoc />
-        public override bool CanSeek
-            => false;
-
-        /// <inheritdoc />
-        public override bool CanWrite
-            => true;
-
-        /// <inheritdoc />
-        public override long Length { get; }
-
-        /// <inheritdoc />
-        public override long Position { get; set; }
     }
 }

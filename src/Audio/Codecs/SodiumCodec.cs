@@ -4,7 +4,7 @@ using Frostbyte.Factories;
 
 namespace Frostbyte.Audio.Codecs
 {
-    public sealed class SodiumCodec
+    public readonly struct SodiumCodec
     {
         public static int NonceSize
             => (int) SecretBoxNonceSize();

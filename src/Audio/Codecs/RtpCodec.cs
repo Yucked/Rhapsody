@@ -4,7 +4,7 @@ using Frostbyte.Factories;
 
 namespace Frostbyte.Audio.Codecs
 {
-    public sealed class RtpCodec
+    public readonly struct RtpCodec
     {
         public const int HEADER_SIZE = 12;
         private const byte RTP_VERSION = 0x78;

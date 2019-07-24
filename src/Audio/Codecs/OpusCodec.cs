@@ -5,8 +5,10 @@ using Frostbyte.Factories;
 
 namespace Frostbyte.Audio.Codecs
 {
-    public sealed class OpusCodec
+    public struct OpusCodec
     {
+        public static OpusVoiceType OpusVoiceType { private get; set; }
+
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encode")]
         private static extern unsafe int OpusEncode(IntPtr encoder, byte* pcmData, int frameSize, byte* data,
             int maxDataBytes);
@@ -14,8 +16,6 @@ namespace Frostbyte.Audio.Codecs
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encoder_create")]
         private static extern IntPtr OpusCreateEncoder(int sampleRate, int channels, int application,
             out OpusErrorType error);
-
-        public static OpusVoiceType OpusVoiceType { get; set; }
 
         private static unsafe void OpusEncode(IntPtr encoder, ReadOnlySpan<byte> pcm, int frameSize,
             ref Span<byte> opus)

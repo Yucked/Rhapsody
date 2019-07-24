@@ -11,6 +11,6 @@ namespace Frostbyte.Entities.Discord
         public int Delay { get; set; }
 
         [JsonPropertyName("ssrc")]
-        public uint SSRC { get; set; }
+        public uint Ssrc { get; set; }
     }
 }
