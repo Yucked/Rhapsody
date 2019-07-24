@@ -16,17 +16,21 @@ namespace Frostbyte.Audio.Codecs
             => (int) SecretBoxKeySize();
 
         [DllImport("sodium", EntryPoint = "crypto_secretbox_easy", CallingConvention = CallingConvention.Cdecl)]
-        private static extern unsafe int SecretBoxEasy(byte* buffer, byte* message, ulong messageLength, byte* nonce, byte* key);
+        private static extern unsafe int SecretBoxEasy(byte* buffer, byte* message, ulong messageLength, byte* nonce,
+            byte* key);
 
-        [DllImport("sodium", CallingConvention = CallingConvention.Cdecl, EntryPoint = "crypto_secretbox_xsalsa20poly1305_noncebytes")]
+        [DllImport("sodium", CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "crypto_secretbox_xsalsa20poly1305_noncebytes")]
         [return: MarshalAs(UnmanagedType.SysUInt)]
         private static extern UIntPtr SecretBoxNonceSize();
 
-        [DllImport("sodium", CallingConvention = CallingConvention.Cdecl, EntryPoint = "crypto_secretbox_xsalsa20poly1305_macbytes")]
+        [DllImport("sodium", CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "crypto_secretbox_xsalsa20poly1305_macbytes")]
         [return: MarshalAs(UnmanagedType.SysUInt)]
         private static extern UIntPtr SecretBoxMacSize();
 
-        [DllImport("sodium", CallingConvention = CallingConvention.Cdecl, EntryPoint = "crypto_secretbox_xsalsa20poly1305_keybytes")]
+        [DllImport("sodium", CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "crypto_secretbox_xsalsa20poly1305_keybytes")]
         [return: MarshalAs(UnmanagedType.SysUInt)]
         private static extern UIntPtr SecretBoxKeySize();
 
@@ -45,7 +49,8 @@ namespace Frostbyte.Audio.Codecs
             return status;
         }
 
-        public static bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> target, ReadOnlySpan<byte> nonce, ReadOnlyMemory<byte> key)
+        public static bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> target, ReadOnlySpan<byte> nonce,
+            ReadOnlyMemory<byte> key)
         {
             if (nonce.Length != NonceSize)
             {
@@ -55,7 +60,8 @@ namespace Frostbyte.Audio.Codecs
 
             if (target.Length != MacSize + source.Length)
             {
-                LogFactory.Error<SodiumCodec>($"Buffer length wasn't the same as {nameof(MacSize)} + {nameof(source.Length)}.");
+                LogFactory.Error<SodiumCodec>(
+                    $"Buffer length wasn't the same as {nameof(MacSize)} + {nameof(source.Length)}.");
                 return false;
             }
 
@@ -77,7 +83,8 @@ namespace Frostbyte.Audio.Codecs
         {
             if (rtpHeader.Length != RtpCodec.HEADER_SIZE)
             {
-                LogFactory.Error<SodiumCodec>($"RTP header length {rtpHeader.Length} wasn't the same as default {RtpCodec.HEADER_SIZE}.");
+                LogFactory.Error<SodiumCodec>(
+                    $"RTP header length {rtpHeader.Length} wasn't the same as default {RtpCodec.HEADER_SIZE}.");
                 return false;
             }
 

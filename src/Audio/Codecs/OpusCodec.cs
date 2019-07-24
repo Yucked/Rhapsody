@@ -8,10 +8,14 @@ namespace Frostbyte.Audio.Codecs
     public sealed class OpusCodec
     {
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encode")]
-        private static extern unsafe int OpusEncode(IntPtr encoder, byte* pcmData, int frameSize, byte* data, int maxDataBytes);
+        private static extern unsafe int OpusEncode(IntPtr encoder, byte* pcmData, int frameSize, byte* data,
+            int maxDataBytes);
 
         [DllImport("opus", CallingConvention = CallingConvention.Cdecl, EntryPoint = "opus_encoder_create")]
-        private static extern IntPtr OpusCreateEncoder(int sampleRate, int channels, int application, out OpusErrorType error);
+        private static extern IntPtr OpusCreateEncoder(int sampleRate, int channels, int application,
+            out OpusErrorType error);
+
+        public static OpusVoiceType OpusVoiceType { get; set; }
 
         private static unsafe void OpusEncode(IntPtr encoder, ReadOnlySpan<byte> pcm, int frameSize,
             ref Span<byte> opus)
@@ -34,9 +38,10 @@ namespace Frostbyte.Audio.Codecs
             opus = opus.Slice(0, len);
         }
 
-        public static bool TryEncode(ReadOnlySpan<byte> pcm, ref Span<byte> target, OpusVoiceType opusVoiceType)
+        public static bool TryEncode(ReadOnlySpan<byte> pcm, ref Span<byte> target)
         {
-            var encoder = OpusCreateEncoder(AudioHelper.SAMPLE_RATE, AudioHelper.STEREO_CHANNEL, (int) opusVoiceType, out var error);
+            var encoder = OpusCreateEncoder(AudioHelper.SAMPLE_RATE, AudioHelper.STEREO_CHANNEL, (int) OpusVoiceType,
+                out var error);
             if (error != OpusErrorType.Ok)
             {
                 LogFactory.Error<OpusCodec>($"Failed to initialize opus encoder -> {error}");

@@ -7,6 +7,8 @@ namespace Frostbyte.Audio
     {
         public async Task PlayAsync(PlayPayload payload)
         {
+            await AudioHelper.Pipe.ConvertAsync(default)
+                .ConfigureAwait(false);
             await Task.Delay(0);
         }
     }

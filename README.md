@@ -23,3 +23,13 @@
 	    </a> 
     </p>
 </p>
+
+
+> #### ❗ This project is still under-development.
+
+### `⚙ Building Frostbyte`
+To build Frostbyte, you need to have latest version of .NET [SDK](https://github.com/dotnet/core-sdk/blob/master/README.md#installers-and-binaries) and [runtime](https://github.com/dotnet/core-setup/blob/master/README.md#daily-builds) installed.
+
+
+### `📔 About Frostbyte`
+Frostbyte will be a Lavalink alternative (hopefully). What left is implementing a decent voice stream voodoo stuff. What am I making it? I hate JAVA.

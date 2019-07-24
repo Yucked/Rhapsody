@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 using Frostbyte.Audio;
 using Frostbyte.Entities.Discord;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Entities.Infos;
 using Frostbyte.Entities.Payloads;
 using Frostbyte.Factories;
-using Frostbyte.Misc;
 
 namespace Frostbyte.Server
 {
@@ -19,19 +17,19 @@ namespace Frostbyte.Server
             => Volatile.Read(ref _isConnected);
 
         public AudioPlayer Player { get; }
+        private readonly AudioStream _audioStream;
 
         private readonly CancellationTokenSource _cancellation;
         private readonly ClientWebSocket _socket;
         private readonly UdpClient _udp;
         private readonly ulong _userId;
-        private readonly AudioStream _audioStream;
 
+        private uint _ssrc;
         private ulong _guildId;
         private Task _heartBeat;
         private CancellationTokenSource _heartBeatCancel;
         private bool _isConnected;
         private VoiceServerPayload _oldState;
-        private VoiceInfo _voiceInfo;
 
         public WebsocketVoice(ulong userId)
         {
@@ -40,8 +38,7 @@ namespace Frostbyte.Server
             _socket = new ClientWebSocket();
             _cancellation = new CancellationTokenSource();
             _heartBeatCancel = new CancellationTokenSource();
-            _voiceInfo = new VoiceInfo();
-
+            _audioStream = new AudioStream(20);
             Player = new AudioPlayer();
         }
 
@@ -61,13 +58,15 @@ namespace Frostbyte.Server
 
         public async Task ProcessVoiceServerPaylaodAsync(VoiceServerPayload serverPayload)
         {
-            if (_socket != null && _socket.State == WebSocketState.Open && _oldState?.Endpoint != serverPayload.Endpoint)
+            if (_socket != null && _socket.State == WebSocketState.Open &&
+                _oldState?.Endpoint != serverPayload.Endpoint)
             {
                 await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Changing voice server.",
                         CancellationToken.None)
                     .ConfigureAwait(false);
 
-                LogFactory.Information<WebsocketVoice>($"Changing {_guildId} voice server to {serverPayload.Endpoint}.");
+                LogFactory.Information<WebsocketVoice>(
+                    $"Changing {_guildId} voice server to {serverPayload.Endpoint}.");
             }
 
             _oldState = serverPayload;
@@ -75,7 +74,8 @@ namespace Frostbyte.Server
 
             try
             {
-                LogFactory.Debug<WebsocketVoice>($"Starting voice ws connection to Discord for {serverPayload.GuildId} guild.");
+                LogFactory.Debug<WebsocketVoice>(
+                    $"Starting voice ws connection to Discord for {serverPayload.GuildId} guild.");
 
                 var url = $"wss://{serverPayload.Endpoint.Sub(0, serverPayload.Endpoint.Length - 3)}"
                     .WithParameter("encoding", "json")
@@ -164,7 +164,7 @@ namespace Frostbyte.Server
                     var readyData = readyPayload.Data;
 
                     _udp.Connect(readyData.IpAddress, readyData.Port);
-                    await _udp.SendDiscoveryAsync(readyData.Ssrc)
+                    await _udp.SendSsrcAsync(readyData.Ssrc)
                         .ConfigureAwait(false);
 
                     LogFactory.Debug<WebsocketVoice>($"Sent UDP discovery for guild {_guildId}.");
@@ -175,7 +175,8 @@ namespace Frostbyte.Server
                         .ConfigureAwait(false);
 
                     LogFactory.Debug<WebsocketVoice>($"Sent select protocol for guild {_guildId}.");
-                    _voiceInfo.Ssrc = readyData.Ssrc;
+                    _ssrc = readyData.Ssrc;
+                    _audioStream.SetSsrc(readyData.Ssrc);
                     break;
 
                 case VoiceOpType.SessionDescription:
@@ -185,12 +186,21 @@ namespace Frostbyte.Server
                     if (sessionData.Mode != "xsalsa20_poly1305")
                         return;
 
+                    var nullpcm = new byte[AudioHelper.GetSampleSize(20)];
+                    for (var i = 0; i < 3; i++)
+                    {
+                        var opus = new byte[nullpcm.Length];
+                        var opusMem = opus.AsMemory();
+                        AudioHelper.PrepareAudioPacket(nullpcm, ref opusMem, _ssrc,
+                            sessionData.Secret.ConvertToByte());
+                    }
+
                     await SetSpeakingAsync(false)
                         .ConfigureAwait(false);
                     _ = SendKeepAliveAsync()
                         .ConfigureAwait(false);
 
-                    _voiceInfo.Key = sessionData.Secret.ConvertToByte();
+                    _audioStream.SetKey(sessionData.Secret);
                     break;
 
                 case VoiceOpType.Hello:
@@ -231,12 +241,12 @@ namespace Frostbyte.Server
         private async Task SendKeepAliveAsync()
         {
             LogFactory.Debug<WebsocketVoice>($"Started keep alive task for guild {_guildId}.");
-            var keepAlive = 0;
+            var keepAlive = (ulong) 0;
             while (!_cancellation.IsCancellationRequested)
             {
                 await _udp.SendKeepAliveAsync(ref keepAlive)
                     .ConfigureAwait(false);
-                await Task.Delay(4500, _cancellation.Token)
+                await Task.Delay(5000, _cancellation.Token)
                     .ConfigureAwait(false);
             }
         }
@@ -262,7 +272,8 @@ namespace Frostbyte.Server
                         break;
 
                     case 10054:
-                        LogFactory.Warning<WebsocketVoice>($"Discord closed ws connection for {_guildId}. Try reconnecting?");
+                        LogFactory.Warning<WebsocketVoice>(
+                            $"Discord closed ws connection for {_guildId}. Try reconnecting?");
                         await DisposeAsync()
                             .ConfigureAwait(false);
                         break;
@@ -278,7 +289,7 @@ namespace Frostbyte.Server
                 {
                     Delay = 0,
                     IsSpeaking = isSpeaking,
-                    SSRC = _voiceInfo.Ssrc
+                    SSRC = _ssrc
                 });
 
             await _socket.SendAsync(speakingPayload)
@@ -287,10 +298,16 @@ namespace Frostbyte.Server
 
         private async Task SendAudioAsync()
         {
-            await SetSpeakingAsync(true)
-                .ConfigureAwait(false);
+            while (_cancellation.IsCancellationRequested)
+            {
+                if (_audioStream != null || !_audioStream.Packets.IsEmpty)
+                {
+                    await SetSpeakingAsync(true)
+                        .ConfigureAwait(false);
+                }
 
-            await Task.Delay(0);
+                await Task.Delay(0);
+            }
         }
     }
 }

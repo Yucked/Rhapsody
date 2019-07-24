@@ -56,18 +56,17 @@ namespace Frostbyte.Entities.Results
         public double Duration { get; set; }
 
         public TrackInfo ToTrackInfo(string author, string url, long artId)
-        {
-            return new TrackInfo($"{TrackId}",
+            => new TrackInfo($"{TrackId}",
                 Title,
                 url,
-                (long) TimeSpan.FromSeconds(Duration).TotalMilliseconds,
+                (long) TimeSpan.FromSeconds(Duration)
+                    .TotalMilliseconds,
                 artId == 0
                     ? default
                     : $"https://f4.bcbits.com/img/a{artId}_0.jpg",
                 Streaming == 1,
                 "BandCamp",
                 new AuthorInfo(author, default, default));
-        }
     }
 
     public struct BandCampFile

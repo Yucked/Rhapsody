@@ -1,16 +1,136 @@
+using System;
+using System.Collections.Concurrent;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Frostbyte.Audio
 {
-    public sealed class AudioStream
+    public sealed class AudioStream : Stream
     {
-        private uint _timestamp;
-        private ushort _sequence;
-        private readonly Stream _sourceStream;
-
-        public AudioStream(Stream sourceStream)
+        public double Volume
         {
-            _sourceStream = sourceStream;
+            get => _volume;
+            set => _volume = value;
         }
+
+        public ConcurrentQueue<AudioPacket> Packets { get; }
+
+        private uint _ssrc;
+        private ReadOnlyMemory<byte> _key;
+        private int _pcmBufferLength;
+        private double _volume = 1.0;
+
+        private readonly int _pcmBufferDuration;
+        private readonly byte[] _pcmBuffer;
+        private readonly Memory<byte> _pcmMemory;
+
+        public AudioStream(int bufferDuration)
+        {
+            _pcmBufferDuration = bufferDuration;
+            _pcmBuffer = new byte[AudioHelper.GetSampleSize(bufferDuration)];
+            _pcmMemory = _pcmBuffer.AsMemory();
+            _pcmBufferLength = 0;
+            Packets = new ConcurrentQueue<AudioPacket>();
+        }
+
+        /// <inheritdoc />
+        public override void Flush()
+        {
+            var pcm = _pcmMemory.Span;
+            AudioHelper.ZeroFill(pcm.Slice(_pcmBufferLength));
+            var pcm16 = MemoryMarshal.Cast<byte, short>(pcm);
+
+            if (Volume != 1)
+            {
+                for (var i = 0; i < pcm16.Length; i++)
+                    pcm16[i] = (short) (pcm16[i] * Volume);
+            }
+
+            var packet = new byte[pcm.Length];
+            var packetMemory = packet.AsMemory();
+            AudioHelper.PrepareAudioPacket(pcm, ref packetMemory, _ssrc, _key);
+            Packets.Enqueue(new AudioPacket(packetMemory, _pcmBufferDuration));
+        }
+
+        /// <inheritdoc />
+        public override int Read(byte[] buffer, int offset, int count)
+            => 0;
+
+        /// <inheritdoc />
+        public override long Seek(long offset, SeekOrigin origin)
+            => 0;
+
+        /// <inheritdoc />
+        public override void SetLength(long value)
+        {
+        }
+
+        /// <inheritdoc />
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            lock (_pcmBuffer)
+            {
+                var remaining = count;
+                var buffSpan = buffer.AsSpan()
+                    .Slice(offset, count);
+                var pcmSpan = _pcmMemory.Span;
+
+                while (remaining > 0)
+                {
+                    var len = Math.Min(pcmSpan.Length - _pcmBufferLength, remaining);
+
+                    var tgt = pcmSpan.Slice(_pcmBufferLength);
+                    var src = buffSpan.Slice(0, len);
+
+                    src.CopyTo(tgt);
+                    _pcmBufferLength += len;
+                    remaining -= len;
+                    buffSpan = buffSpan.Slice(len);
+
+                    if (_pcmBufferLength != _pcmBuffer.Length) continue;
+                    var pcm16 = MemoryMarshal.Cast<byte, short>(pcmSpan);
+
+                    if (Volume != 1.0)
+                    {
+                        for (var i = 0; i < pcm16.Length; i++)
+                            pcm16[i] = (short) (pcm16[i] * Volume);
+                    }
+
+                    _pcmBufferLength = 0;
+                    var packet = new byte[pcmSpan.Length];
+                    var packetMemory = packet.AsMemory();
+                    AudioHelper.PrepareAudioPacket(pcmSpan, ref packetMemory, _ssrc, _key);
+                    Packets.Enqueue(new AudioPacket(packetMemory, _pcmBufferDuration));
+                }
+            }
+        }
+
+        public void SetSsrc(uint ssrc)
+        {
+            _ssrc = ssrc;
+        }
+
+        public void SetKey(int[] key)
+        {
+            _key = key.ConvertToByte();
+        }
+
+        /// <inheritdoc />
+        public override bool CanRead
+            => false;
+
+        /// <inheritdoc />
+        public override bool CanSeek
+            => false;
+
+        /// <inheritdoc />
+        public override bool CanWrite
+            => true;
+
+        /// <inheritdoc />
+        public override long Length { get; }
+
+        /// <inheritdoc />
+        public override long Position { get; set; }
     }
 }

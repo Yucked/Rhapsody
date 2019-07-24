@@ -20,8 +20,6 @@ namespace Frostbyte.Sources
         public abstract ValueTask<Stream> GetStreamAsync(string trackId);
 
         public ValueTask<Stream> GetStreamAsync(TrackInfo track)
-        {
-            return GetStreamAsync(track.Id);
-        }
+            => GetStreamAsync(track.Id);
     }
 }

@@ -17,11 +17,9 @@ namespace Frostbyte
         }
 
         public static T Of<T>(Type type)
-        {
-            return Instances.TryGetValue(type.Name, out var obj)
+            => Instances.TryGetValue(type.Name, out var obj)
                 ? (T) obj
                 : default;
-        }
 
         public static void Add<T>()
         {

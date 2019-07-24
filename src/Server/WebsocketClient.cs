@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Payloads;
 using Frostbyte.Factories;
-using Frostbyte.Misc;
 
 namespace Frostbyte.Server
 {

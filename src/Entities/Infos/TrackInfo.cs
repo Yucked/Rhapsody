@@ -11,7 +11,8 @@ namespace Frostbyte.Entities.Infos
         public string Provider { get; }
         public AuthorInfo Author { get; }
 
-        public TrackInfo(string id, string title, string url, long duration, string artworkUrl, bool canStream, string provider, AuthorInfo author)
+        public TrackInfo(string id, string title, string url, long duration, string artworkUrl, bool canStream,
+            string provider, AuthorInfo author)
         {
             Id = id;
             Title = title;

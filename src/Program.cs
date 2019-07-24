@@ -1,6 +1,8 @@
 ﻿using System.Drawing;
 using System.Threading.Tasks;
 using Colorful;
+using Frostbyte.Audio;
+using Frostbyte.Audio.Codecs;
 using Frostbyte.Factories;
 using Frostbyte.Server;
 
@@ -21,6 +23,7 @@ namespace Frostbyte
         {
             Singleton.Add<ConfigFactory>();
             Singleton.Add<HttpFactory>();
+            Singleton.Add<FFmpegPipe>();
 
             LogFactory.PrintHeader();
             await LogFactory.PrintRepositoryInformationAsync()
@@ -37,6 +40,8 @@ namespace Frostbyte
             Singleton.Add(config);
             Singleton.Add<SourceFactory>();
             Singleton.Add<WebsocketServer>();
+
+            OpusCodec.OpusVoiceType = config.Audio.OpusVoiceType;
 
             var source = Singleton.Of<SourceFactory>();
             source.CreateSources();

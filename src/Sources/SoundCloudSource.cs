@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
-using Frostbyte.Misc;
 
 namespace Frostbyte.Sources
 {

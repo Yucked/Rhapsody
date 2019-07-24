@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using Frostbyte.Audio.Codecs;
 
@@ -6,6 +7,9 @@ namespace Frostbyte.Audio
 {
     public struct AudioHelper
     {
+        public static FFmpegPipe Pipe
+            => Singleton.Of<FFmpegPipe>();
+
         public const int SAMPLE_RATE
             = 48000;
 
@@ -17,29 +21,25 @@ namespace Frostbyte.Audio
 
         public const int MAX_SILENCE_FRAMES
             = 10;
-        
+
         public static ReadOnlyMemory<byte> SilenceFrames
             = new byte[] {0xF8, 0xFF, 0xFE};
 
         public static int GetSampleSize(int duration)
-        {
-            return duration * STEREO_CHANNEL * (SAMPLE_RATE / 1000) * 2;
-        }
+            => duration * STEREO_CHANNEL * (SAMPLE_RATE / 1000) * 2;
 
         public static int GetSampleDuration(int size)
-        {
-            return size / (SAMPLE_RATE / 1000) / (STEREO_CHANNEL / 2);
-        }
+            => size / (SAMPLE_RATE / 1000) / (STEREO_CHANNEL / 2);
 
         public static int GetFrameSize(int duration)
-        {
-            return duration * (SAMPLE_RATE / 1000);
-        }
+            => duration * (SAMPLE_RATE / 1000);
 
         public static int GetRtpPacketSize(int value)
-        {
-            return RtpCodec.HEADER_SIZE + value;
-        }
+            => RtpCodec.HEADER_SIZE + value;
+
+        public static ushort Sequence;
+
+        public static uint Timestamp;
 
         public static void ZeroFill(Span<byte> buffer)
         {
@@ -55,6 +55,28 @@ namespace Frostbyte.Audio
 
             for (; i < buffer.Length; i++)
                 buffer[i] = 0;
+        }
+
+        public static void PrepareAudioPacket(ReadOnlySpan<byte> pcm, ref Memory<byte> target, uint ssrc,
+            ReadOnlyMemory<byte> key)
+        {
+            var packetArray = ArrayPool<byte>.Shared.Rent(GetRtpPacketSize(MAX_FRAME_SIZE * STEREO_CHANNEL * 2));
+            var packetSpan = packetArray.AsSpan();
+            RtpCodec.TryEncodeHeader(Sequence, Timestamp, ssrc, packetSpan);
+            var opusPacket = packetSpan.Slice(RtpCodec.HEADER_SIZE, pcm.Length);
+            OpusCodec.TryEncode(pcm, ref opusPacket);
+            Sequence++;
+            Timestamp += (uint) GetFrameSize(GetSampleDuration(pcm.Length));
+
+            Span<byte> nonce = stackalloc byte[SodiumCodec.NonceSize];
+            SodiumCodec.TryGenerateNonce(packetSpan.Slice(0, RtpCodec.HEADER_SIZE), nonce);
+            Span<byte> encrypted = stackalloc byte[opusPacket.Length - SodiumCodec.MacSize];
+            SodiumCodec.TryEncrypt(opusPacket, encrypted, nonce, key);
+            encrypted.CopyTo(packetSpan.Slice(RtpCodec.HEADER_SIZE));
+            packetSpan = packetSpan.Slice(0, GetRtpPacketSize(encrypted.Length));
+            target = target.Slice(0, packetSpan.Length);
+            packetSpan.CopyTo(target.Span);
+            ArrayPool<byte>.Shared.Return(packetArray);
         }
     }
 }

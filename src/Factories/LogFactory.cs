@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Colorful;
 using Frostbyte.Entities.Enums;
 using Frostbyte.Entities.Results;
-using Frostbyte.Misc;
 using Console = Colorful.Console;
 
 namespace Frostbyte.Factories
@@ -46,7 +45,8 @@ namespace Frostbyte.Factories
                 .GetBytesAsync()
                 .ConfigureAwait(false);
 
-            result.Commit = getBytes.Deserialize<IEnumerable<GitHubCommit>>().FirstOrDefault();
+            result.Commit = getBytes.Deserialize<IEnumerable<GitHubCommit>>()
+                .FirstOrDefault();
             Console.WriteLineFormatted(
                 $"    {{0}}: {result.Repo.OpenIssues} opened   |    {{1}}: {result.Repo.License.Name}    | {{2}}: {result.Commit?.Sha}",
                 Color.White,

@@ -3,7 +3,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Frostbyte.Misc;
 
 namespace Frostbyte.Factories
 {
@@ -71,7 +70,8 @@ namespace Frostbyte.Factories
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            using var get = await _client.GetAsync(url).ConfigureAwait(false);
+            using var get = await _client.GetAsync(url)
+                .ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogFactory.Error<HttpFactory>($"{url} returned {get.ReasonPhrase}.");
@@ -79,7 +79,8 @@ namespace Frostbyte.Factories
             }
 
             using var content = get.Content;
-            var array = await content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            var array = await content.ReadAsByteArrayAsync()
+                .ConfigureAwait(false);
             Url = string.Empty;
 
             return new ReadOnlyMemory<byte>(array);
@@ -91,7 +92,8 @@ namespace Frostbyte.Factories
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            using var get = await _client.GetAsync(url).ConfigureAwait(false);
+            using var get = await _client.GetAsync(url)
+                .ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogFactory.Error<HttpFactory>($"{url} returned {get.ReasonPhrase}.");
@@ -99,7 +101,8 @@ namespace Frostbyte.Factories
             }
 
             using var content = get.Content;
-            var stream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            var stream = await content.ReadAsStreamAsync()
+                .ConfigureAwait(false);
             Url = string.Empty;
 
             return stream;
@@ -111,7 +114,8 @@ namespace Frostbyte.Factories
             if (string.IsNullOrWhiteSpace(url))
                 return default;
 
-            using var get = await _client.GetAsync(url).ConfigureAwait(false);
+            using var get = await _client.GetAsync(url)
+                .ConfigureAwait(false);
             if (!get.IsSuccessStatusCode)
             {
                 LogFactory.Error<HttpFactory>($"{url} returned {get.ReasonPhrase}.");
@@ -119,7 +123,8 @@ namespace Frostbyte.Factories
             }
 
             using var content = get.Content;
-            var str = await content.ReadAsStringAsync().ConfigureAwait(false);
+            var str = await content.ReadAsStringAsync()
+                .ConfigureAwait(false);
             Url = string.Empty;
 
             return str;

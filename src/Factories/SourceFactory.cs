@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
-using Frostbyte.Misc;
 using Frostbyte.Sources;
 
 namespace Frostbyte.Factories
@@ -16,7 +15,8 @@ namespace Frostbyte.Factories
 
         public SourceFactory()
         {
-            _sourcesConfig = Singleton.Of<Configuration>().Audio.Sources;
+            _sourcesConfig = Singleton.Of<Configuration>()
+                .Audio.Sources;
             _sources = new ConcurrentDictionary<string, BaseSource>();
         }
 
@@ -33,7 +33,8 @@ namespace Frostbyte.Factories
 
             foreach (var match in matches)
             {
-                var source = Activator.CreateInstance(match).As<BaseSource>();
+                var source = Activator.CreateInstance(match)
+                    .As<BaseSource>();
                 _sources.TryAdd(match.Name.Sub(0, match.Name.Length - 6), source);
             }
         }

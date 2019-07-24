@@ -31,7 +31,8 @@ namespace Frostbyte.Sources
                 $"https://bandcamp.com/search?q={WebUtility.UrlEncode(query)}"
             };
 
-            var json = await ScrapeJsonAsync(query).ConfigureAwait(false);
+            var json = await ScrapeJsonAsync(query)
+                .ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(json))
             {
                 response.LoadType = LoadType.SearchError;
@@ -57,7 +58,8 @@ namespace Frostbyte.Sources
                 duration += track.Duration;
             }
 
-            var playlistInfo = new PlaylistInfo($"{bcResult.Current.Id}", bcResult.Current.Title, bcResult.Url, duration,
+            var playlistInfo = new PlaylistInfo($"{bcResult.Current.Id}", bcResult.Current.Title, bcResult.Url,
+                duration,
                 bcResult.ArtId == 0
                     ? default
                     : $"https://f4.bcbits.com/img/a{bcResult.ArtId}_0.jpg");
@@ -72,7 +74,8 @@ namespace Frostbyte.Sources
             if (!_trackUrlRegex.IsMatch(trackId))
                 return default;
 
-            var json = await ScrapeJsonAsync(trackId).ConfigureAwait(false);
+            var json = await ScrapeJsonAsync(trackId)
+                .ConfigureAwait(false);
             var bcResult = JsonSerializer.Deserialize<BandCampResult>(json);
 
             var track = bcResult.Trackinfo.FirstOrDefault();
@@ -96,7 +99,7 @@ namespace Frostbyte.Sources
                 return string.Empty;
 
             const string startStr = "var TralbumData = {",
-                endStr = "};";
+                         endStr = "};";
 
             if (rawHtml.IndexOf(startStr, StringComparison.Ordinal) == -1)
                 return string.Empty;

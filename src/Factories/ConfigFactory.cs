@@ -2,7 +2,6 @@ using System.IO;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Misc;
 
 namespace Frostbyte.Factories
 {

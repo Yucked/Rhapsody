@@ -1,14 +1,19 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Frostbyte.Audio;
 using Frostbyte.Entities;
 using Frostbyte.Entities.Enums;
 
-namespace Frostbyte.Misc
+namespace Frostbyte
 {
     public static class Extensions
     {
@@ -33,9 +38,7 @@ namespace Frostbyte.Misc
         }
 
         public static T Deserialize<T>(this byte[] bytes)
-        {
-            return Deserialize<T>(new ReadOnlyMemory<byte>(bytes));
-        }
+            => Deserialize<T>(new ReadOnlyMemory<byte>(bytes));
 
         public static (string Provider, string Query) BuildQuery(this NameValueCollection collection)
         {
@@ -57,7 +60,8 @@ namespace Frostbyte.Misc
 
         public static bool IsSourceEnabled(this SourcesConfig config, string source)
         {
-            var prop = config.GetType().GetProperty(source);
+            var prop = config.GetType()
+                .GetProperty(source);
             return (bool) prop.GetValue(config);
         }
 
@@ -102,28 +106,20 @@ namespace Frostbyte.Misc
         }
 
         public static string WithPath(this string str, string path)
-        {
-            return $"{str}/{path}";
-        }
+            => $"{str}/{path}";
 
         public static string WithParameter(this string str, string key, string value)
-        {
-            return str.Contains("?")
+            => str.Contains("?")
                 ? str + $"&{key}={value}"
                 : str + $"?{key}={value}";
-        }
 
         public static Uri ToUrl(this string str)
-        {
-            return new Uri(str);
-        }
+            => new Uri(str);
 
         public static T As<T>(this object obj)
-        {
-            return obj is T value
+            => obj is T value
                 ? value
                 : default;
-        }
 
         public static SearchResponse VerifyResponse(this SearchResponse response)
         {
@@ -149,15 +145,33 @@ namespace Frostbyte.Misc
         }
 
         public static string GetName<T>(this T value) where T : struct, Enum
-        {
-            return Enum.GetName(typeof(T), value);
-        }
+            => Enum.GetName(typeof(T), value);
 
         public static ReadOnlyMemory<byte> ConvertToByte(this int[] array)
         {
             var result = new byte[array.Length * sizeof(int)];
             Buffer.BlockCopy(array, 0, result, 0, result.Length);
             return result;
+        }
+
+        public static Task SendKeepAliveAsync(this UdpClient client, ref ulong keepAlive)
+        {
+            var timestamp = Stopwatch.GetTimestamp();
+            Volatile.Write(ref keepAlive, keepAlive + 1);
+            var packet = new byte[8];
+            BinaryPrimitives.WriteUInt64LittleEndian(packet, keepAlive);
+            return SendAsync(client, packet);
+        }
+
+        public static Task SendAsync(this UdpClient client, byte[] data)
+            => client.SendAsync(data, data.Length);
+
+        public static Task SendSsrcAsync(this UdpClient client, uint ssrc)
+        {
+            var packet = new byte[70];
+            MemoryMarshal.Write(packet, ref ssrc);
+            AudioHelper.ZeroFill(packet);
+            return SendAsync(client, packet);
         }
     }
 }

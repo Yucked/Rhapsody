@@ -20,13 +20,11 @@ namespace Frostbyte.Entities
         }
 
         public static SearchResponse WithError(string error)
-        {
-            return new SearchResponse
+            => new SearchResponse
             {
                 LoadType = LoadType.SearchError,
                 Status = Status.Error(error)
             };
-        }
     }
 
     public struct Status
@@ -35,13 +33,11 @@ namespace Frostbyte.Entities
         public string Reason { get; set; }
 
         public static Status Error(string reason)
-        {
-            return new Status
+            => new Status
             {
                 IsSuccess = false,
                 Reason = reason
             };
-        }
 
         public static Status Ok
             => new Status

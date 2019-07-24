@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
 using Frostbyte.Factories;
-using Frostbyte.Misc;
 
 namespace Frostbyte.Server
 {
@@ -66,14 +65,16 @@ namespace Frostbyte.Server
                 {
                     if (context.Request.IsWebSocketRequest)
                     {
-                        LogFactory.Debug<WebsocketServer>($"Processing incoming websocket request from {context.Request.RemoteEndPoint}.");
+                        LogFactory.Debug<WebsocketServer>(
+                            $"Processing incoming websocket request from {context.Request.RemoteEndPoint}.");
 
                         await ProcessWebSocketAsync(context)
                             .ConfigureAwait(false);
                     }
                     else
                     {
-                        LogFactory.Debug<WebsocketServer>($"Processing incoming rest request from {context.Request.RemoteEndPoint}.");
+                        LogFactory.Debug<WebsocketServer>(
+                            $"Processing incoming rest request from {context.Request.RemoteEndPoint}.");
 
                         await ProcessRestRequest(context)
                             .ConfigureAwait(false);
@@ -120,7 +121,8 @@ namespace Frostbyte.Server
                 .ConfigureAwait(false);
             client = new WebsocketClient(wsContext, ulong.Parse(userId), _config.Server.BufferSize);
             _clients.TryAdd(endpoint, client);
-            LogFactory.Information<WebsocketServer>($"Websocket connection established from {context.Request.RemoteEndPoint}.");
+            LogFactory.Information<WebsocketServer>(
+                $"Websocket connection established from {context.Request.RemoteEndPoint}.");
 
             _ = client.ReceiveAsync()
                 .ConfigureAwait(false);
@@ -170,7 +172,8 @@ namespace Frostbyte.Server
                                 continue;
 
                             client.Voices.TryRemove(guildId, out _);
-                            LogFactory.Debug<WebsocketServer>($"Removed {guildId} voice connection since client is disposed.");
+                            LogFactory.Debug<WebsocketServer>(
+                                $"Removed {guildId} voice connection since client is disposed.");
                         }
 
                         continue;

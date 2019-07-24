@@ -58,7 +58,8 @@ namespace Frostbyte.Entities.Results
     {
         [JsonIgnore]
         public TrackInfo ToTrackInfo
-            => new TrackInfo($"{Id}", Title, PermalinkUrl, Duration, ArtworkUrl, IsStreamable, "SoundCloud", User.ToAuthorInfo);
+            => new TrackInfo($"{Id}", Title, PermalinkUrl, Duration, ArtworkUrl, IsStreamable, "SoundCloud",
+                User.ToAuthorInfo);
     }
 
     public sealed class SoundCloudDirectUrl
