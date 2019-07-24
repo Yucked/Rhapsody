@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Infos;
 using Frostbyte.Sources;
 
 namespace Frostbyte.Factories
@@ -11,6 +12,7 @@ namespace Frostbyte.Factories
     public sealed class SourceFactory
     {
         private readonly ConcurrentDictionary<string, BaseSource> _sources;
+        private readonly ConcurrentDictionary<string, TrackInfo> _tracks;
         private readonly SourcesConfig _sourcesConfig;
 
         public SourceFactory()
@@ -18,6 +20,7 @@ namespace Frostbyte.Factories
             _sourcesConfig = Singleton.Of<Configuration>()
                 .Audio.Sources;
             _sources = new ConcurrentDictionary<string, BaseSource>();
+            _tracks = new ConcurrentDictionary<string, TrackInfo>();
         }
 
         public void CreateSources()
@@ -54,7 +57,20 @@ namespace Frostbyte.Factories
             var search = await source.SearchAsync(query)
                 .ConfigureAwait(false);
 
-            return search.VerifyResponse();
+            var response = search.VerifyResponse();
+            if (response.Tracks.Count == 0)
+                return response;
+
+            foreach (var track in response.Tracks.Where(track => !_tracks.ContainsKey(track.Id)))
+                _tracks.TryAdd(track.Id, track);
+
+            return response;
+        }
+
+        public TrackInfo GetTrack(string id)
+        {
+            _tracks.TryGetValue(id, out var track);
+            return track;
         }
     }
 }

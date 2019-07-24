@@ -318,6 +318,9 @@ namespace Frostbyte.Server
             {
                 var hasPacket = AudioStream.Packets.TryDequeue(out var packet);
 
+                if (hasPacket && Player.State == PlayerState.Null)
+                    Player.State = PlayerState.Playing;
+
                 var durationModifier = hasPacket ? packet.MsDuration / 5 : 4;
                 var cts = Math.Max(Stopwatch.GetTimestamp() - syncTicks, 0);
                 if (cts < syncRes * durationModifier)
@@ -329,7 +332,7 @@ namespace Frostbyte.Server
 
                 syncTicks += syncRes * durationModifier;
 
-                if (!hasPacket)
+                if (!hasPacket || Player.State == PlayerState.Paused)
                     continue;
 
                 await SetSpeakingAsync(true)
@@ -341,8 +344,11 @@ namespace Frostbyte.Server
                 if (!packet.IsSilence && AudioStream.Packets.Count == 0)
                     QueueNullPackets(true);
                 else if (AudioStream.Packets.Count == 0)
+                {
                     await SetSpeakingAsync(false)
                         .ConfigureAwait(false);
+                    Player.State = PlayerState.Stopped;
+                }
             }
         }
     }

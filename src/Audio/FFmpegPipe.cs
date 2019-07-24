@@ -1,7 +1,10 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Frostbyte.Factories;
 
 namespace Frostbyte.Audio
 {
@@ -17,14 +20,25 @@ namespace Frostbyte.Audio
                 PipeOptions.Asynchronous,
                 10000, 10000);
 
-            Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = "ffmpeg.exe",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardInput = true,
-                Arguments = @"-hide_banner -loglevel panic -ac 2 -f sl6le -ar 48000 -i \\.\pipe\ffpipe"
-            });
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        ? "ffmpeg.exe"
+                        : RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                            ? ""
+                            : throw new Exception("OS not supported."),
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    Arguments = @"-hide_banner -loglevel panic -ac 2 -f sl6le -ar 48000 -i \\.\pipe\ffpipe"
+                });
+            }
+            catch (Exception ex)
+            {
+                LogFactory.Error<FFmpegPipe>(exception: ex);
+            }
         }
 
         public async Task ConvertAndWriteAsync(Stream input, Stream output)

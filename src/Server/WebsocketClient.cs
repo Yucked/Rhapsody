@@ -57,6 +57,12 @@ namespace Frostbyte.Server
                 .ConfigureAwait(false);
         }
 
+        public async Task SendAsync<T>(T value)
+        {
+            await _socket.SendAsync(value)
+                .ConfigureAwait(false);
+        }
+
         public async Task ReceiveAsync()
         {
             while (!_source.IsCancellationRequested && _socket.State == WebSocketState.Open)

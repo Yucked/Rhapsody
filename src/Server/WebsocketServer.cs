@@ -1,9 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
+using Frostbyte.Entities.Enums;
+using Frostbyte.Entities.EventArgs;
+using Frostbyte.Entities.Infos;
 using Frostbyte.Factories;
 
 namespace Frostbyte.Server
@@ -47,6 +53,9 @@ namespace Frostbyte.Server
             LogFactory.Information<WebsocketServer>("Server now listening for connections.");
 
             _ = CleanupClientsAsync()
+                .ConfigureAwait(false);
+
+            _ = SendMetricsAsync()
                 .ConfigureAwait(false);
 
             while (!_cancellation.IsCancellationRequested)
@@ -154,12 +163,12 @@ namespace Frostbyte.Server
             context.Response.StatusCode = 200;
             context.Response.Close();
 
-            LogFactory.Information<WebsocketServer>($"Replied to {endpoint} with {context.Response.StatusCode}.");
+            LogFactory.Debug<WebsocketServer>($"Replied to {endpoint} with {context.Response.StatusCode}.");
         }
 
         private async Task CleanupClientsAsync()
         {
-            LogFactory.Debug<WebsocketServer>("Started up websocket client cleanup task.");
+            LogFactory.Information<WebsocketServer>("Started up websocket client cleanup task.");
             while (!_cancellation.IsCancellationRequested)
             {
                 foreach (var (endPoint, client) in _clients)
@@ -180,10 +189,42 @@ namespace Frostbyte.Server
                     }
 
                     _clients.TryRemove(endPoint, out _);
-                    LogFactory.Debug<WebsocketServer>($"Removed {endPoint} from clients since client is disposed.");
+                    LogFactory.Warning<WebsocketServer>($"Removed {endPoint} from clients since client is disposed.");
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(15), _cancellation.Token)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        private async Task SendMetricsAsync()
+        {
+            LogFactory.Information<WebsocketServer>("Started up metrics sender task.");
+            var process = Process.GetCurrentProcess();
+            while (!_cancellation.IsCancellationRequested)
+            {
+                if (!_clients.IsEmpty)
+                {
+                    var metricsInfo = new MetricsInfo
+                    {
+                        ConnectedClients = _clients.Count,
+                        ConnectedPlayers = _clients.Values.Sum(x => x.Voices.Count),
+                        PlayingPlayers =
+                            _clients.Values.Sum(x => x.Voices.Values.Count(p => p.Player.State == PlayerState.Playing)),
+                        Uptime = (long) (DateTime.Now - process.StartTime).TotalMilliseconds,
+                        Memory = new MemoryInfo(process.VirtualMemorySize64, process.WorkingSet64),
+                        Cpu = new CpuInfo(Environment.ProcessorCount, 0, 0)
+                    };
+
+                    var metricsEvent = new MetricsEvent(metricsInfo);
+                    var sendTasks = _clients.Values.Select(x => x.SendAsync(metricsEvent));
+                    await Task.WhenAll(sendTasks)
+                        .ConfigureAwait(false);
+
+                    LogFactory.Debug<WebsocketServer>(JsonSerializer.Serialize(metricsEvent));
+                }
+
+                await Task.Delay(TimeSpan.FromMinutes(3))
                     .ConfigureAwait(false);
             }
         }
