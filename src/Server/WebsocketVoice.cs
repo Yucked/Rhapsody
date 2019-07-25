@@ -340,9 +340,13 @@ namespace Frostbyte.Server
 
                 await _udp.SendAsync(packet.Bytes)
                     .ConfigureAwait(false);
+                LogFactory.Debug<WebsocketVoice>(
+                    $"Guild {_guildId} sent voice payload of {packet.Bytes.Length} bytes to udp.");
 
                 if (!packet.IsSilence && AudioStream.Packets.Count == 0)
+                {
                     QueueNullPackets(true);
+                }
                 else if (AudioStream.Packets.Count == 0)
                 {
                     await SetSpeakingAsync(false)

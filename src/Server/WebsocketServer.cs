@@ -172,7 +172,6 @@ namespace Frostbyte.Server
             while (!_cancellation.IsCancellationRequested)
             {
                 foreach (var (endPoint, client) in _clients)
-                {
                     if (client.IsConnected)
                     {
                         foreach (var (guildId, voice) in client.Voices)
@@ -184,13 +183,13 @@ namespace Frostbyte.Server
                             LogFactory.Debug<WebsocketServer>(
                                 $"Removed {guildId} voice connection since client is disposed.");
                         }
-
-                        continue;
                     }
-
-                    _clients.TryRemove(endPoint, out _);
-                    LogFactory.Warning<WebsocketServer>($"Removed {endPoint} from clients since client is disposed.");
-                }
+                    else
+                    {
+                        _clients.TryRemove(endPoint, out _);
+                        LogFactory.Warning<WebsocketServer>(
+                            $"Removed {endPoint} from clients since client is disposed.");
+                    }
 
                 await Task.Delay(TimeSpan.FromSeconds(15), _cancellation.Token)
                     .ConfigureAwait(false);

@@ -2,7 +2,7 @@ namespace Frostbyte.Entities.Enums
 {
     public enum OperationType
     {
-        Play,
+        Play = 1,
         VoiceServer = 8
     }
 }

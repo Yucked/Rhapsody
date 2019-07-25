@@ -12,8 +12,8 @@ namespace Frostbyte.Factories
     public sealed class SourceFactory
     {
         private readonly ConcurrentDictionary<string, BaseSource> _sources;
-        private readonly ConcurrentDictionary<string, TrackInfo> _tracks;
         private readonly SourcesConfig _sourcesConfig;
+        private readonly ConcurrentDictionary<string, TrackInfo> _tracks;
 
         public SourceFactory()
         {
