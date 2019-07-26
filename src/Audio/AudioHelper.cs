@@ -57,26 +57,36 @@ namespace Frostbyte.Audio
                 buffer[i] = 0;
         }
 
-        public static void PrepareAudioPacket(ReadOnlySpan<byte> pcm, ref Memory<byte> target, uint ssrc,
+        public static bool TryPrepareAudioPacket(ReadOnlySpan<byte> pcm, ref Memory<byte> target, uint ssrc,
             ReadOnlyMemory<byte> key)
         {
             var packetArray = ArrayPool<byte>.Shared.Rent(GetRtpPacketSize(MAX_FRAME_SIZE * STEREO_CHANNEL * 2));
             var packetSpan = packetArray.AsSpan();
-            RtpCodec.TryEncodeHeader(Sequence, Timestamp, ssrc, packetSpan);
+            if (!RtpCodec.TryEncodeHeader(Sequence, Timestamp, ssrc, packetSpan))
+                return false;
+
             var opusPacket = packetSpan.Slice(RtpCodec.HEADER_SIZE, pcm.Length);
-            OpusCodec.TryEncode(pcm, ref opusPacket);
+            if (!OpusCodec.TryEncode(pcm, ref opusPacket))
+                return false;
+
             Sequence++;
             Timestamp += (uint) GetFrameSize(GetSampleDuration(pcm.Length));
 
             Span<byte> nonce = stackalloc byte[SodiumCodec.NonceSize];
-            SodiumCodec.TryGenerateNonce(packetSpan.Slice(0, RtpCodec.HEADER_SIZE), nonce);
+            if (SodiumCodec.TryGenerateNonce(packetSpan.Slice(0, RtpCodec.HEADER_SIZE), nonce))
+                return false;
+
             Span<byte> encrypted = stackalloc byte[opusPacket.Length - SodiumCodec.MacSize];
-            SodiumCodec.TryEncrypt(opusPacket, encrypted, nonce, key);
+            if (!SodiumCodec.TryEncrypt(opusPacket, encrypted, nonce, key))
+                return false;
+
             encrypted.CopyTo(packetSpan.Slice(RtpCodec.HEADER_SIZE));
             packetSpan = packetSpan.Slice(0, GetRtpPacketSize(encrypted.Length));
             target = target.Slice(0, packetSpan.Length);
             packetSpan.CopyTo(target.Span);
             ArrayPool<byte>.Shared.Return(packetArray);
+
+            return true;
         }
     }
 }

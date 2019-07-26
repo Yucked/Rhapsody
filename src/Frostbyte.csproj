@@ -12,19 +12,31 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Colorful.Console" Version="1.2.9" />
-        <PackageReference Include="System.Text.Json" Version="4.6.0-preview6.19303.8" />
+        <PackageReference Include="Colorful.Console" Version="1.2.9"/>
+        <PackageReference Include="System.Text.Json" Version="4.6.0-preview6.19303.8"/>
     </ItemGroup>
 
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="copy /Y &quot;$(ProjectDir)\Binaries\FFmpeg\ffmpeg.exe&quot; &quot;$(OutDir)&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)\Binaries\Opus\x86\opus.dll&quot; &quot;$(OutDir)&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)\Binaries\Opus\x64\opus.dll&quot; &quot;$(OutDir)&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)\Binaries\Sodium\x86\sodium.dll&quot; &quot;$(OutDir)&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)\Binaries\Sodium\x64\sodium.dll&quot; &quot;$(OutDir)&quot;" />
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+        <Exec Command="dotnet clean"/>
+        <RemoveDir Directories="$(OutDir)"/>
+        <RemoveDir Directories="$(ProjectDir)$(BaseIntermediateOutputPath)"/>
+        <Exec Command="dotnet restore"/>
     </Target>
 
-    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-        <Exec Command="dotnet clean" />
-        <RemoveDir Directories="$(TargetDir)" />
-        <RemoveDir Directories="$(ProjectDir)$(BaseIntermediateOutputPath)" />
-        <Exec Command="dotnet restore" />
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Copy SourceFiles="$(ProjectDir)\Binaries\FFmpeg\ffmpeg.exe" DestinationFolder="$(OutDir)"/>
+
+        <Copy Condition="$(PlatformName) == x64"
+              SourceFiles="$(ProjectDir)\Binaries\Opus\x64\opus.dll;$(ProjectDir)\Binaries\Sodium\x64\sodium.dll"
+              DestinationFolder="$(OutDir)"/>
+
+        <Copy Condition="$(PlatformName) == x86"
+              SourceFiles="$(ProjectDir)\Binaries\Opus\x86\opus.dll;$(ProjectDir)\Binaries\Sodium\x86\sodium.dll"
+              DestinationFolder="$(OutDir)"/>
+
+        <Copy Condition="$(PlatformName) == AnyCPU"
+              SourceFiles="$(ProjectDir)\Binaries\Opus\x86\opus.dll;$(ProjectDir)\Binaries\Sodium\x86\sodium.dll"
+              DestinationFolder="$(OutDir)"/>
     </Target>
 
 </Project>

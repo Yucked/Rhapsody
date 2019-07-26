@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -65,6 +66,17 @@ namespace Frostbyte.Factories
                 _tracks.TryAdd(track.Id, track);
 
             return response;
+        }
+
+        public async Task<Stream> GetStreamAsync(string provider, string trackId)
+        {
+            var name = provider.GetSourceName();
+            if (!_sources.TryGetValue(name, out var source))
+                return default;
+
+            var stream = await source.GetStreamAsync(trackId)
+                .ConfigureAwait(false);
+            return stream;
         }
 
         public TrackInfo GetTrack(string id)

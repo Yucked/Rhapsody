@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Frostbyte.Entities;
@@ -220,7 +220,8 @@ namespace Frostbyte.Server
                     await Task.WhenAll(sendTasks)
                         .ConfigureAwait(false);
 
-                    LogFactory.Debug<WebsocketServer>(JsonSerializer.Serialize(metricsEvent));
+                    LogFactory.Debug<WebsocketServer>(Encoding.UTF8.GetString(metricsEvent.Serialize()
+                        .Span));
                 }
 
                 await Task.Delay(TimeSpan.FromMinutes(3))

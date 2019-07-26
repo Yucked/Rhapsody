@@ -22,7 +22,8 @@ namespace Frostbyte.Entities.Discord
                 SelectPayload _ => VoiceOpType.SelectProtocol,
                 ReadyData _     => VoiceOpType.Ready,
                 HelloData _     => VoiceOpType.Hello,
-                long _          => VoiceOpType.Heartbeat
+                long _          => VoiceOpType.Heartbeat,
+                _               => default
             };
         }
     }

@@ -19,6 +19,7 @@ namespace Frostbyte.Server
         private readonly WebSocketContext _context;
         private readonly WebSocket _socket;
         private readonly CancellationTokenSource _source;
+        private readonly SourceFactory _sourceFactory;
 
         private readonly ulong _userId;
         private bool _isConnected;
@@ -32,6 +33,7 @@ namespace Frostbyte.Server
             _socket = webSocketContext.WebSocket;
             _source = new CancellationTokenSource();
             Voices = new ConcurrentDictionary<ulong, WebsocketVoice>();
+            _sourceFactory = Singleton.Of<SourceFactory>();
         }
 
         public async ValueTask DisposeAsync()
@@ -118,10 +120,47 @@ namespace Frostbyte.Server
 
                 case OperationType.Play:
                     var playPayload = bytes.Deserialize<PlayPayload>();
-                    await voice.Player.PlayAsync(playPayload, voice.AudioStream)
+                    await HandlePlayAsync(playPayload)
                         .ConfigureAwait(false);
                     break;
             }
+        }
+
+        private async Task HandlePlayAsync(PlayPayload playPayload)
+        {
+            var track = _sourceFactory.GetTrack(playPayload.TrackId);
+            if (playPayload.StartTime < 0)
+            {
+                LogFactory.Error<WebsocketClient>($"Guild {playPayload.GuildId}: Out of range startime.");
+                return;
+            }
+
+            if (playPayload.EndTime > track.Duration)
+            {
+                LogFactory.Error<WebsocketClient>(
+                    $"Guild {playPayload.GuildId}: Provided endtime is greater than track's duration.");
+                return;
+            }
+
+            var voice = GetConnection(playPayload.GuildId);
+            if (!voice.IsConnected)
+            {
+                LogFactory.Error<WebsocketClient>($"Guild {playPayload.GuildId}: Voice connection isn't ready.");
+                return;
+            }
+
+            var stream = await _sourceFactory.GetStreamAsync(track.Provider, track.Id)
+                .ConfigureAwait(false);
+
+            if (stream.Length is 0)
+            {
+                LogFactory.Error<WebsocketClient>(
+                    $"Guild {playPayload.GuildId}: {playPayload.TrackId} returned an invalid stream.");
+                return;
+            }
+
+            await voice.Player.PlayAsync(stream, voice.AudioStream)
+                .ConfigureAwait(false);
         }
 
         private WebsocketVoice GetConnection(ulong guildId)

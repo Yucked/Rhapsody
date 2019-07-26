@@ -44,6 +44,7 @@ namespace Frostbyte.Server
             Player = new AudioPlayer();
 
             _audioSenderTask = SendAudioAsync();
+            Volatile.Write(ref _isConnected, true);
         }
 
         public async ValueTask DisposeAsync()
@@ -303,7 +304,12 @@ namespace Frostbyte.Server
             {
                 var opus = new byte[nullpcm.Length];
                 var opusMem = opus.AsMemory();
-                AudioHelper.PrepareAudioPacket(nullpcm, ref opusMem, _ssrc, _key);
+                if (!AudioHelper.TryPrepareAudioPacket(nullpcm, ref opusMem, _ssrc, _key))
+                {
+                    LogFactory.Error<WebsocketVoice>("Failed to encrypt silence voice packets.");
+                    return;
+                }
+
                 AudioStream.Packets.Enqueue(new AudioPacket(opusMem, 20, isSilence));
             }
         }

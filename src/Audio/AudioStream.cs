@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.InteropServices;
+using Frostbyte.Factories;
 
 namespace Frostbyte.Audio
 {
@@ -60,7 +61,12 @@ namespace Frostbyte.Audio
 
             var packet = new byte[pcm.Length];
             var packetMemory = packet.AsMemory();
-            AudioHelper.PrepareAudioPacket(pcm, ref packetMemory, _ssrc, _key);
+            if (!AudioHelper.TryPrepareAudioPacket(pcm, ref packetMemory, _ssrc, _key))
+            {
+                LogFactory.Error<AudioStream>("Failed to encrypt audio packet when flushing stream.");
+                return;
+            }
+
             Packets.Enqueue(new AudioPacket(packetMemory, _pcmBufferDuration));
         }
 
@@ -109,7 +115,12 @@ namespace Frostbyte.Audio
                     _pcmBufferLength = 0;
                     var packet = new byte[pcmSpan.Length];
                     var packetMemory = packet.AsMemory();
-                    AudioHelper.PrepareAudioPacket(pcmSpan, ref packetMemory, _ssrc, _key);
+                    if (!AudioHelper.TryPrepareAudioPacket(pcmSpan, ref packetMemory, _ssrc, _key))
+                    {
+                        LogFactory.Error<AudioStream>("Failed to encrypt audio packet when writing to stream.");
+                        return;
+                    }
+
                     Packets.Enqueue(new AudioPacket(packetMemory, _pcmBufferDuration));
                 }
             }

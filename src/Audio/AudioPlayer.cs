@@ -1,6 +1,6 @@
+using System.IO;
 using System.Threading.Tasks;
 using Frostbyte.Entities.Enums;
-using Frostbyte.Entities.Payloads;
 
 namespace Frostbyte.Audio
 {
@@ -8,9 +8,9 @@ namespace Frostbyte.Audio
     {
         public PlayerState State { get; set; }
 
-        public async Task PlayAsync(PlayPayload payload, AudioStream audioStream)
+        public async Task PlayAsync(Stream trackStream, AudioStream audioStream)
         {
-            await AudioHelper.Pipe.ConvertAndWriteAsync(default, audioStream)
+            await AudioHelper.Pipe.ConvertAndWriteAsync(trackStream, audioStream)
                 .ConfigureAwait(false);
 
             State = PlayerState.Playing;
