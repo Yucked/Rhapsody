@@ -67,7 +67,7 @@ namespace Frostbyte.Server
                 if (authorization != _config.Server.Authorization)
                 {
                     CloseResponse(context, 401, $"Failed to authorize request from {context.Request.RemoteEndPoint}.");
-                    return;
+                    continue;
                 }
 
                 try
