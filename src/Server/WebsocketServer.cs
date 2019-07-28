@@ -26,15 +26,9 @@ namespace Frostbyte.Server
         {
             _config = Singleton.Of<Configuration>();
             _sourceFactory = Singleton.Of<SourceFactory>();
-
-            var prefix = $"http://{_config.Server.Hostname}:{_config.Server.Port}/";
             _listener = new HttpListener();
-            _listener.Prefixes.Add(prefix);
-            _listener.Start();
-
             _cancellation = new CancellationTokenSource();
             _clients = new ConcurrentDictionary<IPEndPoint, WebsocketClient>();
-            LogFactory.Information<WebsocketServer>($"Websocket server started on: {prefix}");
         }
 
         public async ValueTask DisposeAsync()
@@ -50,7 +44,20 @@ namespace Frostbyte.Server
 
         public async Task InitializeAsync()
         {
-            LogFactory.Information<WebsocketServer>("Server now listening for connections.");
+            try
+            {
+                var prefix = $"http://{_config.Server.Hostname}:{_config.Server.Port}/";
+                _listener.Prefixes.Add(prefix);
+                _listener.Start();
+                LogFactory.Information<WebsocketServer>($"Websocket server started on: {prefix}");
+            }
+            catch (HttpListenerException exception)
+            {
+                LogFactory.Error<WebsocketServer>(
+                    "Something went wrong when starting the server. Exiting in 10 seconds.", exception);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                Environment.Exit(0);
+            }
 
             _ = CleanupClientsAsync()
                 .ConfigureAwait(false);
@@ -58,6 +65,7 @@ namespace Frostbyte.Server
             _ = SendMetricsAsync()
                 .ConfigureAwait(false);
 
+            LogFactory.Information<WebsocketServer>("Server now listening for connections.");
             while (!_cancellation.IsCancellationRequested)
             {
                 var context = await _listener.GetContextAsync()

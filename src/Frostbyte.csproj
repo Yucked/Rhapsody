@@ -9,6 +9,7 @@
         <PublishTrimmed>true</PublishTrimmed>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+        <RuntimeIdentifiers>win-x64;linux-x64;linux-arm</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>
