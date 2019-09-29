@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,11 +14,14 @@ namespace Concept.Configuration
 
         public string Authorization { get; set; }
 
-        public Configuration(string host, short port, string authorization)
+        public string LogLevel { get; set; }
+
+        public Configuration(string host, short port, string authorization, LogLevel minimumLog)
         {
             Host = host;
             Port = port;
             Authorization = authorization;
+            LogLevel = minimumLog.ToString();
         }
 
         public Configuration()

@@ -11,12 +11,14 @@ namespace Concept.Logger
         private readonly object _lockObj;
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
+        private readonly LogLevel _minimumLogLevel;
 
-        public ModifiedLogger(string categoryName, IConfigurationSection section)
+        public ModifiedLogger(string categoryName, IConfigurationSection section, LogLevel logLevel)
         {
             _categoryName = categoryName;
             _section = section;
             _lockObj = new object();
+            _minimumLogLevel = logLevel;
         }
 
         public IDisposable BeginScope<TState>(TState state)
@@ -24,8 +26,8 @@ namespace Concept.Logger
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            var level = (LogLevel) Enum.Parse(typeof(LogLevel), _section.Value);
-            return true;
+            var level = (LogLevel)Enum.Parse(typeof(LogLevel), _section.Value);
+            return level >= _minimumLogLevel;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
@@ -48,7 +50,6 @@ namespace Concept.Logger
             }
         }
 
-
         private void Append(string message, Color color)
         {
             lock (_lockObj)
@@ -62,12 +63,12 @@ namespace Concept.Logger
             => logLevel switch
             {
                 LogLevel.Information => (Color.SpringGreen, "INFO"),
-                LogLevel.Debug       => (Color.MediumPurple, "DBUG"),
-                LogLevel.Trace       => (Color.MediumPurple, "TRCE"),
-                LogLevel.Critical    => (Color.Crimson, "CRIT"),
-                LogLevel.Error       => (Color.Crimson, "EROR"),
-                LogLevel.Warning     => (Color.Orange, "WARN"),
-                _                    => (Color.Tomato, "UKNW")
+                LogLevel.Debug => (Color.MediumPurple, "DBUG"),
+                LogLevel.Trace => (Color.MediumPurple, "TRCE"),
+                LogLevel.Critical => (Color.Crimson, "CRIT"),
+                LogLevel.Error => (Color.Crimson, "EROR"),
+                LogLevel.Warning => (Color.Orange, "WARN"),
+                _ => (Color.Tomato, "UKNW")
             };
     }
 }

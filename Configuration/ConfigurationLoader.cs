@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,7 +33,7 @@ namespace Concept.Configuration
 
         private readonly Configuration CreateDefaultConfiguration()
         {
-            var config = new Configuration("localhost", 5000, "MyInvenciblePassword");
+            var config = new Configuration("localhost", 5000, "MyInvenciblePassword", LogLevel.Information);
 
             var json = JsonSerializer.Serialize(config);
 
@@ -43,9 +44,7 @@ namespace Concept.Configuration
         }
 
         private readonly void PopuleCache(Configuration config)
-        {
-            _configurationCache = config;
-        }
+            => _configurationCache = config;
 
         private bool CacheValid()
             => _configurationCache != null;

@@ -1,5 +1,6 @@
 {
   "Host": "localhost",
   "Port": 5000,
-  "Authorization": "MyInvenciblePassword"
+  "Authorization": "MyInvenciblePassword",
+  "LogLevel": "Information"
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -8,11 +9,13 @@ namespace Concept.Logger
     {
         private readonly IConfigurationSection _configuration;
         private readonly ConcurrentDictionary<string, ModifiedLogger> _loggers;
+        private readonly LogLevel _minimumLogLevel;
 
-        public ModifiedProvider(IConfiguration configuration)
+        public ModifiedProvider(IConfiguration configuration, string logLevel)
         {
             _configuration = configuration.GetSection("LogLevel");
             _loggers = new ConcurrentDictionary<string, ModifiedLogger>();
+            _minimumLogLevel = Enum.Parse<LogLevel>(logLevel);
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -23,7 +26,7 @@ namespace Concept.Logger
                 return logger;
 
             var category = _configuration.GetSection(categoryName);
-            logger = new ModifiedLogger(categoryName, category);
+            logger = new ModifiedLogger(categoryName, category, _minimumLogLevel);
             _loggers.TryAdd(categoryName, logger);
             return logger;
         }
@@ -35,9 +38,9 @@ namespace Concept.Logger
             => categoryName switch
             {
                 _ when categoryName.Contains("Microsoft") => "Microsoft",
-                _ when categoryName.Contains("System")    => "System",
-                _ when categoryName.Contains("Theory")    => "Theory",
-                _                                         => "Default"
+                _ when categoryName.Contains("System") => "System",
+                _ when categoryName.Contains("Theory") => "Theory",
+                _ => "Default"
             };
     }
 }
