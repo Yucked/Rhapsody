@@ -1,61 +1,58 @@
-﻿using Concept.WebSockets;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Concept.Controllers;
 
 namespace Concept.Middlewares
 {
-    public class WebSocketMiddleware
+    public sealed class WebSocketMiddleware
     {
-        //Thats represent the request, if we do await next(); we pass the request to the next Middleware.
-        private readonly RequestDelegate next;
+        private readonly RequestDelegate _next;
 
         public WebSocketMiddleware(RequestDelegate next)
         {
-            this.next = next;
+            _next = next;
         }
 
         //ASP.Net Core will pass the dependecies to us.
-        public async Task Invoke(HttpContext context, ConceptWebSocket webSocketHandler)
+        public async Task Invoke(HttpContext context, WebSocketController controller)
         {
             if (context.WebSockets.IsWebSocketRequest)
             {
                 var socket = await context.WebSockets.AcceptWebSocketAsync();
-
-                await webSocketHandler.OnConnected(socket);
+                await controller.OnConnectedAsync(context.Connection.RemoteIpAddress, socket);
 
                 await Receive(socket, async (result, buffer) =>
                 {
-                    if (result.MessageType == WebSocketMessageType.Text)
+                    switch (result.MessageType)
                     {
-                        await webSocketHandler.ReceiveAsync(socket, result, buffer);
-                        return;
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await webSocketHandler.OnDisconnected(socket);
-                        return;
+                        case WebSocketMessageType.Text:
+                            await controller.ReceiveAsync(socket, result, buffer);
+                            return;
+
+                        case WebSocketMessageType.Close:
+                            await controller.OnDisconnectedAsync(context.Connection.RemoteIpAddress,
+                                socket);
+                            return;
                     }
                 });
             }
             else
             {
-                await next(context);
+                await _next(context);
             }
         }
 
         private async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, byte[]> handleMessage)
         {
-            var buffer = new byte[1024 * 4];
+            var buffer = ArrayPool<byte>.Shared.Rent(512);
 
             while (socket.State == WebSocketState.Open)
             {
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
+                var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                 handleMessage(result, buffer);
             }
         }
