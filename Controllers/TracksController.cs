@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Concept.Controllers
 {
-    [ApiController, Route("/tracks"), Authorize]
+    // if you put the tag [controller] asp.net core will handle that with the name ahead controller, in this case /Tracks (ignore case).
+    [ApiController, Route("[controller]"), Authorize]
     public sealed class TracksController : ControllerBase
     {
         [HttpGet]
