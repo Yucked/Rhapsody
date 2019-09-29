@@ -10,8 +10,13 @@ namespace Concept.Configuration
 {
     public readonly struct ConfigurationLoader
     {
+        private static Configuration _configurationCache = null;
+
         public readonly Configuration GetConfiguration()
         {
+            if (CacheValid())
+                return _configurationCache;
+
             if (Directory.Exists("config.json"))
                 return CreateDefaultConfiguration();
 
@@ -21,6 +26,7 @@ namespace Concept.Configuration
 
             var config = JsonSerializer.Deserialize<Configuration>(json);
 
+            PopuleCache(config);
             return config;
         }
 
@@ -32,7 +38,16 @@ namespace Concept.Configuration
 
             File.AppendAllText("config.json", json);
 
+            PopuleCache(config);
             return config;
         }
+
+        private readonly void PopuleCache(Configuration config)
+        {
+            _configurationCache = config;
+        }
+
+        private bool CacheValid()
+            => _configurationCache != null;
     }
 }
