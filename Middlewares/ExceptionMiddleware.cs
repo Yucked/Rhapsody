@@ -1,13 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Concept.Middlewares
 {
-    public class ExceptionMiddleware
+    public readonly struct ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
 
@@ -24,13 +22,14 @@ namespace Concept.Middlewares
             }
             catch (Exception ex)
             {
-                HandleException(ex, logger);
+                HandleException(ex, logger, context);
             }
         }
 
-        public void HandleException(Exception ex, ILogger<ExceptionMiddleware> logger)
+        private void HandleException(Exception ex, ILogger logger, HttpContext context)
         {
             logger.Log(LogLevel.Error, "Exception throwed", ex);
+            context.Response.StatusCode = 500;
         }
     }
 }

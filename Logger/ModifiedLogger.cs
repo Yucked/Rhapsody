@@ -24,8 +24,9 @@ namespace Concept.Logger
 
         public bool IsEnabled(LogLevel logLevel)
         {
+            // TODO: Check logging properly.
             var level = (LogLevel) Enum.Parse(typeof(LogLevel), _section.Value);
-            return true;
+            return level <= logLevel;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,

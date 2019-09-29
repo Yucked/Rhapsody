@@ -14,19 +14,25 @@ namespace Concept.Authentication
         {
         }
 
-        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             if (!Request.Headers.TryGetValue("Authorization", out var authValue))
-                return AuthenticateResult.Fail("Please make sure you are using Authorization header in your request.");
+                return
+                    Task.FromResult(
+                        AuthenticateResult.Fail(
+                            "Please make sure you are using Authorization header in your request."));
 
             if (!authValue.Equals(Options.Authorization))
-                AuthenticateResult.Fail("Unable to authenticate. Provided password was wrong.");
+                return
+                    Task.FromResult(
+                        AuthenticateResult.Fail("Unable to authenticate. Provided password was wrong."));
 
             var claims = new[] {new Claim(ClaimTypes.Name, "Authenticated")};
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
-            return AuthenticateResult.Success(ticket);
+
+            return Task.FromResult(AuthenticateResult.Success(ticket));
         }
     }
 }

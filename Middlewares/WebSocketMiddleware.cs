@@ -8,17 +8,15 @@ using Concept.Controllers;
 
 namespace Concept.Middlewares
 {
-    public sealed class WebSocketMiddleware
+    public readonly struct WebSocketMiddleware
     {
-        private const string AuthorizationHeaderName = "Authorization";
-
         private readonly RequestDelegate _next;
-        private readonly string _password;
+        private readonly string _authorization;
 
-        public WebSocketMiddleware(RequestDelegate next, string password)
+        public WebSocketMiddleware(RequestDelegate next, string authorization)
         {
             _next = next;
-            _password = password;
+            _authorization = authorization;
         }
 
         //ASP.Net Core will pass the dependecies to us.
@@ -66,7 +64,8 @@ namespace Concept.Middlewares
 
         private bool IsValidUser(HttpContext context)
         {
-            if (context.Request.Headers.TryGetValue(AuthorizationHeaderName, out var password) && _password.Equals(password))
+            if (context.Request.Headers.TryGetValue("Authorization", out var password) &&
+                _authorization.Equals(password))
                 return true;
 
             context.Response.StatusCode = 401;
