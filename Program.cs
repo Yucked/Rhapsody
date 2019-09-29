@@ -1,26 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Concept.Logger;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Concept
 {
-    public class Program
+    public readonly struct Program
     {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+        public static void Main()
+            => Host.CreateDefaultBuilder(default)
+                .ConfigureWebHostDefaults(hostBuilder => hostBuilder.UseStartup(typeof(Startup)))
+                .ConfigureLogging((hostBuilder, logging) =>
                 {
-                    webBuilder.UseStartup<Startup>();
-                });
+                    var section = hostBuilder.Configuration.GetSection("Logging");
+                    logging.ClearProviders();
+                    logging.AddProvider(new ModifiedProvider(section));
+                })
+                .Build()
+                .Run();
     }
 }

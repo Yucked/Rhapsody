@@ -1,19 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
+using Concept.WebSockets;
+using Microsoft.Extensions.Logging;
 
-namespace Concept.WebSockets
+namespace Concept.Controllers
 {
-    public class ConceptWebSocket : WebSocketHandler
+    public sealed class WebSocketController : SocketControllerBase
     {
-        protected readonly ILogger<ConceptWebSocket> _logger;
+        private readonly ILogger<WebSocketController> _logger;
 
-        public ConceptWebSocket(WebSocketConnectionManager webSocketConnectionManager, ILogger<ConceptWebSocket> logger)
-            : base(webSocketConnectionManager)
+        public WebSocketController(ClientsCache clientsClients, ILogger<WebSocketController> logger)
+            : base(clientsClients)
         {
             _logger = logger;
         }
