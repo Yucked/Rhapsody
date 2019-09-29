@@ -1,32 +1,36 @@
-﻿using System.Net;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Concept.WebSockets
 {
     public class SocketControllerBase
     {
         public ClientsCache Clients { get; }
+        public ILogger<SocketControllerBase> Logger { get; }
 
-        protected SocketControllerBase(ClientsCache clientsClients)
+        protected SocketControllerBase(ClientsCache clientsClients, ILogger<SocketControllerBase> logger)
         {
             Clients = clientsClients;
+            Logger = logger;
         }
 
-        public virtual Task OnConnectedAsync(IPAddress address, WebSocket socket)
+        public virtual Task OnConnectedAsync(ulong snowflake, WebSocket socket)
         {
-            Clients.AddClient(address, socket);
+            Clients.AddClient(snowflake, socket);
+            Logger.LogInformation($"User with {snowflake} snowflake connected!");
             return Task.CompletedTask;
         }
 
-        public virtual async Task OnDisconnectedAsync(IPAddress address, WebSocket socket)
+        public virtual async Task OnDisconnectedAsync(ulong snowflake, WebSocket socket)
         {
             await socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
                 "Closed by remote.", CancellationToken.None);
 
-            Clients.RemoveClient(address);
+            Logger.LogError($"User with {snowflake} snowflake disconnected.");
+            Clients.RemoveClient(snowflake);
         }
 
         protected async Task SendMessageAsync(WebSocket socket, object data)
@@ -38,8 +42,8 @@ namespace Concept.WebSockets
             await socket.SendAsync(raw, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public async Task SendMessageAsync(IPAddress address, string message)
-            => await SendMessageAsync(Clients.GetClient(address), message);
+        public async Task SendMessageAsync(ulong snowflake, string message)
+            => await SendMessageAsync(Clients.GetClient(snowflake), message);
 
         public async Task SendMessageToAllAsync(string message)
         {

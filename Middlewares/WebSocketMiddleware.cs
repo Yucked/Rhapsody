@@ -5,18 +5,21 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Concept.Controllers;
+using Microsoft.Extensions.Logging;
 
 namespace Concept.Middlewares
 {
-    public readonly struct WebSocketMiddleware
+    public sealed class WebSocketMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly string _authorization;
+        private readonly ILogger<WebSocketMiddleware> _logger;
 
-        public WebSocketMiddleware(RequestDelegate next, string authorization)
+        public WebSocketMiddleware(RequestDelegate next, string authorization, ILogger<WebSocketMiddleware> logger)
         {
             _next = next;
             _authorization = authorization;
+            _logger = logger;
         }
 
         //ASP.Net Core will pass the dependecies to us.
@@ -24,26 +27,29 @@ namespace Concept.Middlewares
         {
             if (context.WebSockets.IsWebSocketRequest)
             {
-                if (IsValidUser(context))
+                if (!IsValidRequest(context, out var snowflake))
+                    return;
+
+                _logger.LogInformation($"Incoming websocket request from {context.Connection.RemoteIpAddress}.");
+
+                var socket = await context.WebSockets.AcceptWebSocketAsync();
+                await controller.OnConnectedAsync(snowflake, socket);
+
+                await Receive(socket, async (result, buffer) =>
                 {
-                    var socket = await context.WebSockets.AcceptWebSocketAsync();
-                    await controller.OnConnectedAsync(context.Connection.RemoteIpAddress, socket);
-
-                    await Receive(socket, async (result, buffer) =>
+                    switch (result.MessageType)
                     {
-                        switch (result.MessageType)
-                        {
-                            case WebSocketMessageType.Text:
-                                await controller.ReceiveAsync(socket, result, buffer);
-                                return;
+                        case WebSocketMessageType.Text:
+                            await controller.ReceiveAsync(socket, result, buffer);
+                            return;
 
-                            case WebSocketMessageType.Close:
-                                await controller.OnDisconnectedAsync(context.Connection.RemoteIpAddress,
-                                    socket);
-                                return;
-                        }
-                    });
-                }
+                        case WebSocketMessageType.Close:
+                            await controller.OnDisconnectedAsync(snowflake, socket);
+                            _logger.LogWarning(
+                                $"Client ({context.Connection.RemoteIpAddress}) disconnected.");
+                            return;
+                    }
+                });
             }
             else
             {
@@ -62,14 +68,32 @@ namespace Concept.Middlewares
             }
         }
 
-        private bool IsValidUser(HttpContext context)
+        private bool IsValidRequest(HttpContext context, out ulong snowflake)
         {
-            if (context.Request.Headers.TryGetValue("Authorization", out var password) &&
-                _authorization.Equals(password))
-                return true;
+            if (!context.Request.Headers.TryGetValue("Authorization", out var auth)
+                && !_authorization.Equals(auth))
+            {
+                context.Response.StatusCode = 401;
+                snowflake = default;
+                return false;
+            }
 
-            context.Response.StatusCode = 401;
-            return false;
+            if (!context.Request.Headers.TryGetValue("User-Id", out var userId))
+            {
+                context.Response.StatusCode = 403;
+                snowflake = default;
+                return false;
+            }
+
+
+            if (!ulong.TryParse(userId, out snowflake))
+            {
+                context.Response.StatusCode = 403;
+                return false;
+            }
+
+            context.Response.StatusCode = 101;
+            return true;
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Concept.Controllers
         private readonly ILogger<WebSocketController> _logger;
 
         public WebSocketController(ClientsCache clientsClients, ILogger<WebSocketController> logger)
-            : base(clientsClients)
+            : base(clientsClients, logger)
         {
             _logger = logger;
         }
