@@ -36,7 +36,7 @@ namespace Concept
             app.UseWebSockets();
 
             app.UseMiddleware(typeof(ExceptionMiddleware));
-            app.UseMiddleware(typeof(WebSocketMiddleware));
+            app.UseMiddleware(typeof(WebSocketMiddleware), "MyInvenciblePassword");
 
             //For any reason in asp.net core 3.0 we need the 2 uses.
             app.UseAuthentication();
