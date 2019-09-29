@@ -1,48 +1,45 @@
-using Concept.Authentication;
 using Concept.Controllers;
 using Concept.Middlewares;
 using Concept.WebSockets;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Concept
 {
-    public readonly struct Startup
+    public sealed class Startup
     {
-        public IConfiguration Configuration { get; }
+        private readonly IConfiguration _configuration;
+        private readonly Settings _settings;
 
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
+            _settings = _configuration.Get<Settings>();
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<ClientsCache>();
             services.AddSingleton<WebSocketController>();
+            services.Configure<Settings>(_configuration);
             services.AddControllers();
-            services.AddAuthentication(HeaderDefaults.AuthenticationScheme)
-                .AddHeaderAuth(options =>
-                {
-                    options.Authorization = "MyInvenciblePassword";
-                });
+            services.AddAuthentication()
+                .UseHeaderAuthentication(options => options.Authorization = _settings.Authorization);
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
             app.UseRouting();
             app.UseWebSockets();
 
             app.UseMiddleware(typeof(ExceptionMiddleware));
-            app.UseMiddleware(typeof(WebSocketMiddleware), "MyInvenciblePassword");
+            app.UseMiddleware(typeof(WebSocketMiddleware), _settings.Authorization);
 
-            //For any reason in asp.net core 3.0 we need the 2 uses.
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints => endpoints.MapControllers());
         }
     }
 }
