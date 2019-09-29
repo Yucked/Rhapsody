@@ -17,26 +17,26 @@ namespace Concept.Logger
 
         public ILogger CreateLogger(string categoryName)
         {
-            categoryName = GetCategory(categoryName);
+            var substring = GetCategorySubstring(categoryName);
 
-            if (_loggers.TryGetValue(categoryName, out var logger))
+            if (_loggers.TryGetValue(substring, out var logger))
                 return logger;
 
-            var category = _configuration.GetSection(categoryName);
+            var category = _configuration.GetSection(substring);
             logger = new ModifiedLogger(categoryName, category);
-            _loggers.TryAdd(categoryName, logger);
+            _loggers.TryAdd(substring, logger);
             return logger;
         }
 
         public void Dispose()
             => _loggers.Clear();
 
-        private string GetCategory(string categoryName)
+        private string GetCategorySubstring(string categoryName)
             => categoryName switch
             {
                 _ when categoryName.Contains("Microsoft") => "Microsoft",
                 _ when categoryName.Contains("System")    => "System",
-                _ when categoryName.Contains("Theory")    => "Theory",
+                _ when categoryName.Contains("Concept")   => "Concept",
                 _                                         => "Default"
             };
     }

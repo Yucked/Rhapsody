@@ -43,7 +43,7 @@ namespace Concept.Logger
 
                 Append(date, Color.Gray);
                 Append($"[{abbrevation}] ", color);
-                Append($"<{_categoryName}>", Color.Orchid);
+                Append($"[{_categoryName}]", Color.Orchid);
                 Append($"{Environment.NewLine}  -> {message}", Color.White);
                 Console.Write(Environment.NewLine);
             }
