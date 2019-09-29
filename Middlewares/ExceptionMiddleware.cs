@@ -24,13 +24,14 @@ namespace Concept.Middlewares
             }
             catch (Exception ex)
             {
-                HandleException(ex, logger);
+                HandleException(ex, logger, context);
             }
         }
 
-        public void HandleException(Exception ex, ILogger<ExceptionMiddleware> logger)
+        public void HandleException(Exception ex, ILogger<ExceptionMiddleware> logger, HttpContext context)
         {
             logger.Log(LogLevel.Error, "Exception throwed", ex);
+            context.Response.StatusCode = 500;
         }
     }
 }

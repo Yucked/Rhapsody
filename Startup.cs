@@ -40,6 +40,7 @@ namespace Concept
             app.UseRouting();
             app.UseWebSockets();
 
+            //Don't works in other middleware
             app.UseMiddleware(typeof(ExceptionMiddleware));
             app.UseMiddleware(typeof(WebSocketMiddleware), config.Authorization);
 
