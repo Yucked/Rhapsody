@@ -2,5 +2,10 @@
   "Host": "localhost",
   "Port": 5000,
   "Authorization": "MyInvenciblePassword",
-  "LogLevel": "Information"
+  "LogLevel": "Information",
+  "Sources": {
+    "YouTube": true,
+    "SoundCloud": true,
+    "BandCamp": false
+  }
 }

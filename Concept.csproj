@@ -9,8 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <ProjectReference Include="..\Theory\Theory\Theory.csproj" />
   </ItemGroup>
 </Project>

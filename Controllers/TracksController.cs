@@ -1,15 +1,29 @@
+using Concept.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Concept.Controllers
 {
-    [ApiController, Route("/tracks"), Authorize]
-    public sealed class TracksController : ControllerBase
+    [ApiController, Route("/search"), Authorize]
+    public sealed class SearchController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult GetTrack(string provider, string query)
+        private readonly TheoryService _theory;
+
+        public SearchController(TheoryService theory)
+        {
+            _theory = theory;
+        }
+
+        [HttpGet("youtube")]
+        public IActionResult YouTube(string query)
         {
             return NotFound("Under construction.");
+        }
+
+        [HttpGet("soundcloud")]
+        public IActionResult SoundCloud(string query)
+        {
+            return Ok();
         }
     }
 }

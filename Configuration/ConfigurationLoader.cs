@@ -13,7 +13,7 @@ namespace Concept.Configuration
             if (CacheValid())
                 return _configurationCache;
 
-            if (Directory.Exists("config.json"))
+            if (!File.Exists("config.json"))
                 return CreateDefaultConfiguration();
 
             using var sr = new StreamReader($"config.json", Encoding.GetEncoding("iso-8859-1"));
@@ -28,7 +28,7 @@ namespace Concept.Configuration
 
         private readonly Configuration CreateDefaultConfiguration()
         {
-            var config = new Configuration("localhost", 5000, "MyInvenciblePassword", "Information");
+            var config = new Configuration();
 
             var json = JsonSerializer.Serialize(config);
 

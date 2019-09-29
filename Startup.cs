@@ -2,6 +2,7 @@ using Concept.Authentication;
 using Concept.Configuration;
 using Concept.Controllers;
 using Concept.Middlewares;
+using Concept.Services;
 using Concept.WebSockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -25,6 +26,7 @@ namespace Concept
             var config = new ConfigurationLoader().GetConfiguration();
 
             services.AddSingleton(config);
+            services.AddSingleton<TheoryService>();
             services.AddTransient<ClientsCache>();
             services.AddSingleton<WebSocketController>();
             services.AddControllers();

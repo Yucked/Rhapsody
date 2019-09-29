@@ -8,24 +8,14 @@ namespace Concept.Configuration
 {
     public class Configuration
     {
-        public string Host { get; set; }
+        public string Host { get; set; } = "localhost";
 
-        public short Port { get; set; }
+        public short Port { get; set; } = 5000;
 
-        public string Authorization { get; set; }
+        public string Authorization { get; set; } = "MyInvenciblePassword";
 
-        public string LogLevel { get; set; }
+        public string LogLevel { get; set; } = "Information";
 
-        public Configuration(string host, short port, string authorization, string minimumLog)
-        {
-            Host = host;
-            Port = port;
-            Authorization = authorization;
-            LogLevel = minimumLog;
-        }
-
-        public Configuration()
-        {
-        }
+        public ConfigurationSources Sources { get; set; } = new ConfigurationSources();
     }
 }
