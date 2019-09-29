@@ -25,7 +25,7 @@ namespace Concept.WebSockets
         {
             _clients.TryGetValue(address, out var socket);
             socket.Dispose();
-            _clients.TryRemove(address, out socket);
+            _clients.TryRemove(address, out var _);
         }
     }
 }

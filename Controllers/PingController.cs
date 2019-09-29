@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Concept.Controllers
 {
-    [ApiController, Route("[controller]"), AllowAnonymous]
+    [ApiController, Route("/ping"), AllowAnonymous]
     public class PingController : ControllerBase
     {
         // This endpoint is to check if our server is alive, very useful for monitoring services like updown.io
