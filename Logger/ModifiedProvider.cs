@@ -9,13 +9,11 @@ namespace Concept.Logger
     {
         private readonly IConfigurationSection _configuration;
         private readonly ConcurrentDictionary<string, ModifiedLogger> _loggers;
-        private readonly LogLevel _minimumLogLevel;
 
-        public ModifiedProvider(IConfiguration configuration, string logLevel)
+        public ModifiedProvider(IConfiguration configuration)
         {
             _configuration = configuration.GetSection("LogLevel");
             _loggers = new ConcurrentDictionary<string, ModifiedLogger>();
-            _minimumLogLevel = Enum.Parse<LogLevel>(logLevel);
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -26,7 +24,7 @@ namespace Concept.Logger
                 return logger;
 
             var category = _configuration.GetSection(categoryName);
-            logger = new ModifiedLogger(categoryName, category, _minimumLogLevel);
+            logger = new ModifiedLogger(categoryName, category);
             _loggers.TryAdd(categoryName, logger);
             return logger;
         }

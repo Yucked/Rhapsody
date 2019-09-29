@@ -22,10 +22,9 @@ namespace Concept
                 .ConfigureLogging((hostBuilder, logging) =>
                 {
                     var section = hostBuilder.Configuration.GetSection("Logging");
-                    var config = new ConfigurationLoader().GetConfiguration();
 
                     logging.ClearProviders();
-                    logging.AddProvider(new ModifiedProvider(section, config.LogLevel));
+                    logging.AddProvider(new ModifiedProvider(section));
                 })
                 .Build()
                 .Run();

@@ -11,14 +11,12 @@ namespace Concept.Logger
         private readonly object _lockObj;
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
-        private readonly LogLevel _minimumLogLevel;
 
-        public ModifiedLogger(string categoryName, IConfigurationSection section, LogLevel logLevel)
+        public ModifiedLogger(string categoryName, IConfigurationSection section)
         {
             _categoryName = categoryName;
             _section = section;
             _lockObj = new object();
-            _minimumLogLevel = logLevel;
         }
 
         public IDisposable BeginScope<TState>(TState state)
@@ -27,7 +25,7 @@ namespace Concept.Logger
         public bool IsEnabled(LogLevel logLevel)
         {
             var level = (LogLevel)Enum.Parse(typeof(LogLevel), _section.Value);
-            return level >= _minimumLogLevel;
+            return true;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,

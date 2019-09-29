@@ -14,8 +14,6 @@ namespace Concept.Configuration
 
         public string Authorization { get; set; } = "MyInvenciblePassword";
 
-        public string LogLevel { get; set; } = "Information";
-
         public ConfigurationSources Sources { get; set; } = new ConfigurationSources();
     }
 }
