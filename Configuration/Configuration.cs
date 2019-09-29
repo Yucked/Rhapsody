@@ -16,12 +16,12 @@ namespace Concept.Configuration
 
         public string LogLevel { get; set; }
 
-        public Configuration(string host, short port, string authorization, LogLevel minimumLog)
+        public Configuration(string host, short port, string authorization, string minimumLog)
         {
             Host = host;
             Port = port;
             Authorization = authorization;
-            LogLevel = minimumLog.ToString();
+            LogLevel = minimumLog;
         }
 
         public Configuration()
