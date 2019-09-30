@@ -1,7 +1,6 @@
-using Concept.Caches;
 using Concept.Controllers;
 using Concept.Middlewares;
-using Concept.Options;
+using Concept.WebSockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,12 +11,12 @@ namespace Concept
     public sealed class Startup
     {
         private readonly IConfiguration _configuration;
-        private readonly ApplicationOptions _applicationOptions;
+        private readonly Settings _settings;
 
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
-            _applicationOptions = _configuration.Get<ApplicationOptions>();
+            _settings = _configuration.Get<Settings>();
         }
 
         public void ConfigureServices(IServiceCollection services)
@@ -25,25 +24,25 @@ namespace Concept
             services.AddTransient<ClientsCache>();
             services.AddSingleton<Theoretical>();
             services.AddSingleton<WebSocketController>();
-            services.Configure<ApplicationOptions>(_configuration);
+            services.Configure<Settings>(_configuration);
             services.AddControllers();
-            services.AddAuthentication()
-                .UseHeaderAuthentication(options => options.Authorization = _applicationOptions.Authorization);
-
-            if (_applicationOptions.CacheOptions.IsEnabled)
-                services.AddSingleton<ResponsesCache>();
+            //You need the specify the default scheme in this case "HeaderAuth"
+            services.AddAuthentication("HeaderAuth")
+                .UseHeaderAuthentication(options => options.Authorization = _settings.Authorization);
         }
 
         public void Configure(IApplicationBuilder app)
         {
+            //If you change the order authorize will not work
+            app.UseWebSockets();
+            app.UseRouting();
+
             app.UseMiddleware(typeof(ExceptionMiddleware));
-            app.UseMiddleware(typeof(WebSocketMiddleware), _applicationOptions.Authorization);
+            app.UseMiddleware(typeof(WebSocketMiddleware), _settings.Authorization);
 
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseWebSockets();
-            app.UseRouting();
             app.UseEndpoints(endpoints => endpoints.MapControllers());
         }
     }
