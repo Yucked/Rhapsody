@@ -1,3 +1,4 @@
+using System;
 using Concept.Caches;
 using Concept.Controllers;
 using Concept.Middlewares;
@@ -34,7 +35,7 @@ namespace Concept
                 services.AddSingleton<ResponsesCache>();
         }
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IServiceProvider provider)
         {
             app.UseWebSockets();
             app.UseRouting();
@@ -46,6 +47,10 @@ namespace Concept
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => endpoints.MapControllers());
+
+            if (_options.CacheOptions.IsEnabled)
+                _ = provider.GetRequiredService<ResponsesCache>()
+                    .AutoPurgeAsync();
         }
     }
 }

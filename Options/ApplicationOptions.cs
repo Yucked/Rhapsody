@@ -28,7 +28,8 @@ namespace Concept.Options
                 {
                     IsEnabled = false,
                     Limit = 100,
-                    ExpiresAfter = TimeSpan.FromMinutes(30)
+                    ExpiresAfter = (long) TimeSpan.FromMinutes(30)
+                        .TotalMinutes
                 }
             };
     }

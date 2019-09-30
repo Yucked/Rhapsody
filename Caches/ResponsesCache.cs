@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Concept.Options;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +15,14 @@ namespace Concept.Caches
         {
             _cacheOptions = aOptions.Value.CacheOptions;
             _responses = new ConcurrentDictionary<object, object>();
+        }
+
+        public async Task AutoPurgeAsync()
+        {
+            while (_cacheOptions.IsEnabled)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(10));
+            }
         }
     }
 }

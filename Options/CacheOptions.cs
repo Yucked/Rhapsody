@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json.Serialization;
 
 namespace Concept.Options
@@ -11,7 +10,7 @@ namespace Concept.Options
         [JsonPropertyName("limit")]
         public int Limit { get; set; }
 
-        [JsonPropertyName("expiresAfter")]
-        public TimeSpan ExpiresAfter { get; set; }
+        [JsonPropertyName("expiryInMinutes")]
+        public long ExpiresAfter { get; set; }
     }
 }
