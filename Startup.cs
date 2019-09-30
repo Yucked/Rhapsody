@@ -26,20 +26,23 @@ namespace Concept
             services.AddSingleton<WebSocketController>();
             services.Configure<Settings>(_configuration);
             services.AddControllers();
-            services.AddAuthentication()
+            //You need the specify the default scheme in this case "HeaderAuth"
+            services.AddAuthentication("HeaderAuth")
                 .UseHeaderAuthentication(options => options.Authorization = _settings.Authorization);
         }
 
         public void Configure(IApplicationBuilder app)
         {
+            //If you change the order authorize will not work
+            app.UseWebSockets();
+            app.UseRouting();
+
             app.UseMiddleware(typeof(ExceptionMiddleware));
             app.UseMiddleware(typeof(WebSocketMiddleware), _settings.Authorization);
 
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseWebSockets();
-            app.UseRouting();
             app.UseEndpoints(endpoints => endpoints.MapControllers());
         }
     }
