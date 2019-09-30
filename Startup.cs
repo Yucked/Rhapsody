@@ -4,6 +4,7 @@ using Concept.WebSockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Theory;
 
 namespace Concept
 {
@@ -21,6 +22,7 @@ namespace Concept
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<ClientsCache>();
+            services.AddSingleton<Theoretical>();
             services.AddSingleton<WebSocketController>();
             services.Configure<Settings>(_configuration);
             services.AddControllers();
@@ -30,15 +32,14 @@ namespace Concept
 
         public void Configure(IApplicationBuilder app)
         {
-            app.UseRouting();
-            app.UseWebSockets();
-
             app.UseMiddleware(typeof(ExceptionMiddleware));
             app.UseMiddleware(typeof(WebSocketMiddleware), _settings.Authorization);
 
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseWebSockets();
+            app.UseRouting();
             app.UseEndpoints(endpoints => endpoints.MapControllers());
         }
     }
