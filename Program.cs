@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using Concept.Logger;
+using Concept.Options;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -12,30 +13,30 @@ namespace Concept
     {
         public static void Main()
         {
-            Settings settings;
+            ApplicationOptions applicationOptions;
 
-            if (!File.Exists("Config.json"))
+            if (!File.Exists("options.json"))
             {
-                settings = Settings.CreateDefault();
-                var raw = JsonSerializer.SerializeToUtf8Bytes(settings);
-                File.WriteAllBytes("Config.json", raw);
+                applicationOptions = ApplicationOptions.Default;
+                var raw = JsonSerializer.SerializeToUtf8Bytes(applicationOptions);
+                File.WriteAllBytes("options.json", raw);
             }
             else
             {
-                var raw = File.ReadAllBytes("Config.json");
-                settings = JsonSerializer.Deserialize<Settings>(raw);
+                var raw = File.ReadAllBytes("options.json");
+                applicationOptions = JsonSerializer.Deserialize<ApplicationOptions>(raw);
             }
 
             Host.CreateDefaultBuilder(default)
                 .ConfigureAppConfiguration(configBuilder =>
                 {
                     configBuilder.SetBasePath(Directory.GetCurrentDirectory());
-                    configBuilder.AddJsonFile("Config.json", false, true);
+                    configBuilder.AddJsonFile("options.json", false, true);
                 })
                 .ConfigureWebHostDefaults(hostBuilder =>
                 {
                     hostBuilder.UseStartup<Startup>();
-                    hostBuilder.UseUrls($"http://{settings.Hostname}:{settings.Port}");
+                    hostBuilder.UseUrls($"http://{applicationOptions.Hostname}:{applicationOptions.Port}");
                 })
                 .ConfigureLogging((hostBuilder, logging) =>
                 {

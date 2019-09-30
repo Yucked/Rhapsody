@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net.WebSockets;
 
-namespace Concept.WebSockets
+namespace Concept.Caches
 {
     public sealed class ClientsCache
     {
