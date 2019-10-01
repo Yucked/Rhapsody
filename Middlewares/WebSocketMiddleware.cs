@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
-using System.Buffers;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,46 +24,56 @@ namespace Concept.Middlewares
         //ASP.Net Core will pass the dependecies to us.
         public async Task Invoke(HttpContext context, WebSocketController controller)
         {
-            if (context.WebSockets.IsWebSocketRequest)
+            if (!IsValidRequest(context, out var snowflake))
+                return;
+
+            if (!context.WebSockets.IsWebSocketRequest)
             {
-                if (!IsValidRequest(context, out var snowflake))
-                    return;
+                await _next(context);
+                return;
+            }
 
-                _logger.LogInformation($"Incoming websocket request from {context.Connection.RemoteIpAddress}.");
+            _logger.LogInformation(
+                $"Incoming websocket request from {context.Connection.RemoteIpAddress}:{context.Connection.RemotePort}.");
 
-                var socket = await context.WebSockets.AcceptWebSocketAsync();
-                await controller.OnConnectedAsync(snowflake, socket);
+            var socket = await context.WebSockets.AcceptWebSocketAsync();
+            await controller.OnConnectedAsync(snowflake, socket);
+            await ReceiveAsync(snowflake, controller, context, socket);
+        }
 
-                await Receive(socket, async (result, buffer) =>
+        private async Task ReceiveAsync(ulong snowflake, SocketControllerBase controller, HttpContext context,
+            WebSocket socket)
+        {
+            try
+            {
+                while (socket.State == WebSocketState.Open)
                 {
+                    var buffer = new byte[512];
+                    var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                     switch (result.MessageType)
                     {
                         case WebSocketMessageType.Text:
-                            await controller.ReceiveAsync(socket, result, buffer);
-                            return;
+                            if (!result.EndOfMessage)
+                                continue;
+
+                            var lastIndex = Array.FindLastIndex(buffer, b => b != 0);
+                            Array.Resize(ref buffer, lastIndex + 1);
+
+                            await controller.ReceiveAsync(socket, buffer);
+                            continue;
 
                         case WebSocketMessageType.Close:
-                            await controller.OnDisconnectedAsync(snowflake, socket);
                             _logger.LogWarning(
-                                $"Client ({context.Connection.RemoteIpAddress}) disconnected.");
-                            return;
+                                $"Client {context.Connection.RemoteIpAddress}:{context.Connection.RemotePort} disconnected.");
+                            await controller.OnDisconnectedAsync(snowflake, socket);
+                            continue;
                     }
-                });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await _next(context);
-            }
-        }
-
-        private async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, byte[]> handleMessage)
-        {
-            var buffer = ArrayPool<byte>.Shared.Rent(512);
-
-            while (socket.State == WebSocketState.Open)
-            {
-                var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
-                handleMessage(result, buffer);
+                _logger.LogCritical(ex, ex.Message);
+                await controller.OnDisconnectedAsync(snowflake, socket);
             }
         }
 
