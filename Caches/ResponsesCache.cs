@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Concept.Options;
 using Microsoft.Extensions.Options;
+using Theory.Infos;
 using Theory.Providers;
 using Theory.Search;
 
@@ -62,21 +63,22 @@ namespace Concept.Caches
             string query,
             out SearchResponse value)
         {
-            Span<SearchResponse> response = new Span<SearchResponse>(new SearchResponse[1]);
-
-            response.Fill(
-                cache.Values
-                .Where(
-                    a => query.Contains(a.Query) ||
-                    a.Tracks.Any(a => a.Id == query) ||
-                    a.Tracks.Any(a => a.Url == query))
-                .FirstOrDefault()
-                );
-
-            if (response.ToArray().FirstOrDefault().Query != default)
+            foreach (SearchResponse cacheResponse in cache.Values)
             {
-                value = response.ToArray().FirstOrDefault();
-                return true;
+                if (query.Contains(cacheResponse.Query))
+                {
+                    value = cacheResponse;
+                    return true;
+                }
+                else
+                {
+                    foreach (TrackInfo track in cacheResponse.Tracks)
+                        if (track.Id == query || track.Url == query)
+                        {
+                            value = cacheResponse;
+                            return true;
+                        }
+                }
             }
 
             value = default;
