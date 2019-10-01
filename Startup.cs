@@ -48,7 +48,7 @@ namespace Concept
 
             app.UseEndpoints(endpoints => endpoints.MapControllers());
 
-            if (_options.CacheOptions.IsEnabled)
+            if (_options.CacheOptions.IsEnabled && _options.CacheOptions.ExpiresAfter > 0)
                 _ = provider.GetRequiredService<ResponsesCache>()
                     .AutoPurgeAsync();
         }

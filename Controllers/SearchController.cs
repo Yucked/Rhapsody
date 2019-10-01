@@ -1,8 +1,13 @@
+using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Concept.Caches;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Theory;
 using Theory.Providers;
+using Theory.Search;
 
 namespace Concept.Controllers
 {
@@ -10,9 +15,13 @@ namespace Concept.Controllers
     public sealed class SearchController : ControllerBase
     {
         private readonly Theoretical _theoretical;
+        private readonly ResponsesCache _cache;
 
-        public SearchController(Theoretical theoretical)
-            => _theoretical = theoretical;
+        public SearchController(Theoretical theoretical, IServiceProvider serviceProvider)
+        {
+            _theoretical = theoretical;
+            _cache = serviceProvider.GetServices<ResponsesCache>().FirstOrDefault();
+        }
 
         [HttpGet("youtube")]
         public Task<IActionResult> SearchYouTubeAsync(string query)
@@ -31,8 +40,15 @@ namespace Concept.Controllers
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest("Missing query parameter.");
 
+            if (_cache != null &&
+                _cache.TryGetCache(query, out var response, providerType))
+                return Ok(response);
+
             var provider = _theoretical.GetProvider(providerType);
             var result = await provider.SearchAsync(query);
+
+            if (_cache != null)
+                _cache.TryAddCache(result, providerType);
 
             return Ok(result);
         }
