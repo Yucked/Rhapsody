@@ -20,10 +20,8 @@ namespace Concept.Controllers
         public override async Task ReceiveAsync(WebSocket socket, ReadOnlyMemory<byte> buffer)
         {
             _logger.Log(LogLevel.Debug, $"Message received: {Encoding.UTF8.GetString(buffer.Span)}");
-            await SendMessageAsync(socket, new
-            {
-                message = "This is a message"
-            });
+            var message = Encoding.UTF8.GetString(buffer.Span.Slice(5));
+            await SendMessageAsync(socket, $"Pong {message}");
             await base.ReceiveAsync(socket, buffer);
         }
     }

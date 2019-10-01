@@ -21,7 +21,6 @@ namespace Concept.Middlewares
             _logger = logger;
         }
 
-        //ASP.Net Core will pass the dependecies to us.
         public async Task Invoke(HttpContext context, WebSocketController controller)
         {
             if (!IsValidRequest(context, out var snowflake))
