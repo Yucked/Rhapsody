@@ -1,4 +1,5 @@
-﻿using System.Net.WebSockets;
+﻿using System;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using Concept.Caches;
@@ -16,11 +17,12 @@ namespace Concept.Controllers
             _logger = logger;
         }
 
-        public override async Task ReceiveAsync(WebSocket socket, WebSocketReceiveResult result, byte[] buffer)
+        public override async Task ReceiveAsync(WebSocket socket, ReadOnlyMemory<byte> buffer)
         {
-            _logger.Log(LogLevel.Information, $"Message received: {Encoding.UTF8.GetString(buffer)}");
-            await SendMessageAsync(socket, "Hello, I'm Concept");
-            await base.ReceiveAsync(socket, result, buffer);
+            _logger.Log(LogLevel.Debug, $"Message received: {Encoding.UTF8.GetString(buffer.Span)}");
+            var message = Encoding.UTF8.GetString(buffer.Span.Slice(5));
+            await SendMessageAsync(socket, $"Pong {message}");
+            await base.ReceiveAsync(socket, buffer);
         }
     }
 }
