@@ -37,6 +37,7 @@ namespace Concept.Logger
             {
                 _semaphore.Wait();
                 
+                //IFeatureCollection is disposed here for some reason after disconnecting and reconnecting the client, and then sending a message
                 var message = formatter(state, exception);
                 if (string.IsNullOrWhiteSpace(message))
                     return;
