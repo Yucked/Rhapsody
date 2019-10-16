@@ -1,23 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Concept.Payloads.InboundPayloads
 {
     /// <summary>
     /// Represents a payload for connecting to the voice server.
     /// </summary>
-    public class ConnectPayload : InboundPayload
+    public sealed class ConnectPayload : InboundPayload
     {
-        [JsonProperty("sessionId")]
+        [JsonPropertyName("sessionId")]
         public string SessionId { get; set; }
 
-        [JsonProperty("token")]
+        [JsonPropertyName("token")]
         public string Token { get; set; }
 
-        [JsonProperty("endpoint")]
+        [JsonPropertyName("endpoint")]
         public string Endpoint { get; set; }
     }
 }

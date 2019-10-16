@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Concept.Payloads.InboundPayloads
 {
     /// <summary>
     /// Represnts a payload to seek through a playing track
     /// </summary>
-    public class SeekPayload : InboundPayload
+    public sealed class SeekPayload : InboundPayload
     {
-        [JsonProperty("position")]
+        [JsonPropertyName("position")]
         public int Position { get; set; }
     }
 }

@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Concept.Payloads.InboundPayloads
 {
     /// <summary>
     /// Represents a payload to pause a player.
     /// </summary>
-    public class PausePayload : InboundPayload
+    public sealed class PausePayload : InboundPayload
     {
-        [JsonProperty("pause")]
+        [JsonPropertyName("pause")]
         public bool Pause { get; set; }
     }
 }

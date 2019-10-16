@@ -1,23 +1,23 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Concept.Payloads.InboundPayloads
 {
     /// <summary>
     /// Represents a payload to play a track from a player.
     /// </summary>
-    public class PlayPayload : InboundPayload
+    public sealed class PlayPayload : InboundPayload
     {
-        [JsonProperty("track")]
+        [JsonPropertyName("track")]
         public string Track { get; set; }
 
 #nullable enable
-        [JsonProperty("startTime")]
+        [JsonPropertyName("startTime")]
         public string? StartTime { get; set; }
 
-        [JsonProperty("endTime", NullValueHandling = NullValueHandling.Include)]
+        [JsonPropertyName("endTime")]
         public string? EndTime { get; set; }
 #nullable disable
-        [JsonProperty("replace", NullValueHandling = NullValueHandling.Include)]
+        [JsonPropertyName("replace")]
         public bool Replace { get; set; }
     }
 }

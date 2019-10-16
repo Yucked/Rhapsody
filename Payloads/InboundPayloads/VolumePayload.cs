@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Concept.Payloads.InboundPayloads
 {
     /// <summary>
     /// Reprents a payload to edit a player's volume
     /// </summary>
-    public class VolumePayload : InboundPayload
+    public sealed class VolumePayload : InboundPayload
     {
-        [JsonProperty("volume")]
+        [JsonPropertyName("volume")]
         public int Volume { get; set; }
     }
 }
