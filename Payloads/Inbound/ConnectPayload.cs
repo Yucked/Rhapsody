@@ -1,11 +1,8 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
-namespace Concept.Payloads.InboundPayloads
+namespace Test.Payloads.Inbound
 {
-    /// <summary>
-    /// Represents a payload for connecting to the voice server.
-    /// </summary>
-    public sealed class ConnectPayload : InboundPayload
+    public sealed class ConnectPayload : BasePayload
     {
         [JsonPropertyName("sessionId")]
         public string SessionId { get; set; }

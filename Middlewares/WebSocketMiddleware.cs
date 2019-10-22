@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Concept.Controllers;
+using Concept.Options;
 using Microsoft.Extensions.Logging;
 
 namespace Concept.Middlewares
@@ -36,19 +37,23 @@ namespace Concept.Middlewares
                 $"Incoming websocket request from {context.Connection.RemoteIpAddress}:{context.Connection.RemotePort}.");
 
             var socket = await context.WebSockets.AcceptWebSocketAsync();
-            await controller.OnConnectedAsync(snowflake, socket);
-            await ReceiveAsync(snowflake, controller, context, socket);
+            var clienOptions = new ClientOptions
+            {
+                UserId = snowflake,
+                Socket = socket
+            };
+            await controller.OnConnectedAsync(clienOptions);
+            await ReceiveAsync(clienOptions, controller, context);
         }
 
-        private async Task ReceiveAsync(ulong snowflake, SocketControllerBase controller, HttpContext context,
-            WebSocket socket)
+        private async Task ReceiveAsync(ClientOptions options, SocketControllerBase controller, HttpContext context)
         {
             try
             {
-                while (socket.State == WebSocketState.Open)
+                while (options.Socket.State == WebSocketState.Open)
                 {
                     var buffer = new byte[512];
-                    var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+                    var result = await options.Socket.ReceiveAsync(buffer, CancellationToken.None);
                     switch (result.MessageType)
                     {
                         case WebSocketMessageType.Text:
@@ -58,13 +63,13 @@ namespace Concept.Middlewares
                             var lastIndex = Array.FindLastIndex(buffer, b => b != 0);
                             Array.Resize(ref buffer, lastIndex + 1);
 
-                            await controller.ReceiveAsync(socket, buffer);
+                            await controller.ReceiveAsync(options, buffer);
                             continue;
 
                         case WebSocketMessageType.Close:
                             _logger.LogWarning(
                                 $"Client {context.Connection.RemoteIpAddress}:{context.Connection.RemotePort} disconnected.");
-                            await controller.OnDisconnectedAsync(snowflake, socket);
+                            await controller.OnDisconnectedAsync(options);
                             continue;
                     }
                 }
@@ -72,7 +77,7 @@ namespace Concept.Middlewares
             catch (Exception ex)
             {
                 _logger.LogCritical(ex, ex.Message);
-                await controller.OnDisconnectedAsync(snowflake, socket);
+                await controller.OnDisconnectedAsync(options);
             }
         }
 

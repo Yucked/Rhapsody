@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Theory;
 using Theory.Providers;
-using Theory.Search;
 
 namespace Concept.Controllers
 {
@@ -47,8 +46,7 @@ namespace Concept.Controllers
             var provider = _theoretical.GetProvider(providerType);
             var result = await provider.SearchAsync(query);
 
-            if (_cache != null)
-                _cache.TryAddCache(result, providerType);
+            _cache?.TryAddCache(result, providerType);
 
             return Ok(result);
         }

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Concept.Caches;
+using Concept.Options;
 using Microsoft.Extensions.Logging;
 
 namespace Concept.Controllers
@@ -19,22 +20,22 @@ namespace Concept.Controllers
             _logger = logger;
         }
 
-        public virtual Task OnConnectedAsync(ulong snowflake, WebSocket socket)
+        public virtual Task OnConnectedAsync(ClientOptions options)
         {
-            Clients.AddClient(snowflake, socket);
-            _logger.LogInformation($"User with {snowflake} snowflake connected!");
+            Clients.AddClient(options);
+            _logger.LogInformation($"User with {options.UserId} snowflake connected!");
             return Task.CompletedTask;
         }
 
-        public virtual async Task OnDisconnectedAsync(ulong snowflake, WebSocket socket)
+        public virtual async Task OnDisconnectedAsync(ClientOptions options)
         {
-            _logger.LogError($"User with {snowflake} snowflake disconnected.");
-            Clients.RemoveClient(snowflake);
+            _logger.LogError($"User with {options.UserId} snowflake disconnected.");
 
             try
             {
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
+                await options.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
                     "Closed by remote.", CancellationToken.None);
+                Clients.RemoveClient(options.UserId);
             }
             catch (Exception exception)
             {
@@ -55,14 +56,14 @@ namespace Concept.Controllers
         {
             foreach (var (_, value) in Clients.GetAll())
             {
-                if (value.State != WebSocketState.Open)
+                if (value.Socket.State != WebSocketState.Open)
                     continue;
 
-                await SendMessageAsync(value, message);
+                await SendMessageAsync(value.Socket, message);
             }
         }
 
-        public virtual Task ReceiveAsync(WebSocket socket, ReadOnlyMemory<byte> buffer)
+        public virtual Task ReceiveAsync(ClientOptions options, ReadOnlyMemory<byte> buffer)
             => Task.CompletedTask;
     }
 }
