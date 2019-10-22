@@ -36,7 +36,7 @@ namespace Concept.Logger
             => Task.Run(() =>
             {
                 _semaphore.Wait();
-                
+
                 //IFeatureCollection is disposed here for some reason after disconnecting and reconnecting the client, and then sending a message
                 var message = formatter(state, exception);
                 if (string.IsNullOrWhiteSpace(message))
@@ -45,21 +45,14 @@ namespace Concept.Logger
                 var date = DateTimeOffset.Now;
                 var (color, abbrevation) = LogLevelInfo(logLevel);
 
-                Append($"[{date:MMM d - hh:mm:ss tt}] ", Color.Gray);
-                Append($"[{abbrevation}] ", color);
-                Append($"[{_categoryName}]", Color.Orchid);
-                Append($"{Environment.NewLine}  -> {message}", Color.White);
+                Extensions.Append($"[{date:MMM d - hh:mm:ss tt}] ", Color.Gray);
+                Extensions.Append($"[{abbrevation}] ", color);
+                Extensions.Append($"[{_categoryName}]", Color.Orchid);
+                Extensions.Append($"{Environment.NewLine}  -> {message}", Color.White);
                 Console.Write(Environment.NewLine);
 
                 _semaphore.Release();
             });
-
-
-        private void Append(string message, Color color)
-        {
-            Console.ForegroundColor = color;
-            Console.Write(message);
-        }
 
         private (Color Color, string Abbrevation) LogLevelInfo(LogLevel logLevel)
             => logLevel switch
