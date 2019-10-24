@@ -4,38 +4,38 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Concept.Caches;
-using Concept.Options;
+using Concept.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Concept.Controllers
 {
     public class SocketControllerBase
     {
-        public ClientsCache Clients { get; }
+        public ClientsCache Cache { get; }
         private readonly ILogger<SocketControllerBase> _logger;
 
-        protected SocketControllerBase(ClientsCache clientsClients, ILogger<SocketControllerBase> logger)
+        protected SocketControllerBase(ClientsCache clientsCache, ILogger<SocketControllerBase> logger)
         {
-            Clients = clientsClients;
+            Cache = clientsCache;
             _logger = logger;
         }
 
-        public virtual Task OnConnectedAsync(ClientOptions options)
+        public virtual Task OnConnectedAsync(SocketConnection connection)
         {
-            Clients.AddClient(options);
-            _logger.LogInformation($"User with {options.UserId} snowflake connected!");
+            Cache.AddConnection(connection);
+            _logger.LogInformation($"User with {connection.UserId} snowflake connected!");
             return Task.CompletedTask;
         }
 
-        public virtual async Task OnDisconnectedAsync(ClientOptions options)
+        public virtual async Task OnDisconnectedAsync(SocketConnection connection)
         {
-            _logger.LogError($"User with {options.UserId} snowflake disconnected.");
+            _logger.LogError($"User with {connection.UserId} snowflake disconnected.");
 
             try
             {
-                await options.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
+                await connection.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
                     "Closed by remote.", CancellationToken.None);
-                Clients.RemoveClient(options.UserId);
+                Cache.RemoveConnection(connection.UserId);
             }
             catch (Exception exception)
             {
@@ -52,18 +52,18 @@ namespace Concept.Controllers
             await socket.SendAsync(raw, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public async Task SendMessageToAllAsync(string message)
+        public async Task SendToAllAsync(object data)
         {
-            foreach (var (_, value) in Clients.GetAll())
+            foreach (var value in Cache.Clients.Values)
             {
                 if (value.Socket.State != WebSocketState.Open)
                     continue;
 
-                await SendMessageAsync(value.Socket, message);
+                await SendMessageAsync(value.Socket, data);
             }
         }
 
-        public virtual Task ReceiveAsync(ClientOptions options, ReadOnlyMemory<byte> buffer)
+        public virtual Task ReceiveAsync(SocketConnection connection, ReadOnlyMemory<byte> buffer)
             => Task.CompletedTask;
     }
 }

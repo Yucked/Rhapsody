@@ -2,10 +2,10 @@
 using System.Text.Json;
 using System.Threading.Tasks;
 using Concept.Caches;
-using Concept.Options;
+using Concept.Entities;
+using Concept.Entities.Payloads;
+using Concept.Entities.Payloads.Inbound;
 using Microsoft.Extensions.Logging;
-using Test.Payloads;
-using Test.Payloads.Inbound;
 using Vysn.Commons;
 using Vysn.Voice;
 using Vysn.Voice.Enums;
@@ -17,14 +17,14 @@ namespace Concept.Controllers
     {
         private readonly ILogger _logger;
 
-        public WebSocketController(ClientsCache clientsClients, ILogger<WebSocketController> logger)
-            : base(clientsClients, logger)
+        public WebSocketController(ClientsCache cacheCache, ILogger<WebSocketController> logger)
+            : base(cacheCache, logger)
         {
             _logger = logger;
         }
 
         /// <inheritdoc />
-        public override async Task ReceiveAsync(ClientOptions options, ReadOnlyMemory<byte> buffer)
+        public override async Task ReceiveAsync(SocketConnection connection, ReadOnlyMemory<byte> buffer)
         {
             var payload = JsonSerializer.Deserialize<BasePayload>(buffer.Span);
 
@@ -41,16 +41,18 @@ namespace Concept.Controllers
                     await gatewayClient.RunAsync(new ConnectionPacket
                     {
                         GuildId = Snowflake.FromId(payload.GuildId),
-                        UserId = Snowflake.FromId(options.UserId),
+                        UserId = Snowflake.FromId(connection.UserId),
                         Token = connectPayload.Token,
                         SessionId = connectPayload.SessionId,
                         Endpoint = connectPayload.Endpoint
                     });
-                    options.AddGatewayClient(gatewayClient);
+                    connection.AddGatewayClient(gatewayClient);
+
+                    await SendMessageAsync(connection.Socket, "Connected accepted!");
                     break;
             }
 
-            await base.ReceiveAsync(options, buffer);
+            await base.ReceiveAsync(connection, buffer);
         }
 
         private Task OnLogAsync(LogMessage logMessage)
