@@ -1,8 +1,9 @@
 using System;
 using Concept.Caches;
 using Concept.Controllers;
+using Concept.Entities.Options;
+using Concept.Jobs;
 using Concept.Middlewares;
-using Concept.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ namespace Concept
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<MetricsJob>();
             services.AddTransient<ClientsCache>();
             services.AddSingleton<Theoretical>();
             services.AddSingleton<WebSocketController>();
@@ -49,8 +51,11 @@ namespace Concept
             app.UseEndpoints(endpoints => endpoints.MapControllers());
 
             if (_options.CacheOptions.IsEnabled && _options.CacheOptions.ExpiresAfter > 0)
-                _ = provider.GetRequiredService<ResponsesCache>()
-                    .AutoPurgeAsync();
+                _ = provider.GetRequiredService<ResponsesCache>().AutoPurgeAsync();
+
+            var metricsJob = provider.GetRequiredService<MetricsJob>();
+            metricsJob.ChangeDelay(TimeSpan.FromSeconds(5));
+            metricsJob.Start();
         }
     }
 }

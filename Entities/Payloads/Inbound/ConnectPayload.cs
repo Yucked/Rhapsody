@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Test.Payloads.Inbound
+namespace Concept.Entities.Payloads.Inbound
 {
     public sealed class ConnectPayload : BasePayload
     {

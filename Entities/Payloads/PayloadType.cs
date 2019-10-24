@@ -1,4 +1,4 @@
-namespace Test.Payloads
+namespace Concept.Entities.Payloads
 {
     public enum PayloadType : int
     {

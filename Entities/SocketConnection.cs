@@ -2,16 +2,18 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using Vysn.Voice;
 
-namespace Concept.Options
+namespace Concept.Entities
 {
-    public sealed class ClientOptions
+    public readonly struct SocketConnection
     {
-        public ulong UserId { get; set; }
-        public WebSocket Socket { get; set; }
+        public ulong UserId { get; }
+        public WebSocket Socket { get; }
         public ConcurrentDictionary<ulong, VoiceGatewayClient> GatewayClients { get; }
 
-        public ClientOptions()
+        public SocketConnection(ulong userId, WebSocket socket)
         {
+            UserId = userId;
+            Socket = socket;
             GatewayClients = new ConcurrentDictionary<ulong, VoiceGatewayClient>();
         }
 

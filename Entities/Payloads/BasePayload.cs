@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Test.Payloads
+namespace Concept.Entities.Payloads
 {
     public class BasePayload
     {

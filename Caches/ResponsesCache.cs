@@ -2,9 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using Concept.Options;
+using Concept.Entities.Options;
 using Microsoft.Extensions.Options;
-using Theory.Infos;
 using Theory.Providers;
 using Theory.Search;
 
@@ -38,7 +37,7 @@ namespace Concept.Caches
 
         private void RemoveExpiredEntries(ConcurrentDictionary<DateTimeOffset, SearchResponse> cache)
         {
-            foreach (var (key, value) in cache)
+            foreach (var (key, _) in cache)
             {
                 if (key < DateTimeOffset.Now)
                     continue;
@@ -51,10 +50,10 @@ namespace Concept.Caches
         {
             return provider switch
             {
-                ProviderType.YouTube => TryGetAnyCache(_ytCache, query, out value),
+                ProviderType.YouTube    => TryGetAnyCache(_ytCache, query, out value),
                 ProviderType.SoundCloud => TryGetAnyCache(_scCache, query, out value),
-                ProviderType.BandCamp => TryGetAnyCache(_bcCache, query, out value),
-                _ => throw new Exception($"Invalid provider {provider}.")
+                ProviderType.BandCamp   => TryGetAnyCache(_bcCache, query, out value),
+                _                       => throw new Exception($"Invalid provider {provider}.")
             };
         }
 
@@ -63,22 +62,19 @@ namespace Concept.Caches
             string query,
             out SearchResponse value)
         {
-            foreach (SearchResponse cacheResponse in cache.Values)
+            foreach (var cacheResponse in cache.Values)
             {
                 if (query.Contains(cacheResponse.Query))
                 {
                     value = cacheResponse;
                     return true;
                 }
-                else
-                {
-                    foreach (TrackInfo track in cacheResponse.Tracks)
-                        if (track.Id == query || track.Url == query)
-                        {
-                            value = cacheResponse;
-                            return true;
-                        }
-                }
+
+                if (!cacheResponse.Tracks.Any(track => track.Id == query || track.Url == query))
+                    continue;
+                
+                value = cacheResponse;
+                return true;
             }
 
             value = default;
@@ -89,10 +85,10 @@ namespace Concept.Caches
         {
             return provider switch
             {
-                ProviderType.YouTube => TryAddAnyCache(_ytCache, value),
+                ProviderType.YouTube    => TryAddAnyCache(_ytCache, value),
                 ProviderType.SoundCloud => TryAddAnyCache(_scCache, value),
-                ProviderType.BandCamp => TryAddAnyCache(_bcCache, value),
-                _ => throw new Exception($"Invalid provider {provider}.")
+                ProviderType.BandCamp   => TryAddAnyCache(_bcCache, value),
+                _                       => throw new Exception($"Invalid provider {provider}.")
             };
         }
 
@@ -100,12 +96,11 @@ namespace Concept.Caches
             ConcurrentDictionary<DateTimeOffset, SearchResponse> cache,
             SearchResponse value)
         {
-            if (_cacheOptions.Limit > 0 && cache.Count >= _cacheOptions.Limit)
-            {
-                cache.TryRemove(cache.FirstOrDefault().Key, out _);
+            if (_cacheOptions.Limit <= 0 || cache.Count < _cacheOptions.Limit)
                 return cache.TryAdd(DateTimeOffset.Now.AddMinutes(_cacheOptions.ExpiresAfter), value);
-            }
 
+            cache.TryRemove(cache.FirstOrDefault()
+                .Key, out _);
             return cache.TryAdd(DateTimeOffset.Now.AddMinutes(_cacheOptions.ExpiresAfter), value);
         }
     }
