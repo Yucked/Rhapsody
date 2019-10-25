@@ -1,5 +1,7 @@
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
+using Colorful;
 using Concept.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
@@ -27,10 +29,45 @@ namespace Concept
                 _                                 => LogLevel.Trace
             };
 
-        public static void Append(string message, Color color)
+
+        public static (Color Color, string Abbrevation) LogLevelInfo(this LogLevel logLevel)
+            => logLevel switch
+            {
+                LogLevel.Information => (Color.SpringGreen, "INFO"),
+                LogLevel.Debug       => (Color.MediumPurple, "DBUG"),
+                LogLevel.Trace       => (Color.MediumPurple, "TRCE"),
+                LogLevel.Critical    => (Color.Crimson, "CRIT"),
+                LogLevel.Error       => (Color.Crimson, "EROR"),
+                LogLevel.Warning     => (Color.Orange, "WARN"),
+                _                    => (Color.Tomato, "UKNW")
+            };
+
+        public static void PrintHeaderAndInformation()
         {
-            Console.ForegroundColor = color;
-            Console.Write(message);
+            const string logo =
+                @"
+             ▄▄·        ▐ ▄  ▄▄· ▄▄▄ . ▄▄▄·▄▄▄▄▄
+            ▐█ ▌▪▪     •█▌▐█▐█ ▌▪▀▄.▀·▐█ ▄█•██  
+            ██ ▄▄ ▄█▀▄ ▐█▐▐▌██ ▄▄▐▀▀▪▄ ██▀· ▐█.▪
+            ▐███▌▐█▌.▐▌██▐█▌▐███▌▐█▄▄▌▐█▪·• ▐█▌·
+            ·▀▀▀  ▀█▄▀▪▀▀ █▪·▀▀▀  ▀▀▀ .▀    ▀▀▀ 
+";
+            
+            var lineBreak = new string('-', 105);
+            Console.WriteLine(logo, Color.Crimson);
+            Console.WriteLine(lineBreak);
+            
+            const string logMessage = "    Framework: {0} - OS Arch: {1} - Process Arch: {2} - OS: {3}";
+            var formatters = new[]
+            {
+                new Formatter(RuntimeInformation.FrameworkDescription, Color.Aqua),
+                new Formatter(RuntimeInformation.OSArchitecture, Color.Gold),
+                new Formatter(RuntimeInformation.ProcessArchitecture, Color.LawnGreen),
+                new Formatter(RuntimeInformation.OSDescription, Color.HotPink)
+            };
+
+            Console.WriteLineFormatted(logMessage, Color.White, formatters);
+            Console.WriteLine(lineBreak);
         }
     }
 }

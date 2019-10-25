@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading.Tasks;
 using Concept.Entities.Options;
 using Microsoft.Extensions.Options;
 using Theory.Providers;
@@ -12,30 +11,19 @@ namespace Concept.Caches
     public sealed class ResponsesCache
     {
         private readonly CacheOptions _cacheOptions;
-        private readonly ConcurrentDictionary<DateTimeOffset, SearchResponse> _ytCache;
-        private readonly ConcurrentDictionary<DateTimeOffset, SearchResponse> _scCache;
-        private readonly ConcurrentDictionary<DateTimeOffset, SearchResponse> _bcCache;
+        public ConcurrentDictionary<DateTimeOffset, SearchResponse> YtCache { get; }
+        public ConcurrentDictionary<DateTimeOffset, SearchResponse> ScCache { get; }
+        public ConcurrentDictionary<DateTimeOffset, SearchResponse> BcCache { get; }
 
         public ResponsesCache(IOptions<ApplicationOptions> aOptions)
         {
             _cacheOptions = aOptions.Value.CacheOptions;
-            _ytCache = new ConcurrentDictionary<DateTimeOffset, SearchResponse>();
-            _scCache = new ConcurrentDictionary<DateTimeOffset, SearchResponse>();
-            _bcCache = new ConcurrentDictionary<DateTimeOffset, SearchResponse>();
+            YtCache = new ConcurrentDictionary<DateTimeOffset, SearchResponse>();
+            ScCache = new ConcurrentDictionary<DateTimeOffset, SearchResponse>();
+            BcCache = new ConcurrentDictionary<DateTimeOffset, SearchResponse>();
         }
 
-        public async Task AutoPurgeAsync()
-        {
-            while (_cacheOptions.IsEnabled && _cacheOptions.ExpiresAfter > 0)
-            {
-                RemoveExpiredEntries(_ytCache);
-                RemoveExpiredEntries(_scCache);
-                RemoveExpiredEntries(_bcCache);
-                await Task.Delay(TimeSpan.FromMinutes(10));
-            }
-        }
-
-        private void RemoveExpiredEntries(ConcurrentDictionary<DateTimeOffset, SearchResponse> cache)
+        public void RemoveExpiredEntries(ConcurrentDictionary<DateTimeOffset, SearchResponse> cache)
         {
             foreach (var (key, _) in cache)
             {
@@ -50,9 +38,9 @@ namespace Concept.Caches
         {
             return provider switch
             {
-                ProviderType.YouTube    => TryGetAnyCache(_ytCache, query, out value),
-                ProviderType.SoundCloud => TryGetAnyCache(_scCache, query, out value),
-                ProviderType.BandCamp   => TryGetAnyCache(_bcCache, query, out value),
+                ProviderType.YouTube    => TryGetAnyCache(YtCache, query, out value),
+                ProviderType.SoundCloud => TryGetAnyCache(ScCache, query, out value),
+                ProviderType.BandCamp   => TryGetAnyCache(BcCache, query, out value),
                 _                       => throw new Exception($"Invalid provider {provider}.")
             };
         }
@@ -72,7 +60,7 @@ namespace Concept.Caches
 
                 if (!cacheResponse.Tracks.Any(track => track.Id == query || track.Url == query))
                     continue;
-                
+
                 value = cacheResponse;
                 return true;
             }
@@ -85,9 +73,9 @@ namespace Concept.Caches
         {
             return provider switch
             {
-                ProviderType.YouTube    => TryAddAnyCache(_ytCache, value),
-                ProviderType.SoundCloud => TryAddAnyCache(_scCache, value),
-                ProviderType.BandCamp   => TryAddAnyCache(_bcCache, value),
+                ProviderType.YouTube    => TryAddAnyCache(YtCache, value),
+                ProviderType.SoundCloud => TryAddAnyCache(ScCache, value),
+                ProviderType.BandCamp   => TryAddAnyCache(BcCache, value),
                 _                       => throw new Exception($"Invalid provider {provider}.")
             };
         }

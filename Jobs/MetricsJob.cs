@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Concept.Controllers;
 using Concept.Entities;
+using Microsoft.Extensions.Logging;
 using Vysn.Voice.Enums;
 
 namespace Concept.Jobs
@@ -11,15 +12,17 @@ namespace Concept.Jobs
     public sealed class MetricsJob : BaseJob
     {
         /// <inheritdoc />
-        public override string Name { get; } = "Metrics";
+        protected override string Name { get; }
 
         private DateTimeOffset _lastTimestamp;
         private TimeSpan _lastTotalProcessorTime = TimeSpan.Zero;
         private readonly Process _process;
         private readonly WebSocketController _controller;
 
-        public MetricsJob(WebSocketController controller)
+        public MetricsJob(WebSocketController controller, ILogger<MetricsJob> logger)
+            : base(logger)
         {
+            Name = "Metrics";
             _controller = controller;
             _process = Process.GetCurrentProcess();
         }
@@ -58,6 +61,7 @@ namespace Concept.Jobs
 
             _lastTimestamp = DateTimeOffset.UtcNow;
             var totalCpuUsed = totalCpuTimeUsed * 100 / cpuTimeElapsed;
+
 
             var clients = _controller.Cache.Clients.Values;
             return new ApplicationMetric

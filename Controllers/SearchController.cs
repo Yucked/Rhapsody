@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Concept.Caches;
 using Microsoft.AspNetCore.Authorization;
@@ -19,7 +18,7 @@ namespace Concept.Controllers
         public SearchController(Theoretical theoretical, IServiceProvider serviceProvider)
         {
             _theoretical = theoretical;
-            _cache = serviceProvider.GetServices<ResponsesCache>().FirstOrDefault();
+            _cache = serviceProvider.GetService<ResponsesCache>();
         }
 
         [HttpGet("youtube")]

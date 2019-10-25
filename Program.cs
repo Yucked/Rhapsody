@@ -13,6 +13,7 @@ namespace Concept
     {
         public static void Main()
         {
+            Extensions.PrintHeaderAndInformation();
             ApplicationOptions applicationOptions;
 
             if (!File.Exists("options.json"))
