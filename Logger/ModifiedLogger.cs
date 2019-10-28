@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
+using Colorful;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Console = Colorful.Console;
@@ -36,40 +37,26 @@ namespace Concept.Logger
             => Task.Run(() =>
             {
                 _semaphore.Wait();
-                
+
                 var message = formatter(state, exception);
                 if (string.IsNullOrWhiteSpace(message))
                     return;
 
                 var date = DateTimeOffset.Now;
-                var (color, abbrevation) = LogLevelInfo(logLevel);
+                var (color, abbrevation) = logLevel.LogLevelInfo();
 
-                Append($"[{date:MMM d - hh:mm:ss tt}] ", Color.Gray);
-                Append($"[{abbrevation}] ", color);
-                Append($"[{_categoryName}]", Color.Orchid);
-                Append($"{Environment.NewLine}  -> {message}", Color.White);
-                Console.Write(Environment.NewLine);
+                const string logMessage = "[{0}] [{1}] [{2}]\n    {3}";
+                var formatters = new[]
+                {
+                    new Formatter($"{date:MMM d - hh:mm:ss tt}", Color.Gray),
+                    new Formatter(abbrevation, color),
+                    new Formatter(_categoryName, color),
+                    new Formatter(message, Color.Wheat)
+                };
+
+                Console.WriteLineFormatted(logMessage, Color.White, formatters);
 
                 _semaphore.Release();
             });
-
-
-        private void Append(string message, Color color)
-        {
-            Console.ForegroundColor = color;
-            Console.Write(message);
-        }
-
-        private (Color Color, string Abbrevation) LogLevelInfo(LogLevel logLevel)
-            => logLevel switch
-            {
-                LogLevel.Information => (Color.SpringGreen, "INFO"),
-                LogLevel.Debug       => (Color.MediumPurple, "DBUG"),
-                LogLevel.Trace       => (Color.MediumPurple, "TRCE"),
-                LogLevel.Critical    => (Color.Crimson, "CRIT"),
-                LogLevel.Error       => (Color.Crimson, "EROR"),
-                LogLevel.Warning     => (Color.Orange, "WARN"),
-                _                    => (Color.Tomato, "UKNW")
-            };
     }
 }
