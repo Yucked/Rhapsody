@@ -24,14 +24,14 @@ namespace Concept.Middlewares
 
         public async Task Invoke(HttpContext context, WebSocketController controller)
         {
-            if (!IsValidRequest(context, out var snowflake))
-                return;
-
             if (!context.WebSockets.IsWebSocketRequest)
             {
                 await _next(context);
                 return;
             }
+
+            if (!IsValidRequest(context, out var snowflake))
+                return;
 
             _logger.LogInformation(
                 $"Incoming websocket request from {context.Connection.RemoteIpAddress}:{context.Connection.RemotePort}.");
@@ -93,7 +93,6 @@ namespace Concept.Middlewares
                 snowflake = default;
                 return false;
             }
-
 
             if (!ulong.TryParse(userId, out snowflake))
             {

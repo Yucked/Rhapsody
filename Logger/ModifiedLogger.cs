@@ -28,7 +28,7 @@ namespace Concept.Logger
         public bool IsEnabled(LogLevel logLevel)
         {
             // TODO: Check logging properly.
-            var level = (LogLevel) Enum.Parse(typeof(LogLevel), _section.Value);
+            var level = (LogLevel)Enum.Parse(typeof(LogLevel), _section.Value);
             return level <= logLevel;
         }
 
@@ -38,9 +38,18 @@ namespace Concept.Logger
             {
                 _semaphore.Wait();
 
-                var message = formatter(state, exception);
-                if (string.IsNullOrWhiteSpace(message))
+                var message = string.Empty;
+                try
+                {
+                    //IFeatureCollection disposing here, but with that try catch the log continues normal
+                    message = formatter(state, exception);
+                    if (string.IsNullOrWhiteSpace(message))
+                        return;
+                }
+                catch
+                {
                     return;
+                }
 
                 var date = DateTimeOffset.Now;
                 var (color, abbrevation) = logLevel.LogLevelInfo();
