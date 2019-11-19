@@ -1,30 +1,30 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Net.WebSockets;
+using Concept.Entities;
 
 namespace Concept.Caches
 {
     public sealed class ClientsCache
     {
-        private readonly ConcurrentDictionary<ulong, WebSocket> _clients;
+        public int Count
+            => Clients.Count;
+
+        public ConcurrentDictionary<ulong, SocketConnection> Clients { get; }
 
         public ClientsCache()
-            => _clients = new ConcurrentDictionary<ulong, WebSocket>();
+            => Clients = new ConcurrentDictionary<ulong, SocketConnection>();
 
-        public WebSocket GetClient(ulong snowflake)
-            => _clients.TryGetValue(snowflake, out var client) ? client : default;
+        public SocketConnection GetConnection(ulong snowflake)
+            => Clients.TryGetValue(snowflake, out var client) ? client : default;
 
-        public IReadOnlyDictionary<ulong, WebSocket> GetAll()
-            => _clients;
+        public void AddConnection(SocketConnection connection)
+            => Clients.TryAdd(connection.UserId, connection);
 
-        public void AddClient(ulong snowflake, WebSocket socket)
-            => _clients.TryAdd(snowflake, socket);
-
-        public void RemoveClient(ulong snowflake)
+        public void RemoveConnection(ulong snowflake)
         {
-            _clients.TryGetValue(snowflake, out var socket);
-            socket.Dispose();
-            _clients.TryRemove(snowflake, out socket);
+            Clients.TryGetValue(snowflake, out var options);
+            options.Socket.Dispose();
+            options.GatewayClients.Clear();
+            Clients.TryRemove(snowflake, out options);
         }
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace Concept.Options
+namespace Concept.Entities.Options
 {
     public sealed class ApplicationOptions
     {

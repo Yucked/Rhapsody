@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
+using Concept.Entities.Options;
 using Concept.Logger;
-using Concept.Options;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -13,6 +13,7 @@ namespace Concept
     {
         public static void Main()
         {
+            Extensions.PrintHeaderAndInformation();
             ApplicationOptions applicationOptions;
 
             if (!File.Exists("options.json"))

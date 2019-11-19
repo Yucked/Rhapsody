@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Concept.Caches;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Theory;
 using Theory.Providers;
-using Theory.Search;
 
 namespace Concept.Controllers
 {
@@ -20,7 +18,7 @@ namespace Concept.Controllers
         public SearchController(Theoretical theoretical, IServiceProvider serviceProvider)
         {
             _theoretical = theoretical;
-            _cache = serviceProvider.GetServices<ResponsesCache>().FirstOrDefault();
+            _cache = serviceProvider.GetService<ResponsesCache>();
         }
 
         [HttpGet("youtube")]
@@ -47,8 +45,7 @@ namespace Concept.Controllers
             var provider = _theoretical.GetProvider(providerType);
             var result = await provider.SearchAsync(query);
 
-            if (_cache != null)
-                _cache.TryAddCache(result, providerType);
+            _cache?.TryAddCache(result, providerType);
 
             return Ok(result);
         }
