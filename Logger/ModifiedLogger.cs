@@ -13,13 +13,15 @@ namespace Concept.Logger
     {
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
-        private readonly SemaphoreSlim _semaphore;
 
         public ModifiedLogger(string categoryName, IConfigurationSection section)
         {
             _categoryName = categoryName;
             _section = section;
-            _semaphore = new SemaphoreSlim(1, 1);
+
+            // Don't need SemaphoreSlim anymore, because the log is writting in one line:
+            //Console.WriteLineFormatted(logMessage, Color.White, formatters);
+            //_semaphore = new SemaphoreSlim(1, 1);
         }
 
         public IDisposable BeginScope<TState>(TState state)
@@ -36,8 +38,6 @@ namespace Concept.Logger
             Func<TState, Exception, string> formatter)
             => Task.Run(() =>
             {
-                _semaphore.Wait();
-
                 var message = string.Empty;
                 try
                 {
@@ -64,8 +64,6 @@ namespace Concept.Logger
                 };
 
                 Console.WriteLineFormatted(logMessage, Color.White, formatters);
-
-                _semaphore.Release();
             });
     }
 }
