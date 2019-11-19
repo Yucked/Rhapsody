@@ -18,12 +18,6 @@ namespace Concept.Logger
         {
             _categoryName = categoryName;
             _section = section;
-
-            // Don't need SemaphoreSlim anymore, because the log is writting in one line:
-            // Console.WriteLineFormatted(logMessage, Color.White, formatters);
-            // Without the SemaphoreSlim the ModifiedLogger class is disposed more faster
-            // speeding up the response time.
-            // _semaphore = new SemaphoreSlim(1, 1);
         }
 
         public IDisposable BeginScope<TState>(TState state)
@@ -38,34 +32,21 @@ namespace Concept.Logger
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
             Func<TState, Exception, string> formatter)
-            => Task.Run(() =>
+        {
+            var message = string.Empty;
+            try
             {
-                var message = string.Empty;
-                try
-                {
-                    //IFeatureCollection disposing here, but with that try catch the log continues normal
-                    message = formatter(state, exception);
-                    if (string.IsNullOrWhiteSpace(message))
-                        return;
-                }
-                catch
-                {
+                //IFeatureCollection disposing here, but with that try catch the log continues normal
+                message = formatter(state, exception);
+                if (string.IsNullOrWhiteSpace(message))
                     return;
-                }
+            }
+            catch
+            {
+                return;
+            }
 
-                var date = DateTimeOffset.Now;
-                var (color, abbrevation) = logLevel.LogLevelInfo();
-
-                const string logMessage = "[{0}] [{1}] [{2}]\n    {3}";
-                var formatters = new[]
-                {
-                    new Formatter($"{date:MMM d - hh:mm:ss tt}", Color.Gray),
-                    new Formatter(abbrevation, color),
-                    new Formatter(_categoryName, color),
-                    new Formatter(message, Color.Wheat)
-                };
-
-                Console.WriteLineFormatted(logMessage, Color.White, formatters);
-            });
+            LogWriter.WriteLog.Invoke(message, _categoryName, logLevel);
+        }
     }
 }

@@ -13,6 +13,7 @@ namespace Concept
     {
         public static void Main()
         {
+            LogWriter.Start();
             Extensions.PrintHeaderAndInformation();
             ApplicationOptions applicationOptions;
 
