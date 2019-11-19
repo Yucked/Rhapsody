@@ -20,8 +20,10 @@ namespace Concept.Logger
             _section = section;
 
             // Don't need SemaphoreSlim anymore, because the log is writting in one line:
-            //Console.WriteLineFormatted(logMessage, Color.White, formatters);
-            //_semaphore = new SemaphoreSlim(1, 1);
+            // Console.WriteLineFormatted(logMessage, Color.White, formatters);
+            // Without the SemaphoreSlim the ModifiedLogger class is disposed more faster
+            // speeding up the response time.
+            // _semaphore = new SemaphoreSlim(1, 1);
         }
 
         public IDisposable BeginScope<TState>(TState state)
