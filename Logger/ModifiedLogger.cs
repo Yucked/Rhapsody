@@ -1,11 +1,6 @@
 using System;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using Colorful;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Console = Colorful.Console;
 
 namespace Concept.Logger
 {
