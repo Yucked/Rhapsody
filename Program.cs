@@ -43,13 +43,10 @@ namespace Concept
                 })
                 .ConfigureLogging((hostBuilder, logging) =>
                 {
-                    var logJob = new LogJob();
                     var section = hostBuilder.Configuration.GetSection("Logging");
 
-                    logging.Services.AddSingleton(logJob);
                     logging.ClearProviders();
-                    logging.AddProvider(new ModifiedProvider(section, logJob));
-                    logJob.Start();
+                    logging.AddProvider(new ModifiedProvider(section));
                 })
                 .Build()
                 .Run();

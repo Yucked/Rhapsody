@@ -9,12 +9,14 @@ namespace Concept.Logger
     {
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
-        private readonly LogJob _logger;
+        private readonly LogWriter _logger;
 
-        public ModifiedLogger(string categoryName, IConfigurationSection section, LogJob logger)
+        public ModifiedLogger(string categoryName, IConfigurationSection section, LogWriter logger)
         {
             _categoryName = categoryName;
             _section = section;
+
+            // Here LogWriter is the same of the provider, injected by the ModifiedProvider.
             _logger = logger;
         }
 
@@ -38,6 +40,7 @@ namespace Concept.Logger
                 if (string.IsNullOrWhiteSpace(message))
                     return;
 
+                // Invoke an event where will handle the log queue.
                 _logger.WriteLog.Invoke(message, _categoryName, logLevel);
             }
             catch { }
