@@ -1,5 +1,4 @@
 using System;
-using Concept.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -35,7 +34,7 @@ namespace Concept.Logger
         {
             try
             {
-                //IFeatureCollection disposing here, but with that try catch the log continues normal
+                // IFeatureCollection disposing here, but with that try catch the log continues normal
                 var message = formatter(state, exception);
                 if (string.IsNullOrWhiteSpace(message))
                     return;

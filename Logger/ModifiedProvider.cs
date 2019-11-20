@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Concept.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -17,7 +16,7 @@ namespace Concept.Logger
             _loggers = new ConcurrentDictionary<string, ModifiedLogger>();
 
             // I removed the LogJob param because we have one unique LoggerProvider instance per app.
-            _logger = new LogWriter();
+            _logger = new LogWriter(default);
             _logger.Start();
         }
 
