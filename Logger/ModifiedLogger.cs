@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Concept.Logger
 {
-    public sealed class ModifiedLogger : ILogger
+    public readonly struct ModifiedLogger : ILogger
     {
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
