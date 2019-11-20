@@ -46,14 +46,14 @@ namespace Concept.Jobs
         private readonly Queue<LogMessage> LogsQueue = new Queue<LogMessage>();
         private bool QueueStopped = true;
 
-        private bool CanCreateThred
+        private bool CanCreateThread
             => QueueStopped && Semaphore.CurrentCount > 0;
 
         protected override string Name { get; } = "LogWriter";
 
         protected override async Task InitializeAsync()
         {
-            if (CanCreateThred)
+            if (CanCreateThread)
                 await WriteNextLogAsync();
         }
 
@@ -61,7 +61,7 @@ namespace Concept.Jobs
         {
             LogsQueue.Enqueue(new LogMessage(message, categoryName, logLevel));
 
-            if (CanCreateThred)
+            if (CanCreateThread)
                 _ = Task.Run(async () => await WriteNextLogAsync());
         }
 
