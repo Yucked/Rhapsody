@@ -16,5 +16,6 @@
     <ItemGroup>
         <ProjectReference Include="..\..\Vysn\Voice\Voice.csproj" />
         <ProjectReference Include="..\Theory\Theory\Theory.csproj" />
+        <ProjectReference Include="..\Vsyn\Voice\Voice.csproj" />
     </ItemGroup>
 </Project>

@@ -17,7 +17,6 @@ namespace Concept.Entities.Options
         [JsonPropertyName("cacheOptions")]
         public CacheOptions CacheOptions { get; set; }
 
-
         public static ApplicationOptions Default
             => new ApplicationOptions
             {
@@ -26,7 +25,6 @@ namespace Concept.Entities.Options
                 Authorization = "Conceptual",
                 CacheOptions = new CacheOptions
                 {
-                    IsEnabled = false,
                     Limit = 100,
                     ExpiresAfter = (long) TimeSpan.FromMinutes(30)
                         .TotalMinutes

@@ -24,18 +24,7 @@ namespace Concept
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<PurgeJob>();
-            services.AddSingleton<MetricsJob>();
-            services.AddTransient<ClientsCache>();
-            services.AddSingleton<Theoretical>();
-            services.AddSingleton<WebSocketController>();
-            services.Configure<ApplicationOptions>(_configuration);
-            services.AddControllers();
-            services.AddAuthentication("HeaderAuth")
-                .UseHeaderAuthentication(options => options.Authorization = _options.Authorization);
-
-            if (_options.CacheOptions.IsEnabled)
-                services.AddSingleton<ResponsesCache>();
+            
         }
 
         public void Configure(IApplicationBuilder app, IServiceProvider provider)
@@ -50,14 +39,6 @@ namespace Concept
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => endpoints.MapControllers());
-
-            var metricsJob = provider.GetRequiredService<MetricsJob>();
-            metricsJob.ChangeDelay(TimeSpan.FromSeconds(5));
-            metricsJob.Start();
-
-            var purgeJob = provider.GetRequiredService<PurgeJob>();
-            purgeJob.ChangeDelay(TimeSpan.FromSeconds(5));
-            purgeJob.Start();
         }
     }
 }
