@@ -71,6 +71,18 @@ namespace Concept
         }
 
         public static void RunAsyncValueTask(Func<ValueTask> valuetask)
-            => _ = Task.Run(async () => await valuetask());
+            => _ = Task.Run(async () => await valuetask()).ExceptionAsync();
+
+        public static async Task ExceptionAsync(this Task task)
+        {
+            try
+            {
+                await task;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }
