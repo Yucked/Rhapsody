@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Concept.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -8,11 +9,13 @@ namespace Concept.Logger
     {
         private readonly IConfigurationSection _configuration;
         private readonly ConcurrentDictionary<string, ModifiedLogger> _loggers;
+        private readonly LogJob _logger;
 
-        public ModifiedProvider(IConfiguration configuration)
+        public ModifiedProvider(IConfiguration configuration, LogJob logJob)
         {
             _configuration = configuration.GetSection("LogLevel");
             _loggers = new ConcurrentDictionary<string, ModifiedLogger>();
+            _logger = logJob;
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -21,7 +24,7 @@ namespace Concept.Logger
                 return logger;
 
             var category = _configuration.GetSection(categoryName.Split('.')[0]);
-            logger = new ModifiedLogger(categoryName, category);
+            logger = new ModifiedLogger(categoryName, category, _logger);
             _loggers.TryAdd(categoryName, logger);
             return logger;
         }

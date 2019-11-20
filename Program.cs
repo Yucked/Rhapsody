@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Concept.Jobs;
 
 namespace Concept
 {
@@ -13,7 +15,6 @@ namespace Concept
     {
         public static void Main()
         {
-            LogWriter.Start();
             Extensions.PrintHeaderAndInformation();
             ApplicationOptions applicationOptions;
 
@@ -42,9 +43,13 @@ namespace Concept
                 })
                 .ConfigureLogging((hostBuilder, logging) =>
                 {
+                    var logJob = new LogJob();
                     var section = hostBuilder.Configuration.GetSection("Logging");
+
+                    logging.Services.AddSingleton(logJob);
                     logging.ClearProviders();
-                    logging.AddProvider(new ModifiedProvider(section));
+                    logging.AddProvider(new ModifiedProvider(section, logJob));
+                    logJob.Start();
                 })
                 .Build()
                 .Run();

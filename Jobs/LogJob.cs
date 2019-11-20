@@ -1,15 +1,16 @@
-﻿using Colorful;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Colorful;
+using Microsoft.Extensions.Logging;
 using Console = Colorful.Console;
 
-namespace Concept.Logger
+namespace Concept.Jobs
 {
-    public static class LogWriter
+    public sealed class LogJob : BaseJob
     {
         private readonly struct LogMessage
         {
@@ -27,34 +28,44 @@ namespace Concept.Logger
             public readonly LogLevel LogLevel { get; }
         }
 
-        public static Action<string, string, LogLevel> WriteLog;
+        public LogJob() : base(default)
+        {
+            OnLog += LogReceived;
+        }
 
-        private static event Action<string, string, LogLevel> OnLog
+        public Action<string, string, LogLevel> WriteLog;
+
+        private event Action<string, string, LogLevel> OnLog
         {
             add => WriteLog += value;
             remove => WriteLog -= value;
         }
 
-        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
 
-        private static readonly Queue<LogMessage> LogsQueue = new Queue<LogMessage>();
-        private static bool QueueStopped = true;
+        private readonly Queue<LogMessage> LogsQueue = new Queue<LogMessage>();
+        private bool QueueStopped = true;
 
-        public static void Start()
+        private bool CanCreateThred
+            => QueueStopped && Semaphore.CurrentCount > 0;
+
+        protected override string Name { get; } = "LogWriter";
+
+        protected override async Task InitializeAsync()
         {
-            OnLog += LogReceived;
-            _ = Task.Run(async () => await WriteNextLogAsync());
+            if (CanCreateThred)
+                await WriteNextLogAsync();
         }
 
-        private static void LogReceived(string message, string categoryName, LogLevel logLevel)
+        private void LogReceived(string message, string categoryName, LogLevel logLevel)
         {
             LogsQueue.Enqueue(new LogMessage(message, categoryName, logLevel));
 
-            if (QueueStopped && Semaphore.CurrentCount > 0)
+            if (CanCreateThred)
                 _ = Task.Run(async () => await WriteNextLogAsync());
         }
 
-        private static async Task WriteLogAsync(LogMessage logQueueMessage)
+        private async Task WriteLogAsync(LogMessage logQueueMessage)
         {
             await Semaphore.WaitAsync();
             var date = DateTimeOffset.Now;
@@ -75,7 +86,7 @@ namespace Concept.Logger
             await WriteNextLogAsync();
         }
 
-        private static async Task WriteNextLogAsync()
+        private async Task WriteNextLogAsync()
         {
             if (LogsQueue.Count <= 0)
             {

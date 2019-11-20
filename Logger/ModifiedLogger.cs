@@ -1,4 +1,5 @@
 using System;
+using Concept.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -8,11 +9,13 @@ namespace Concept.Logger
     {
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
+        private readonly LogJob _logger;
 
-        public ModifiedLogger(string categoryName, IConfigurationSection section)
+        public ModifiedLogger(string categoryName, IConfigurationSection section, LogJob logger)
         {
             _categoryName = categoryName;
             _section = section;
+            _logger = logger;
         }
 
         public IDisposable BeginScope<TState>(TState state)
@@ -28,20 +31,16 @@ namespace Concept.Logger
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
             Func<TState, Exception, string> formatter)
         {
-            var message = string.Empty;
             try
             {
                 //IFeatureCollection disposing here, but with that try catch the log continues normal
-                message = formatter(state, exception);
+                var message = formatter(state, exception);
                 if (string.IsNullOrWhiteSpace(message))
                     return;
-            }
-            catch
-            {
-                return;
-            }
 
-            LogWriter.WriteLog.Invoke(message, _categoryName, logLevel);
+                _logger.WriteLog.Invoke(message, _categoryName, logLevel);
+            }
+            catch { }
         }
     }
 }
