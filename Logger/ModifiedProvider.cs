@@ -17,7 +17,6 @@ namespace Concept.Logger
 
             // I removed the LogJob param because we have one unique LoggerProvider instance per app.
             _logger = new LogWriter(default);
-            _logger.Start();
         }
 
         public ILogger CreateLogger(string categoryName)

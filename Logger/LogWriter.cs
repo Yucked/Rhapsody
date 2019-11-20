@@ -57,11 +57,6 @@ namespace Concept.Logger
         private bool CanCreateThread
             => QueueStopped && Semaphore.CurrentCount > 0;
 
-        public void Start()
-        {
-            TryCreateNewThread();
-        }
-
         private void LogReceived(string message, string categoryName, LogLevel logLevel)
         {
             // Here we add the message to the logqueue.
