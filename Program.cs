@@ -42,6 +42,7 @@ namespace Concept
                 .ConfigureLogging((hostBuilder, logging) =>
                 {
                     var section = hostBuilder.Configuration.GetSection("Logging");
+
                     logging.ClearProviders();
                     logging.AddProvider(new ModifiedProvider(section));
                 })

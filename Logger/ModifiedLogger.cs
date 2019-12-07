@@ -1,25 +1,22 @@
 using System;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using Colorful;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Console = Colorful.Console;
 
 namespace Concept.Logger
 {
-    public sealed class ModifiedLogger : ILogger
+    public readonly struct ModifiedLogger : ILogger
     {
         private readonly string _categoryName;
         private readonly IConfigurationSection _section;
-        private readonly SemaphoreSlim _semaphore;
+        private readonly LogWriter _logger;
 
-        public ModifiedLogger(string categoryName, IConfigurationSection section)
+        public ModifiedLogger(string categoryName, IConfigurationSection section, LogWriter logger)
         {
             _categoryName = categoryName;
             _section = section;
-            _semaphore = new SemaphoreSlim(1, 1);
+
+            // Here LogWriter is the same of the provider, injected by the ModifiedProvider.
+            _logger = logger;
         }
 
         public IDisposable BeginScope<TState>(TState state)
@@ -28,35 +25,24 @@ namespace Concept.Logger
         public bool IsEnabled(LogLevel logLevel)
         {
             // TODO: Check logging properly.
-            var level = (LogLevel) Enum.Parse(typeof(LogLevel), _section.Value);
+            var level = (LogLevel)Enum.Parse(typeof(LogLevel), _section.Value);
             return level <= logLevel;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
             Func<TState, Exception, string> formatter)
-            => Task.Run(() =>
+        {
+            try
             {
-                _semaphore.Wait();
-
+                // IFeatureCollection disposing here, but with that try catch the log continues normal
                 var message = formatter(state, exception);
                 if (string.IsNullOrWhiteSpace(message))
                     return;
 
-                var date = DateTimeOffset.Now;
-                var (color, abbrevation) = logLevel.LogLevelInfo();
-
-                const string logMessage = "[{0}] [{1}] [{2}]\n    {3}";
-                var formatters = new[]
-                {
-                    new Formatter($"{date:MMM d - hh:mm:ss tt}", Color.Gray),
-                    new Formatter(abbrevation, color),
-                    new Formatter(_categoryName, color),
-                    new Formatter(message, Color.Wheat)
-                };
-
-                Console.WriteLineFormatted(logMessage, Color.White, formatters);
-
-                _semaphore.Release();
-            });
+                // Invoke an event where will handle the log queue.
+                _logger.WriteLog.Invoke(message, _categoryName, logLevel);
+            }
+            catch { }
+        }
     }
 }

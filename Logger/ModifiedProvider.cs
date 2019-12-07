@@ -8,11 +8,15 @@ namespace Concept.Logger
     {
         private readonly IConfigurationSection _configuration;
         private readonly ConcurrentDictionary<string, ModifiedLogger> _loggers;
+        private readonly LogWriter _logger;
 
         public ModifiedProvider(IConfiguration configuration)
         {
             _configuration = configuration.GetSection("LogLevel");
             _loggers = new ConcurrentDictionary<string, ModifiedLogger>();
+
+            // I removed the LogJob param because we have one unique LoggerProvider instance per app.
+            _logger = new LogWriter(default);
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -21,7 +25,7 @@ namespace Concept.Logger
                 return logger;
 
             var category = _configuration.GetSection(categoryName.Split('.')[0]);
-            logger = new ModifiedLogger(categoryName, category);
+            logger = new ModifiedLogger(categoryName, category, _logger);
             _loggers.TryAdd(categoryName, logger);
             return logger;
         }

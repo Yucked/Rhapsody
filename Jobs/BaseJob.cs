@@ -21,7 +21,7 @@ namespace Concept.Jobs
 
         public void Start()
         {
-            Logger.LogInformation($"Started {Name} job with {Delay.TotalSeconds}s delay.");
+            Logger?.LogInformation($"Started {Name} job with {Delay.TotalSeconds}s delay.");
             Delay = TimeSpan.FromSeconds(5);
             TokenSource = new CancellationTokenSource();
             _runningTask = InitializeAsync();
