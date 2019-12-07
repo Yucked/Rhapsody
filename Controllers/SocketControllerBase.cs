@@ -33,13 +33,17 @@ namespace Concept.Controllers
 
             try
             {
-                await connection.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
-                    "Closed by remote.", CancellationToken.None);
-                Cache.RemoveConnection(connection.UserId);
+                if (connection.Socket.State.Equals(WebSocketState.Open))
+                    await connection.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure,
+                        "Closed by remote.", CancellationToken.None);
             }
             catch (Exception exception)
             {
                 _logger.LogCritical(exception, exception.Message);
+            }
+            finally
+            {
+                Cache.RemoveConnection(connection.UserId);
             }
         }
 

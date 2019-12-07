@@ -1,17 +1,10 @@
 using System;
-using System.Drawing;
-using System.Threading;
-using System.Threading.Tasks;
-using Colorful;
-using Concept.Entities;
-using Concept.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Console = Colorful.Console;
 
 namespace Concept.Logger
 {
-    public sealed class ModifiedLogger : ILogger
+    public readonly struct ModifiedLogger : ILogger
     {
         private readonly LogService _service;
         private readonly string _categoryName;
@@ -30,7 +23,7 @@ namespace Concept.Logger
         public bool IsEnabled(LogLevel logLevel)
         {
             // TODO: Check logging properly.
-            var level = (LogLevel) Enum.Parse(typeof(LogLevel), _section.Value);
+            var level = (LogLevel)Enum.Parse(typeof(LogLevel), _section.Value);
             return level <= logLevel;
         }
 

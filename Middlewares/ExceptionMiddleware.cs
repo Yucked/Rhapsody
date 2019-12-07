@@ -28,7 +28,7 @@ namespace Concept.Middlewares
 
         private void HandleException(Exception ex, ILogger logger, HttpContext context)
         {
-            logger.Log(LogLevel.Error, ex.Message, ex);
+            logger.LogError(ex, ex.ToString());
             context.Response.StatusCode = 500;
         }
     }
