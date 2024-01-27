@@ -30,12 +30,12 @@ namespace Rhapsody.Internals.Logging {
 			if (_filters.TryGetFilter(ref categoryName, out var logLevel)) {
 			}
 
-			if (_loggers.TryGetValue(categoryName, out var logger)) {
-				return logger;
-			}
+            if (_loggers.TryGetValue(categoryName, out var logger)) {
+                return logger;
+            }
 
 
-			logger = new ColorfulLogger(categoryName, _defaultLevel, this);
+			logger = new ColorfulLogger(categoryName, logLevel, this);
 			_loggers.TryAdd(categoryName, logger);
 			return logger;
 		}

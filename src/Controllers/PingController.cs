@@ -1,12 +1,12 @@
 using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Rhapsody.Payloads.Outbound;
 
 namespace Rhapsody.Controllers {
 	[Route("api/[controller]"), ApiController, Produces("application/json")]
 	public sealed class PingController : ControllerBase {
 		private readonly IMemoryCache _memoryCache;
-		private const string CACHE_KEY = "_Time";
 
 		public PingController(IMemoryCache memoryCache) {
 			_memoryCache = memoryCache;
@@ -14,13 +14,13 @@ namespace Rhapsody.Controllers {
 
 		[HttpGet]
 		public IActionResult Ping() {
-			if (_memoryCache.TryGetValue(CACHE_KEY, out DateTimeOffset old)) {
-				return Ok(old);
+			if (_memoryCache.TryGetValue("PING", out DateTimeOffset old)) {
+				return RestResponse.Ok(old);
 			}
 
-			old = DateTimeOffset.Now;
-			_memoryCache.Set(CACHE_KEY, old);
-			return Ok(old);
+			old = DateTimeOffset.UtcNow;
+			_memoryCache.Set("PING", old);
+			return RestResponse.Ok(old);
 		}
 	}
 }

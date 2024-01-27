@@ -1,0 +1,1 @@
+{"endpoint":{"host":"*","port":2020,"fallbackRandom":false},"authentication":{"password":"Rhapsody","endpoints":["/api/search","/ws"]},"logging":{"defaultLevel":"Trace","filters":{"System.*":3}},"providers":{"youtube":true,"soundcloud":true,"bandcamp":true,"hearthisat":true,"http":true}}

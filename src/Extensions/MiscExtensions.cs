@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Colorful;
-using Dysc.Providers;
+using Dysc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Rhapsody.Objects;
@@ -101,7 +101,7 @@ namespace Rhapsody.Extensions {
 						},
 						DefaultLevel = LogLevel.Trace
 					},
-					Providers = Enum.GetNames(typeof(ProviderType))
+					Providers = Enum.GetNames(typeof(SourceProvider))
 					   .ToDictionary(x => x.ToLower(), x => true)
 				};
 				var serialize = applicationOptions.Serialize();

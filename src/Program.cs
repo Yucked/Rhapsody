@@ -54,7 +54,7 @@ namespace Rhapsody {
 						collection.Configure<ApplicationOptions>(context.Configuration);
 
 						collection.AddScoped<ProviderFilterAttribute>();
-						collection.AddSingleton<DyscClient>();
+						collection.AddSingleton<Dysk>();
 					})
 				   .RunConsoleAsync();
 			}

@@ -91,3 +91,25 @@ html, body {
 .menu.active .bar:nth-child(3) ul li {
     opacity: 1;
 }
+
+.has-border-radius-20 {
+    border-radius: 20px;
+}
+
+.has-border-radius-15 {
+    border-radius: 15px;
+}
+
+.has-shadow {
+    box-shadow: 0 1px 10px black;
+}
+
+.is-tea-pink {
+    color: #131313 !important;
+    background-color: #fcd4fb !important;
+}
+
+.is-somewhat-yellow {
+    color: #131313 !important;
+    background-color: #fff454 !important;
+}

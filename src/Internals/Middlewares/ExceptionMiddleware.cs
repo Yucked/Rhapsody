@@ -18,7 +18,7 @@ namespace Rhapsody.Internals.Middlewares {
                 await _requestDelegate(context);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, ex.StackTrace);
+                _logger.LogError(ex.Message, ex.StackTrace);
                 context.Response.StatusCode = 500;
             }
         }
